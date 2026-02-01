@@ -123,7 +123,13 @@ def login_required(f):
 
 @app.route('/')
 def index():
-    """Serve the main page"""
+    """Serve the homepage"""
+    return send_from_directory('static', 'homepage.html')
+
+
+@app.route('/puzzle')
+def puzzle():
+    """Serve the puzzle page"""
     return send_from_directory('static', 'index.html')
 
 
