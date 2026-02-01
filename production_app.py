@@ -609,5 +609,4 @@ if __name__ == '__main__':
 if not os.path.exists(DATABASE):
     print("Initializing database for production deployment...")
     init_db()
-    print("✓ Database initialized successfully!")
-Fix database initialization for Railway   
+    print("✓ Database initialized successfully!") 
