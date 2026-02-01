@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardian Cryptic 29,914 - With Progressive Hints</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #0f0f0f;
+            --paper: #fffef8;
+            --blue-dark: #1a3a52;
+            --blue-accent: #2563a8;
+            --amber: #d97706;
+            --amber-light: #fef3c7;
+            --green: #065f46;
+            --green-light: #d1fae5;
+            --red: #991b1b;
+            --red-light: #fee2e2;
+            --grey-light: #f3f4f6;
+            --grey-border: #d1d5db;
+            
+            --serif: 'Crimson Pro', Georgia, serif;
+            --display: 'Cormorant Garamond', Georgia, serif;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--serif);
+            background: var(--paper);
+            color: var(--ink);
+            line-height: 1.65;
+            min-height: 100vh;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--blue-dark) 0px,
+                var(--blue-dark) 20px,
+                var(--amber) 20px,
+                var(--amber) 22px,
+                transparent 22px,
+                transparent 40px
+            );
+            z-index: 1000;
+        }
+        
+        .masthead {
+            background: var(--blue-dark);
+            color: var(--paper);
+            padding: 3rem 2rem 2rem;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        
+        .masthead h1 {
+            font-family: var(--display);
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.5rem;
+        }
+        
+        .masthead .tagline {
+            font-size: clamp(1rem, 2vw, 1.3rem);
+            opacity: 0.95;
+            font-style: italic;
+            letter-spacing: 0.03em;
+        }
+        
+        .puzzle-meta {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            font-size: 0.95rem;
+            letter-spacing: 0.05em;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+        }
+        
+        .hero-feature {
+            background: linear-gradient(135deg, var(--amber-light) 0%, #fde68a 100%);
+            border: 2px solid var(--amber);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 4px 16px rgba(217, 119, 6, 0.1);
+        }
+        
+        .hero-feature h2 {
+            font-family: var(--display);
+            font-size: 2rem;
+            color: var(--blue-dark);
+            margin-bottom: 0.75rem;
+        }
+        
+        .hero-feature p {
+            font-size: 1.1rem;
+            color: #78350f;
+        }
+        
+        .clues-wrapper {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 24px rgba(0,0,0,0.08);
+            overflow: hidden;
+            margin-bottom: 3rem;
+        }
+        
+        .section-header {
+            background: var(--grey-light);
+            padding: 1.5rem 2rem;
+            border-bottom: 3px solid var(--blue-dark);
+        }
+        
+        .section-header h3 {
+            font-family: var(--display);
+            font-size: 1.8rem;
+            color: var(--blue-dark);
+            font-weight: 700;
+        }
+        
+        .clues-list {
+            padding: 2rem;
+        }
+        
+        .clue-item {
+            padding: 2rem 0;
+            border-bottom: 1px solid var(--grey-border);
+        }
+        
+        .clue-item:last-child {
+            border-bottom: none;
+        }
+        
+        .clue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .clue-number {
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: var(--blue-dark);
+        }
+        
+        .clue-enum {
+            font-family: monospace;
+            color: #6b7280;
+            font-size: 1rem;
+        }
+        
+        .clue-text {
+            font-size: 1.2rem;
+            line-height: 1.75;
+            margin-bottom: 1.5rem;
+            color: var(--ink);
+        }
+        
+        .answer-section {
+            background: var(--grey-light);
+            padding: 1.5rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .answer-input {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            font-family: var(--display);
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            border: 2px solid var(--grey-border);
+            border-radius: 4px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        .answer-input:focus {
+            outline: none;
+            border-color: var(--blue-accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 168, 0.1);
+        }
+        
+        .check-btn {
+            padding: 0.875rem 2rem;
+            background: var(--blue-dark);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-family: var(--serif);
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .check-btn:hover {
+            background: var(--blue-accent);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 168, 0.3);
+        }
+        
+        .feedback {
+            padding: 1rem 1.25rem;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .feedback.show {
+            display: block;
+        }
+        
+        .feedback.correct {
+            background: var(--green-light);
+            color: var(--green);
+            border-left: 4px solid var(--green);
+        }
+        
+        .feedback.incorrect {
+            background: var(--red-light);
+            color: var(--red);
+            border-left: 4px solid var(--red);
+        }
+        
+        .hints-container {
+            background: white;
+            border: 1px solid var(--grey-border);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 1.5rem;
+        }
+        
+        .hint-level {
+            border-bottom: 1px solid var(--grey-border);
+        }
+        
+        .hint-level:last-child {
+            border-bottom: none;
+        }
+        
+        .hint-toggle {
+            width: 100%;
+            padding: 1.25rem 1.5rem;
+            background: transparent;
+            border: none;
+            text-align: left;
+            cursor: pointer;
+            font-family: var(--serif);
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            color: var(--ink);
+        }
+        
+        .hint-toggle:hover {
+            background: var(--grey-light);
+        }
+        
+        .hint-toggle .label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .hint-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 3px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        
+        .hint-badge.gentle {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .hint-badge.medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .hint-badge.detailed {
+            background: #fce7f3;
+            color: #9f1239;
+        }
+        
+        .hint-badge.answer {
+            background: #f3e8ff;
+            color: #6b21a8;
+        }
+        
+        .hint-icon {
+            font-size: 1.2rem;
+            color: var(--amber);
+            transition: transform 0.3s ease;
+        }
+        
+        .hint-toggle.active {
+            background: var(--amber-light);
+        }
+        
+        .hint-toggle.active .hint-icon {
+            transform: rotate(90deg);
+        }
+        
+        .hint-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+            background: var(--grey-light);
+        }
+        
+        .hint-content.show {
+            max-height: 1000px;
+            border-top: 2px solid var(--amber);
+        }
+        
+        .hint-inner {
+            padding: 1.5rem;
+        }
+        
+        .hint-inner p {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: #374151;
+        }
+        
+        .footer {
+            margin-top: 5rem;
+            padding: 3rem 2rem;
+            text-align: center;
+            border-top: 2px solid var(--grey-border);
+            background: var(--grey-light);
+        }
+        
+        .footer p {
+            font-size: 0.95rem;
+            color: #6b7280;
+            margin: 0.5rem 0;
+        }
+        
+        @media (max-width: 768px) {
+            .input-group {
+                flex-direction: column;
+            }
+            .check-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="masthead">
+        <h1>🧩 Guardian Cryptic 29,914</h1>
+        <p class="tagline">Progressive hints that never spoil other clues</p>
+        <div class="puzzle-meta">
+            Set by Fed • Monday, 27 January 2026 • Proof of Concept
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="hero-feature">
+            <h2>✨ Real Guardian Puzzle with Progressive Hints!</h2>
+            <p><strong>This is your proof-of-concept!</strong> A real Guardian cryptic with progressive hints extracted from fifteensquared.net. Each clue has 4 hint levels that build on each other without spoiling the whole puzzle. Try it out, then use this to approach Guardian/FT for permission!</p>
+        </div>
+        
+        <div class="clues-wrapper">
+            <div class="section-header">
+                <h3>Across</h3>
+            </div>
+            <div class="clues-list" id="across-clues"></div>
+        </div>
+        
+        <div class="clues-wrapper">
+            <div class="section-header">
+                <h3>Down</h3>
+            </div>
+            <div class="clues-list" id="down-clues"></div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Proof of Concept - Not for Public Distribution</strong></p>
+            <p>Guardian Cryptic crossword © Guardian News & Media Ltd</p>
+            <p>Explanations adapted from Fifteensquared.net (with permission pending)</p>
+            <p style="margin-top: 1.5rem;">This demo shows how progressive hints would work with real puzzles.</p>
+        </div>
+    </div>
+    
+    <script>
+        // Real Guardian Cryptic 29,914 clues with hints extracted from fifteensquared
+        const puzzleData = {
+            across: [
+                {
+                    id: 1,
+                    number: '1',
+                    clue: 'Prisoner finally does bird over murder',
+                    enumeration: '7',
+                    answer: 'CONSUME',
+                    hints: [
+                        'The definition is "murder" - but think informal usage, like "I could murder a..."',
+                        'This combines: a prisoner (3 letters) + something from "does" + a bird, reversed.',
+                        '"Prisoner" gives you a 3-letter abbreviation. "Finally does" means take the last letter. "Bird over" means a bird name backwards.',
+                        'Answer: CONSUME. Prisoner=CON, finally does=S, bird over=UME (EMU backwards). Definition: to murder (consume greedily).'
+                    ]
+                },
+                {
+                    id: 2,
+                    number: '5',
+                    clue: 'Spooner\'s old man wagered unrecoverable liability',
+                    enumeration: '3,4',
+                    answer: 'BAD DEBT',
+                    hints: [
+                        'The definition is "unrecoverable liability". This is a Spoonerism - swap initial sounds.',
+                        'Find synonyms for "old man" and "wagered". Both are 3 letters.',
+                        'Think: what\'s slang for old man or father? What\'s another word for wagered?',
+                        'Answer: BAD DEBT. Spoonerism of "Dad bet" - swap the D and B sounds.'
+                    ]
+                },
+                {
+                    id: 3,
+                    number: '10',
+                    clue: 'Wind in America goes the other way',
+                    enumeration: '1-5',
+                    answer: 'U-TURNS',
+                    hints: [
+                        'The definition is "goes the other way".',
+                        'This is a container clue. A word for "wind" (as a verb) goes inside "America".',
+                        'America = 2 letters. Think of a 4-letter verb meaning to wind or rotate.',
+                        'Answer: U-TURNS. TURN (wind) inside US (America) = U(TURN)S.'
+                    ]
+                },
+                {
+                    id: 4,
+                    number: '11',
+                    clue: 'A power tool they hope to get in',
+                    enumeration: '8',
+                    answer: 'APPLIERS',
+                    hints: [
+                        'The definition is "they hope to get in" - think job applications.',
+                        'This is built from: the letter A + an abbreviation for power + a hand tool.',
+                        'Power in physics = one letter. The tool grips things and has 6 letters.',
+                        'Answer: APPLIERS. A + P (power) + PLIERS (tool).'
+                    ]
+                },
+                {
+                    id: 5,
+                    number: '12',
+                    clue: 'Thick walls collapsing here in ancient Rome',
+                    enumeration: '3',
+                    answer: 'HIC',
+                    hints: [
+                        'The definition is "here in ancient Rome" - you need the Latin word.',
+                        '"Walls collapsing" means remove the outer letters from a word.',
+                        'Look at the word "thick" - what\'s inside if the walls (outer letters) collapse?',
+                        'Answer: HIC (Latin for "here"). T[HIC]K - remove the outer walls.'
+                    ]
+                },
+                {
+                    id: 6,
+                    number: '13',
+                    clue: 'Seafood swindle pursued by detective',
+                    enumeration: '6',
+                    answer: 'SCAMPI',
+                    hints: [
+                        'The definition is "Seafood".',
+                        'This adds two parts: a word for swindle (4 letters) + a detective abbreviation (2 letters).',
+                        'Think of a 4-letter fraud/swindle. Detective = private investigator = two initials.',
+                        'Answer: SCAMPI. SCAM (swindle) + PI (private investigator).'
+                    ]
+                },
+                {
+                    id: 7,
+                    number: '14',
+                    clue: 'Available after pound fell',
+                    enumeration: '5,3',
+                    answer: 'KNOCK OUT',
+                    hints: [
+                        'The definition is "fell" - to cause someone to fall down.',
+                        'Combine: a word meaning available/released + a verb meaning to pound/hit.',
+                        'Available = 3 letters (think "the new book is ___"). Pound = 5 letters.',
+                        'Answer: KNOCK OUT. KNOCK (pound) + OUT (available). To fell = to knock out.'
+                    ]
+                },
+                {
+                    id: 8,
+                    number: '15',
+                    clue: 'Quietly ring back to get checked',
+                    enumeration: '5',
+                    answer: 'PLAID',
+                    hints: [
+                        'The definition is "checked" - a type of checked fabric pattern.',
+                        'Combine: a musical instruction for quiet (1 letter) + "ring back" (a phone word reversed).',
+                        'Quietly in music = P for piano. To ring = to call someone on the phone (4 letters).',
+                        'Answer: PLAID. P (piano/quiet) + LAID (DIAL for "ring" reversed).'
+                    ]
+                },
+                {
+                    id: 9,
+                    number: '16',
+                    clue: 'Record a beat on the radio, calculating power',
+                    enumeration: '9',
+                    answer: 'LOGARITHM',
+                    hints: [
+                        'The definition is "calculating power" - this is a mathematical term.',
+                        'This uses a homophone. "On the radio" means it sounds like something.',
+                        'Start with a word for record (3 letters). Then add something that sounds like "a beat/rhythm".',
+                        'Answer: LOGARITHM. LOG (record) + "A RITHM" (sounds like "a rhythm").'
+                    ]
+                },
+                {
+                    id: 10,
+                    number: '19',
+                    clue: 'Produce – and handle – Elton John for instance',
+                    enumeration: '5,4',
+                    answer: 'STAGE NAME',
+                    hints: [
+                        'The definition is "Elton John for instance" - what performers use instead of real names.',
+                        'This is two simple synonyms joined together.',
+                        'Produce (a show) = 5 letters. Handle (a nickname) = 4 letters.',
+                        'Answer: STAGE NAME. STAGE (produce) + NAME (handle).'
+                    ]
+                },
+                {
+                    id: 11,
+                    number: '21',
+                    clue: 'Threatening look from member of parliament on select committee for starters',
+                    enumeration: '5',
+                    answer: 'SCOWL',
+                    hints: [
+                        'The definition is "Threatening look".',
+                        'Take initial letters ("for starters") from some words, plus a "member of parliament".',
+                        'Parliament member = 3 letters (but not MP!). Initial letters of two words in the clue = 2 letters.',
+                        'Answer: SCOWL. S and C (initial letters of "Select Committee") + OWL (parliament - the collective noun for owls).'
+                    ]
+                },
+                {
+                    id: 12,
+                    number: '24',
+                    clue: 'Rival Pope made strange claims about religious books',
+                    enumeration: '8',
+                    answer: 'OPPONENT',
+                    hints: [
+                        'The definition is "Rival".',
+                        'This is an anagram ("made strange") containing other elements.',
+                        'Anagram POPE around: ON (about) + NT (religious books = New Testament).',
+                        'Answer: OPPONENT. Anagram of POPE containing ON + NT.'
+                    ]
+                },
+                {
+                    id: 13,
+                    number: '26',
+                    clue: 'Hulk director\'s detailed tip to actor – one with a line?',
+                    enumeration: '6',
+                    answer: 'ANGLER',
+                    hints: [
+                        'The definition is "one with a line" - a fishing line.',
+                        'This uses a film director\'s name with parts removed and added.',
+                        'The Hulk director is Ang Lee (2003). "Detailed" means remove the last letter. Add the final letter of "actor".',
+                        'Answer: ANGLER. ANG LE (Ang Lee minus last E) + R (tip/end of "actor").'
+                    ]
+                },
+                {
+                    id: 14,
+                    number: '27',
+                    clue: 'When half-cut, draw back tattoo',
+                    enumeration: '3',
+                    answer: 'INK',
+                    hints: [
+                        'The definition is "tattoo" (the substance used).',
+                        'Find a word meaning "draw back" or "recoil", then cut it in half.',
+                        'A 6-letter word for recoil, cut in half = 3 letters.',
+                        'Answer: INK. Half of SHRINK (draw back), reversed = INK. Wait - actually just take half of SHRINK = INK (the last 3 letters).'
+                    ]
+                },
+                {
+                    id: 15,
+                    number: '28',
+                    clue: 'Heriot Watt, Edinburgh ultimately struggling until now',
+                    enumeration: '8',
+                    answer: 'HITHERTO',
+                    hints: [
+                        'The definition is "until now".',
+                        'This is an anagram ("struggling") using letters from the clue.',
+                        'Anagram of: HERIOT + final letters ("ultimately") of WATT and EDINBURGH.',
+                        'Answer: HITHERTO. Anagram of (HERIOT + T + H) where T and H are the ultimate/final letters.'
+                    ]
+                },
+                {
+                    id: 16,
+                    number: '29',
+                    clue: 'Frosty Spike Milligan scene with actor, Oliver Reed taking only seconds',
+                    enumeration: '6',
+                    answer: 'ICICLE',
+                    hints: [
+                        'The definition is "Frosty". Spike Milligan is misdirection!',
+                        'Take the second letter from each word in part of the clue.',
+                        'Look at: Milligan, scene, with, actor, Oliver, Reed - take the 2nd letter of each.',
+                        'Answer: ICICLE. Second letters: M[I]lligan s[C]ene w[I]th a[C]tor O[L]iver R[E]ed.'
+                    ]
+                },
+                {
+                    id: 17,
+                    number: '30',
+                    clue: 'Drunkenly mess up one line, using skirts to monkey around',
+                    enumeration: '7',
+                    answer: 'MERRILY',
+                    hints: [
+                        'The definition is "Drunkenly" - think of the phrase "merrily we roll along".',
+                        'Combine: a word for "mess up" + I (one) + L (line), with outer letters wrapping around.',
+                        'ERR (mess up) + I + L, with the outer letters of a 6-letter animal word providing the "skirts".',
+                        'Answer: MERRILY. M[ERR + I + L]Y where M and Y are the first and last letters of "monkey".'
+                    ]
+                },
+                {
+                    id: 18,
+                    number: '31',
+                    clue: 'Maybe Magnum\'s close to his nose',
+                    enumeration: '7',
+                    answer: 'SHOOTER',
+                    hints: [
+                        'The definition is "Maybe Magnum" - think of the gun, not the detective or ice cream.',
+                        'Combine: end of "his" + a word for nose.',
+                        'The last letter of "his" + a 6-letter slang word for nose.',
+                        'Answer: SHOOTER. S (close/end of "his") + HOOTER (nose).'
+                    ]
+                }
+            ],
+            down: [
+                {
+                    id: 11,
+                    number: '2',
+                    clue: 'Visual is current with work coming up',
+                    enumeration: '7',
+                    answer: 'OPTICAL',
+                    hints: [
+                        'The definition is "Visual".',
+                        'Start with a 7-letter word meaning "current" or "of the moment".',
+                        'Within that word, move "work" (2 letters - think musical term) upward in the grid.',
+                        'Answer: OPTICAL. Start with TOPICAL, move OP (opus=work) up to the front.'
+                    ]
+                },
+                {
+                    id: 12,
+                    number: '3',
+                    clue: 'Perhaps Gala lifting sound after struggle?',
+                    enumeration: '9',
+                    answer: 'SCRUMPING',
+                    hints: [
+                        'The definition is hidden in the whole clue - think about what you might do with a Gala (type of apple).',
+                        'This combines: a word for struggle (5 letters, think rugby) + a sound (4 letters).',
+                        'A rugby collision = first part. A ringing/beeping sound = second part.',
+                        'Answer: SCRUMPING (stealing fruit/apples). SCRUM (struggle) + PING (sound).'
+                    ]
+                },
+                {
+                    id: 13,
+                    number: '6',
+                    clue: 'Deletion of program on phone, wanting space, ok',
+                    enumeration: '8',
+                    answer: 'APPROVAL',
+                    hints: [
+                        'The definition is "ok".',
+                        'Think about deleting a phone program. What word describes that action?',
+                        'The deletion action is 10 letters. Remove a 2-letter typography term for "space".',
+                        'Answer: APPROVAL. APP REMOVAL minus EM (typographic space unit).'
+                    ]
+                },
+                {
+                    id: 14,
+                    number: '4',
+                    clue: 'I\'m upset with this swimming stroke that went wrong',
+                    enumeration: '6',
+                    answer: 'MISHIT',
+                    hints: [
+                        'The definition is "stroke that went wrong" - a bad hit in cricket/tennis.',
+                        'This uses two anagrams combined.',
+                        'Anagram of "I\'m" (upset) + anagram of "this" (swimming around).',
+                        'Answer: MISHIT. Anagram of (I M) + anagram of (THIS).'
+                    ]
+                },
+                {
+                    id: 15,
+                    number: '7',
+                    clue: 'Tea for one of Doctor Kildare\'s first home visits',
+                    enumeration: '5',
+                    answer: 'DRINK',
+                    hints: [
+                        'The definition is "Tea" (a type of drink) - "for one" means "for example".',
+                        'This is a container clue. Doctor + first letter of a word, with "home" going inside.',
+                        'DR (doctor) + K (first of Kildare), with IN (home) visiting/inserted.',
+                        'Answer: DRINK. DR + IN (inserted) + K = DR(IN)K.'
+                    ]
+                },
+                {
+                    id: 16,
+                    number: '8',
+                    clue: 'Part of town that\'s revolting – King taken by surprise at the outset',
+                    enumeration: '7',
+                    answer: 'BOROUGH',
+                    hints: [
+                        'The definition is "Part of town".',
+                        'Combine: an expression of disgust + a surprise sound, with a king inside.',
+                        'UGH (revolting!) + BOO (surprise!) with R (Rex=king) inserted somewhere.',
+                        'Answer: BOROUGH. BOO (surprise) at the outset/start, then R (king) in UGH = BO + R + OUGH.'
+                    ]
+                },
+                {
+                    id: 17,
+                    number: '9',
+                    clue: 'E.g enthuse defender with say, 4-4-2',
+                    enumeration: '4-9',
+                    answer: 'BACK-FORMATION',
+                    hints: [
+                        'The definition is "E.g enthuse" - enthuse is an example of this linguistic term.',
+                        'Combine: a defender in sports + a football formation.',
+                        'BACK (a defensive position) + FORMATION (like 4-4-2 in football).',
+                        'Answer: BACK-FORMATION. A linguistic term where "enthuse" was created from "enthusiasm".'
+                    ]
+                },
+                {
+                    id: 18,
+                    number: '17',
+                    clue: 'Disguised gin with tonic swirling round',
+                    enumeration: '9',
+                    answer: 'INCOGNITO',
+                    hints: [
+                        'The definition is "Disguised".',
+                        'This is an anagram ("swirling") of two words, plus something for "round".',
+                        'Anagram of "gin tonic" + O (round/circular shape).',
+                        'Answer: INCOGNITO. Anagram of (GIN TONIC) + O.'
+                    ]
+                },
+                {
+                    id: 19,
+                    number: '18',
+                    clue: 'One fifth of thirteen going into 26 freely without fractions',
+                    enumeration: '8',
+                    answer: 'INTEGRAL',
+                    hints: [
+                        'The definition is "without fractions" - whole numbers.',
+                        'This references another clue (26 across). Take the fifth letter of "thirteen" and add it to an anagram.',
+                        'Fifth letter of thirteen is T. Anagram ("freely") of T + the answer to 26 across.',
+                        'Answer: INTEGRAL. I (one) + anagram of (T + ANGLER from 26ac).'
+                    ]
+                },
+                {
+                    id: 20,
+                    number: '20',
+                    clue: 'Best team to make cut',
+                    enumeration: '7',
+                    answer: 'TOPSIDE',
+                    hints: [
+                        'The definition is "cut" - a cut of meat.',
+                        'This is two simple words combined.',
+                        'Best = 3 letters (superlative). Team = 4 letters.',
+                        'Answer: TOPSIDE. TOP (best) + SIDE (team).'
+                    ]
+                },
+                {
+                    id: 21,
+                    number: '22',
+                    clue: 'Little fib about husband\'s bike stunt',
+                    enumeration: '7',
+                    answer: 'WHEELIE',
+                    hints: [
+                        'The definition is "bike stunt".',
+                        'This is a container clue. A small fib goes around an abbreviation for husband.',
+                        'Little fib = 3 letters + 3 letters. Husband = 1 letter. The fib wraps around H.',
+                        'Answer: WHEELIE. WEE LIE (little fib) around H (husband) = W + H + EELIE... wait, that\'s wrong. WEE LIE contains H = W(H)EELIE.'
+                    ]
+                },
+                {
+                    id: 22,
+                    number: '23',
+                    clue: 'Jaunty part of anorak is hood',
+                    enumeration: '6',
+                    answer: 'RAKISH',
+                    hints: [
+                        'The definition is "Jaunty".',
+                        'This is a hidden word - it\'s literally hidden in the clue.',
+                        'Look carefully at "anoRAK IS Hood" - the answer is hiding there.',
+                        'Answer: RAKISH. Hidden in "anoRAK IS H[ood]".'
+                    ]
+                },
+                {
+                    id: 23,
+                    number: '25',
+                    clue: 'Different gold-plated article',
+                    enumeration: '5',
+                    answer: 'OTHER',
+                    hints: [
+                        'The definition is "Different".',
+                        'This is a container clue. Gold goes around an article.',
+                        'Gold in heraldry = 2 letters. Article (like "the") = 3 letters.',
+                        'Answer: OTHER. OR (heraldic gold) around THE (article) = O(THE)R.'
+                    ]
+                }
+            ]
+        };
+        
+        // Render clues
+        function renderClues() {
+            const acrossContainer = document.getElementById('across-clues');
+            const downContainer = document.getElementById('down-clues');
+            
+            acrossContainer.innerHTML = puzzleData.across.map(clue => renderClue(clue)).join('');
+            downContainer.innerHTML = puzzleData.down.map(clue => renderClue(clue)).join('');
+        }
+        
+        function renderClue(clue) {
+            return `
+                <div class="clue-item">
+                    <div class="clue-header">
+                        <span class="clue-number">${clue.number}.</span>
+                        <span class="clue-enum">(${clue.enumeration})</span>
+                    </div>
+                    
+                    <p class="clue-text">${clue.clue}</p>
+                    
+                    <div class="answer-section">
+                        <div class="input-group">
+                            <input 
+                                type="text" 
+                                class="answer-input" 
+                                id="answer-${clue.id}"
+                                placeholder="YOUR ANSWER"
+                                data-answer="${clue.answer}"
+                            >
+                            <button class="check-btn" onclick="checkAnswer(${clue.id})">
+                                Check Answer
+                            </button>
+                        </div>
+                        <div class="feedback" id="feedback-${clue.id}"></div>
+                    </div>
+                    
+                    <div class="hints-container">
+                        ${[1,2,3,4].map(level => {
+                            const badges = ['gentle', 'medium', 'detailed', 'answer'];
+                            const labels = ['Definition', 'Wordplay Type', 'Breakdown', 'Full Answer'];
+                            return `
+                                <div class="hint-level">
+                                    <button class="hint-toggle" onclick="toggleHint(${clue.id}, ${level})">
+                                        <span class="label">
+                                            <span>Hint ${level}: ${labels[level-1]}</span>
+                                            <span class="hint-badge ${badges[level-1]}">${badges[level-1]}</span>
+                                        </span>
+                                        <span class="hint-icon">▶</span>
+                                    </button>
+                                    <div class="hint-content" id="hint-${clue.id}-${level}">
+                                        <div class="hint-inner">
+                                            <p>${clue.hints[level-1]}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function toggleHint(clueId, level) {
+            const toggle = event.currentTarget;
+            const content = document.getElementById(`hint-${clueId}-${level}`);
+            
+            if (toggle.classList.contains('active')) {
+                toggle.classList.remove('active');
+                content.classList.remove('show');
+            } else {
+                toggle.classList.add('active');
+                content.classList.add('show');
+            }
+        }
+        
+        function checkAnswer(clueId) {
+            const input = document.getElementById(`answer-${clueId}`);
+            const feedback = document.getElementById(`feedback-${clueId}`);
+            const userAnswer = input.value.trim().toUpperCase().replace(/[^A-Z]/g, '');
+            const correctAnswer = input.dataset.answer.replace(/[^A-Z]/g, '');
+            
+            if (!userAnswer) {
+                feedback.textContent = 'Please enter an answer first';
+                feedback.className = 'feedback incorrect show';
+                return;
+            }
+            
+            if (userAnswer === correctAnswer) {
+                feedback.textContent = '🎉 Correct! Well done!';
+                feedback.className = 'feedback correct show';
+                input.style.borderColor = 'var(--green)';
+            } else {
+                feedback.textContent = '❌ Not quite - try the hints below!';
+                feedback.className = 'feedback incorrect show';
+                input.style.borderColor = 'var(--red)';
+            }
+        }
+        
+        // Allow Enter key
+        document.addEventListener('keypress', (e) => {
+            if (e.target.classList.contains('answer-input') && e.key === 'Enter') {
+                const clueId = parseInt(e.target.id.replace('answer-', ''));
+                checkAnswer(clueId);
+            }
+        });
+        
+        renderClues();
+    </script>
+</body>
+</html>
