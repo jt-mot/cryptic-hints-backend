@@ -497,6 +497,31 @@ def unpublish_puzzle(puzzle_id):
     return jsonify({'success': True, 'message': 'Puzzle unpublished'})
 
 
+@app.route('/init-db')
+def initialize_database():
+    """Initialize database - visit this once on new deployment"""
+    try:
+        if not os.path.exists(DATABASE):
+            init_db()
+            return jsonify({
+                'success': True, 
+                'message': 'Database initialized! You can now use the app.',
+                'next_steps': [
+                    'Go to /admin/login to access admin panel',
+                    'Import puzzles using the import script',
+                    'Or visit / to see the public site'
+                ]
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'message': 'Database already exists',
+                'status': 'ready'
+            })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 # ============================================================================
 # IMPORT/SCRAPING ROUTES
 # ============================================================================
@@ -576,4 +601,13 @@ if __name__ == '__main__':
     print("\n⚠️  CHANGE THE PASSWORD IN production_app.py BEFORE DEPLOYING!")
     print("\nPress Ctrl+C to stop\n")
     
-    app.run(debug=True, port=5000)
+    # Get port from environment (for Railway/Heroku deployment)
+    port = int(os.getenv('PORT', 5000))
+    app.run(debug=False, host='0.0.0.0', port=port)
+
+# Initialize database when running with gunicorn (production)
+if not os.path.exists(DATABASE):
+    print("Initializing database for production deployment...")
+    init_db()
+    print("✓ Database initialized successfully!")
+Fix database initialization for Railway   
