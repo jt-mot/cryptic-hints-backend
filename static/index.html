@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardian Cryptic 29,914 - With Progressive Hints</title>
+    <title>Guardian Cryptic 29,914 - Progressive Hints</title>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -378,12 +378,110 @@
             margin: 0.5rem 0;
         }
         
+        /* Progress Tracker */
+        .progress-tracker {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .progress-header h2 {
+            font-family: var(--display);
+            font-size: 1.5rem;
+            color: var(--blue-dark);
+            margin: 0;
+        }
+
+        .stats {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+            color: #64748b;
+            flex-wrap: wrap;
+        }
+
+        .stats span:not(:nth-child(2n)) {
+            font-weight: 600;
+            color: var(--blue-dark);
+        }
+
+        .progress-bar-container {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--green) 0%, #10b981 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        /* Success Animations */
+        @keyframes celebrate {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .celebrating {
+            animation: celebrate 0.5s ease;
+        }
+
+        .success-toast {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: var(--green);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
         @media (max-width: 768px) {
             .input-group {
                 flex-direction: column;
             }
             .check-btn {
                 width: 100%;
+            }
+            .progress-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .stats {
+                width: 100%;
+                justify-content: space-between;
             }
         }
     </style>
@@ -398,9 +496,26 @@
     </div>
     
     <div class="container">
+        <!-- Progress Tracker -->
+        <div class="progress-tracker">
+            <div class="progress-header">
+                <h2>🧩 Guardian Cryptic 29,914</h2>
+                <div class="stats">
+                    <span id="solved-count">0/31 solved</span>
+                    <span>•</span>
+                    <span id="hints-used">0 hints</span>
+                    <span>•</span>
+                    <span id="timer">00:00</span>
+                </div>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+        
         <div class="hero-feature">
-            <h2>✨ Real Guardian Puzzle with Progressive Hints!</h2>
-            <p><strong>This is your proof-of-concept!</strong> A real Guardian cryptic with progressive hints extracted from fifteensquared.net. Each clue has 4 hint levels that build on each other without spoiling the whole puzzle. Try it out, then use this to approach Guardian/FT for permission!</p>
+            <h2>✨ How to Use Progressive Hints</h2>
+            <p><strong>Get help without spoilers:</strong> Each clue has 4 hint levels. Start with Hint 1 (definition), and reveal more only if needed. Hints never spoil other clues. Your progress is saved automatically!</p>
         </div>
         
         <div class="clues-wrapper">
@@ -418,10 +533,10 @@
         </div>
         
         <div class="footer">
-            <p><strong>Proof of Concept - Not for Public Distribution</strong></p>
+            <p><strong>Progressive Cryptic Hints</strong></p>
             <p>Guardian Cryptic crossword © Guardian News & Media Ltd</p>
-            <p>Explanations adapted from Fifteensquared.net (with permission pending)</p>
-            <p style="margin-top: 1.5rem;">This demo shows how progressive hints would work with real puzzles.</p>
+            <p>Hints adapted from Fifteensquared.net</p>
+            <p style="margin-top: 1.5rem;"><a href="/">← Back to Home</a></p>
         </div>
     </div>
     
@@ -851,10 +966,9 @@
                 <div class="clue-item">
                     <div class="clue-header">
                         <span class="clue-number">${clue.number}.</span>
-                        <span class="clue-enum">(${clue.enumeration})</span>
                     </div>
                     
-                    <p class="clue-text">${clue.clue}</p>
+                    <p class="clue-text">${clue.clue} <span class="clue-enum">(${clue.enumeration})</span></p>
                     
                     <div class="answer-section">
                         <div class="input-group">
@@ -942,7 +1056,134 @@
             }
         });
         
+        // ============================================
+        // PROGRESS TRACKING SYSTEM
+        // ============================================
+        
+        let solvedClues = new Set();
+        let hintsViewed = {};
+        let startTime = Date.now();
+        const PUZZLE_ID = 'guardian-29914';
+
+        // Load saved progress from localStorage
+        function loadProgress() {
+            const saved = localStorage.getItem(`puzzle-progress-${PUZZLE_ID}`);
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    solvedClues = new Set(data.solved || []);
+                    hintsViewed = data.hintsViewed || {};
+                    startTime = data.startTime || Date.now();
+                    updateProgressDisplay();
+                    
+                    // Mark solved clues visually
+                    solvedClues.forEach(clueId => {
+                        const input = document.getElementById(`answer-${clueId}`);
+                        if (input) {
+                            input.style.borderColor = 'var(--green)';
+                            input.value = input.dataset.answer;
+                            const feedback = document.getElementById(`feedback-${clueId}`);
+                            if (feedback) {
+                                feedback.textContent = '✓ Solved!';
+                                feedback.className = 'feedback correct show';
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.error('Error loading progress:', e);
+                }
+            }
+        }
+
+        // Save progress to localStorage
+        function saveProgress() {
+            const data = {
+                solved: Array.from(solvedClues),
+                hintsViewed: hintsViewed,
+                startTime: startTime,
+                lastUpdated: Date.now()
+            };
+            localStorage.setItem(`puzzle-progress-${PUZZLE_ID}`, JSON.stringify(data));
+        }
+
+        // Update progress display
+        function updateProgressDisplay() {
+            const totalHints = Object.values(hintsViewed).reduce((sum, hints) => sum + hints.length, 0);
+            document.getElementById('solved-count').textContent = `${solvedClues.size}/31 solved`;
+            document.getElementById('hints-used').textContent = `${totalHints} hint${totalHints !== 1 ? 's' : ''}`;
+            
+            const percentage = (solvedClues.size / 31) * 100;
+            document.getElementById('progress-bar').style.width = percentage + '%';
+        }
+
+        // Update timer every second
+        setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('timer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+
+        // Show success toast
+        function showSuccessToast(answer) {
+            const toast = document.createElement('div');
+            toast.className = 'success-toast';
+            toast.innerHTML = `🎉 Correct! <strong>${answer}</strong>`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Wrap the original toggleHint function to track hint usage
+        const originalToggleHint = toggleHint;
+        window.toggleHint = function(clueId, level) {
+            if (!hintsViewed[clueId]) {
+                hintsViewed[clueId] = [];
+            }
+            if (!hintsViewed[clueId].includes(level)) {
+                hintsViewed[clueId].push(level);
+                updateProgressDisplay();
+                saveProgress();
+            }
+            originalToggleHint(clueId, level);
+        };
+
+        // Wrap the original checkAnswer function to track solved clues
+        const originalCheckAnswer = checkAnswer;
+        window.checkAnswer = function(clueId) {
+            const input = document.getElementById(`answer-${clueId}`);
+            const userAnswer = input.value.trim().toUpperCase().replace(/[^A-Z]/g, '');
+            const correctAnswer = input.dataset.answer.replace(/[^A-Z]/g, '');
+            
+            if (userAnswer === correctAnswer && !solvedClues.has(clueId)) {
+                solvedClues.add(clueId);
+                showSuccessToast(correctAnswer);
+                updateProgressDisplay();
+                saveProgress();
+                
+                // Add celebration animation
+                const clueItem = input.closest('.clue-item');
+                if (clueItem) {
+                    clueItem.classList.add('celebrating');
+                    setTimeout(() => {
+                        clueItem.classList.remove('celebrating');
+                    }, 500);
+                }
+            }
+            
+            // Call original function
+            originalCheckAnswer(clueId);
+        };
+        
         renderClues();
+        
+        // Initialize progress tracking after clues are rendered
+        setTimeout(loadProgress, 100);
     </script>
 </body>
 </html>
