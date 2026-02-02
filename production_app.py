@@ -23,7 +23,12 @@ import os
 import secrets
 
 app = Flask(__name__, static_folder='static')
-app.secret_key = secrets.token_hex(32)  # Generate secure secret key
+app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+
+# Session configuration
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 CORS(app)
 
 DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://localhost/crosswords_dev')
