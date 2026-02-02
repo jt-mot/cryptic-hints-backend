@@ -421,11 +421,9 @@
                     credentials: 'same-origin'
                 });
                 
-                // Check if we got HTML (redirect to login)
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    window.location.href = '/admin/login';
-                    return;
+                // Check if response is ok
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 puzzles = await response.json();
