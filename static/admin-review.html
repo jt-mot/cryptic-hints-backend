@@ -384,6 +384,9 @@
                     <button class="btn btn-secondary" onclick="window.location.href='/admin/quick-import'">
                         📥 Import New Puzzle
                     </button>
+                    <button class="btn btn-primary" id="approveAllBtn" onclick="approveAllClues()" disabled>
+                        ✓ Approve All Hints
+                    </button>
                     <button class="btn btn-success" id="publishBtn" onclick="publishPuzzle()" disabled>
                         ✓ Publish Puzzle
                     </button>
@@ -518,6 +521,9 @@
                 <span><strong>Date:</strong> ${currentPuzzle.date}</span>
                 <span class="status-badge ${currentPuzzle.status}">${currentPuzzle.status}</span>
             `;
+            
+            // Enable/disable approve all button (only if not all approved)
+            document.getElementById('approveAllBtn').disabled = allApproved;
             
             // Enable/disable publish button
             document.getElementById('publishBtn').disabled = !allApproved;
@@ -696,6 +702,45 @@
                 loadPuzzle();
             } catch (error) {
                 alert('Error approving hints: ' + error.message);
+            }
+        }
+        
+        async function approveAllClues() {
+            if (!confirm(`Approve all ${currentClues.length * 4} hints (${currentClues.length} clues × 4 hints each)? This will approve everything without review.`)) {
+                return;
+            }
+            
+            const btn = document.getElementById('approveAllBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Approving...';
+            
+            try {
+                let approved = 0;
+                for (const clue of currentClues) {
+                    for (let level = 1; level <= 4; level++) {
+                        // Skip if already approved
+                        if (clue[`hint_${level}_approved`]) continue;
+                        
+                        await fetch('/admin/api/hint/approve', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'same-origin',
+                            body: JSON.stringify({ 
+                                clue_id: clue.id, 
+                                hint_level: level 
+                            })
+                        });
+                        approved++;
+                    }
+                }
+                
+                alert(`✓ Approved ${approved} hints successfully!`);
+                loadPuzzle(); // Reload to show updated status
+                
+            } catch (error) {
+                alert('Error approving hints: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = '✓ Approve All Hints';
             }
         }
         
