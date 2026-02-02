@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button onclick="testPuzzleAPI()">Test /api/puzzle/today</button>
+    <button onclick="testHintAPI()">Test /api/clue/1/hint/1</button>
+    <pre id="output"></pre>
+    
+    <script>
+        async function testPuzzleAPI() {
+            try {
+                const response = await fetch('/api/puzzle/today');
+                const data = await response.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+                console.log('Puzzle API response:', data);
+                
+                if (data.clues && data.clues.length > 0) {
+                    const firstClue = data.clues[0];
+                    console.log('First clue:', firstClue);
+                    console.log('Has answer?', !!firstClue.answer);
+                    console.log('Answer value:', firstClue.answer);
+                }
+            } catch (error) {
+                document.getElementById('output').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        async function testHintAPI() {
+            try {
+                const response = await fetch('/api/clue/1/hint/1');
+                const data = await response.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+                console.log('Hint API response:', data);
+                console.log('Has hint_text?', !!data.hint_text);
+            } catch (error) {
+                document.getElementById('output').textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
