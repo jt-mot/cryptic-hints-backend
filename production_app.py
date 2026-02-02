@@ -319,6 +319,13 @@ def admin_review():
     return send_from_directory('static', 'admin-review.html')
 
 
+@app.route('/admin/quick-import')
+@login_required  
+def admin_quick_import():
+    """Quick import page for puzzle JSON"""
+    return send_from_directory('static', 'quick-import.html')
+
+
 @app.route('/admin/api/puzzles/pending')
 @login_required
 def get_pending_puzzles():
