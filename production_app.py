@@ -582,6 +582,19 @@ def import_puzzle():
     })
 
 
+# Initialize database when running with gunicorn (production)
+# This runs on module import, before any requests
+try:
+    db_test = get_db()
+    db_test.execute("SELECT 1 FROM puzzles LIMIT 1")
+    db_test.close()
+    print("✓ Database tables exist")
+except:
+    print("Database tables don't exist, initializing...")
+    init_db()
+    print("✓ Database initialized successfully!")
+
+
 if __name__ == '__main__':
     # Initialize database on first run
     if not os.path.exists(DATABASE):
