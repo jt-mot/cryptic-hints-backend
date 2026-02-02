@@ -225,18 +225,45 @@
             resultDiv.style.display = 'none';
 
             try {
+                console.log('Sending puzzle data:', puzzleData);
+                
                 const response = await fetch('/admin/api/import-puzzle', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    credentials: 'same-origin',  // Include session cookie
+                    credentials: 'same-origin',
                     body: JSON.stringify(puzzleData)
                 });
 
-                const result = await response.json();
-
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                // Get the response as text first to see what we're getting
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+                
                 loading.style.display = 'none';
+
+                // Try to parse as JSON
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (e) {
+                    // If it's not JSON, it might be HTML (redirect to login)
+                    if (responseText.includes('login') || responseText.includes('<html>')) {
+                        resultDiv.className = 'result error';
+                        resultDiv.style.display = 'block';
+                        resultDiv.innerHTML = `
+                            <h3>❌ Authentication Error</h3>
+                            <p>You need to be logged in to import puzzles.</p>
+                            <p>Please <a href="/admin/login">login first</a>, then try again.</p>
+                        `;
+                        btn.disabled = false;
+                        return;
+                    }
+                    throw new Error('Server returned invalid response: ' + responseText.substring(0, 200));
+                }
 
                 if (response.ok) {
                     resultDiv.className = 'result success';
@@ -263,6 +290,9 @@
                 resultDiv.innerHTML = `
                     <h3>❌ Error</h3>
                     <p>${error.message}</p>
+                    <p style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                        Check browser console (F12) for more details.
+                    </p>
                 `;
                 btn.disabled = false;
             }
