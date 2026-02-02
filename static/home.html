@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cryptic Crossword Hints - Progressive Hint System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #0f0f0f;
+            --paper: #fffef8;
+            --blue-dark: #1a3a52;
+            --blue-accent: #2563a8;
+            --serif: 'Crimson Pro', Georgia, serif;
+            --display: 'Cormorant Garamond', Georgia, serif;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--serif);
+            background: var(--paper);
+            color: var(--ink);
+            line-height: 1.65;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--blue-dark) 0px,
+                var(--blue-dark) 40px,
+                var(--blue-accent) 40px,
+                var(--blue-accent) 80px
+            );
+            z-index: 1000;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 3rem 2rem 2rem;
+            border-bottom: 3px double #ddd;
+        }
+        
+        .header h1 {
+            font-family: var(--display);
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--blue-dark);
+        }
+        
+        .header p {
+            font-size: 1.125rem;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .puzzle-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .puzzle-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .puzzle-card:hover {
+            border-color: var(--blue-accent);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .puzzle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.75rem;
+        }
+        
+        .puzzle-title {
+            font-family: var(--display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--blue-dark);
+        }
+        
+        .puzzle-date {
+            font-size: 0.875rem;
+            color: #666;
+            background: #f3f4f6;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+        }
+        
+        .puzzle-meta {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.9375rem;
+            color: #555;
+            margin-bottom: 0.75rem;
+        }
+        
+        .puzzle-meta strong {
+            color: var(--ink);
+        }
+        
+        .puzzle-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--blue-accent);
+            font-weight: 600;
+            font-size: 0.9375rem;
+        }
+        
+        .puzzle-cta::after {
+            content: '→';
+            font-size: 1.25rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--blue-accent);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+        
+        .empty-state h2 {
+            font-family: var(--display);
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+            color: var(--blue-dark);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Cryptic Crossword Hints</h1>
+        <p>Master cryptic crosswords with progressive hints that guide you to the answer</p>
+    </div>
+    
+    <div class="container">
+        <div id="content">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading puzzles...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        async function loadPuzzles() {
+            try {
+                const response = await fetch('/api/puzzles/published');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load puzzles');
+                }
+                
+                const puzzles = await response.json();
+                
+                const content = document.getElementById('content');
+                
+                if (puzzles.length === 0) {
+                    content.innerHTML = `
+                        <div class="empty-state">
+                            <h2>No Puzzles Available</h2>
+                            <p>Check back soon for new cryptic crosswords!</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                content.innerHTML = `
+                    <div class="puzzle-list">
+                        ${puzzles.map(puzzle => `
+                            <div class="puzzle-card" onclick="window.location.href='/puzzle/${puzzle.puzzle_number}'">
+                                <div class="puzzle-header">
+                                    <div class="puzzle-title">
+                                        ${puzzle.publication} Cryptic #${puzzle.puzzle_number}
+                                    </div>
+                                    <div class="puzzle-date">
+                                        ${formatDate(puzzle.date)}
+                                    </div>
+                                </div>
+                                <div class="puzzle-meta">
+                                    <div><strong>Setter:</strong> ${puzzle.setter}</div>
+                                    <div><strong>Clues:</strong> ${puzzle.clue_count || 'N/A'}</div>
+                                </div>
+                                <div class="puzzle-cta">
+                                    Start solving
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error loading puzzles:', error);
+                document.getElementById('content').innerHTML = `
+                    <div class="empty-state">
+                        <h2>Error Loading Puzzles</h2>
+                        <p>Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-GB', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+        }
+        
+        // Load on page load
+        loadPuzzles();
+    </script>
+</body>
+</html>
