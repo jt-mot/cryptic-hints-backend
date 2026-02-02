@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Import - Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #1a73e8;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 400px;
+            padding: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #1a73e8;
+        }
+
+        .btn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 1rem;
+        }
+
+        .btn:hover {
+            background: #1557b0;
+        }
+
+        .btn-secondary {
+            background: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #555;
+        }
+
+        .result {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .instructions {
+            background: #e8f4fd;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border-left: 4px solid #1a73e8;
+        }
+
+        .instructions h3 {
+            margin-bottom: 0.5rem;
+            color: #1a73e8;
+        }
+
+        .instructions ol {
+            margin-left: 1.5rem;
+            line-height: 1.8;
+        }
+
+        pre {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Quick Puzzle Import</h1>
+        <p class="subtitle">Import puzzle 29915 into the database</p>
+
+        <div class="instructions">
+            <h3>📝 Instructions:</h3>
+            <ol>
+                <li>The puzzle JSON is pre-filled below</li>
+                <li>Click "Import Puzzle" button</li>
+                <li>Go to <a href="/admin/review">/admin/review</a> to review hints</li>
+                <li>Approve hints and publish the puzzle</li>
+                <li>It will appear on the homepage!</li>
+            </ol>
+        </div>
+
+        <textarea id="puzzleJson" placeholder="Paste puzzle JSON here...">
+{
+  "publication": "Guardian",
+  "puzzle_number": "29915",
+  "setter": "Qaos",
+  "date": "2026-01-28",
+  "clues": []
+}
+        </textarea>
+
+        <button class="btn" onclick="importPuzzle()">Import Puzzle</button>
+        <button class="btn btn-secondary" onclick="loadExample()">Load Puzzle 29915</button>
+        <a href="/admin/review" style="margin-left: 1rem;">
+            <button class="btn btn-secondary">Go to Admin Review</button>
+        </a>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        function loadExample() {
+            // This is puzzle 29915 with a few clues to demonstrate
+            // You'll need to paste the full JSON from puzzle_29915_import.json
+            const example = {
+                "publication": "Guardian",
+                "puzzle_number": "29915",
+                "setter": "Qaos",
+                "date": "2026-01-28",
+                "clues": [
+                    {
+                        "clue_number": 9,
+                        "direction": "across",
+                        "clue_text": "Look into firm's capital",
+                        "enumeration": "5",
+                        "answer": "CAIRO",
+                        "hint_level_1": "Definition: capital. Wordplay: AIR (look) inside CO (firm)",
+                        "hint_level_2": "The answer is an African capital city",
+                        "hint_level_3": "C + AIR in CO = CAIRO",
+                        "hint_level_4": "AIR (look) goes inside CO (company/firm) to give CAIRO (capital of Egypt)"
+                    }
+                    // Add more clues here...
+                ]
+            };
+            
+            document.getElementById('puzzleJson').value = JSON.stringify(example, null, 2);
+        }
+
+        async function importPuzzle() {
+            const jsonText = document.getElementById('puzzleJson').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                // Validate JSON
+                const puzzleData = JSON.parse(jsonText);
+                
+                // Check required fields
+                if (!puzzleData.publication || !puzzleData.puzzle_number || !puzzleData.clues) {
+                    throw new Error('Missing required fields: publication, puzzle_number, or clues');
+                }
+
+                // Send to import endpoint
+                const response = await fetch('/admin/api/import-puzzle', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: jsonText
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = `
+                        <h3>✅ Success!</h3>
+                        <p>Puzzle #${puzzleData.puzzle_number} imported successfully!</p>
+                        <p><strong>Puzzle ID:</strong> ${result.puzzle_id}</p>
+                        <p><strong>Clues imported:</strong> ${puzzleData.clues.length}</p>
+                        <p style="margin-top: 1rem;">
+                            <a href="/admin/review">
+                                <button class="btn">Go to Admin Review →</button>
+                            </a>
+                        </p>
+                    `;
+                } else {
+                    throw new Error(result.error || 'Import failed');
+                }
+
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>${error.message}</p>
+                    <pre>${error.stack || ''}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
