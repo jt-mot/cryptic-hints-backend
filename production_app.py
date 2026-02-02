@@ -440,78 +440,109 @@ def scrape_and_import():
         
         # Scrape the puzzle
         scraper = PuzzleScraper()
-        puzzle_data = scraper.scrape_puzzle(puzzle_number)
+        
+        try:
+            puzzle_data = scraper.scrape_puzzle(puzzle_number)
+        except Exception as scrape_error:
+            print(f"Scraping error: {scrape_error}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                'success': False,
+                'message': f'Scraping failed: {str(scrape_error)}',
+                'details': 'Error while fetching puzzle data'
+            })
         
         if 'error' in puzzle_data:
             return jsonify({
                 'success': False, 
                 'message': puzzle_data['error'],
-                'details': 'Could not fetch puzzle from Guardian or fifteensquared'
+                'details': 'Could not fetch puzzle from Guardian'
             })
+        
+        # Check hint coverage
+        clues_with_hints = len([c for c in puzzle_data.get('clues', []) if any(c.get('hints', []))])
         
         # Import into database
         conn = get_db()
         cursor = conn.cursor()
         
-        # Insert puzzle
-        cursor.execute('''
-            INSERT INTO puzzles (publication, puzzle_number, setter, date, status)
-            VALUES (%s, %s, %s, %s, %s)
-            RETURNING id
-        ''', (
-            puzzle_data['publication'],
-            puzzle_data['puzzle_number'],
-            puzzle_data['setter'],
-            puzzle_data['date'],
-            'draft'
-        ))
-        
-        puzzle_id = cursor.fetchone()[0]
-        
-        # Insert clues with hints
-        for clue_data in puzzle_data['clues']:
+        try:
+            # Insert puzzle
             cursor.execute('''
-                INSERT INTO clues (
-                    puzzle_id, clue_number, direction, clue_text, 
-                    answer, enumeration,
-                    hint_level_1, hint_level_2, hint_level_3, hint_level_4,
-                    hint_1_approved, hint_2_approved, hint_3_approved, hint_4_approved
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO puzzles (publication, puzzle_number, setter, date, status)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
             ''', (
-                puzzle_id,
-                clue_data['clue_number'],
-                clue_data['direction'],
-                clue_data['clue_text'],
-                clue_data['answer'],
-                clue_data['enumeration'],
-                clue_data['hints'][0],
-                clue_data['hints'][1],
-                clue_data['hints'][2],
-                clue_data['hints'][3],
-                False, False, False, False  # Hints need review
+                puzzle_data.get('publication', 'Guardian'),
+                puzzle_data.get('puzzle_number', puzzle_number),
+                puzzle_data.get('setter', 'Unknown'),
+                puzzle_data.get('date', datetime.now().strftime('%Y-%m-%d')),
+                'draft'
             ))
+            
+            puzzle_id = cursor.fetchone()[0]
+            
+            # Insert clues with hints
+            for clue_data in puzzle_data.get('clues', []):
+                hints = clue_data.get('hints', ['', '', '', ''])
+                
+                cursor.execute('''
+                    INSERT INTO clues (
+                        puzzle_id, clue_number, direction, clue_text, 
+                        answer, enumeration,
+                        hint_level_1, hint_level_2, hint_level_3, hint_level_4,
+                        hint_1_approved, hint_2_approved, hint_3_approved, hint_4_approved
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ''', (
+                    puzzle_id,
+                    clue_data.get('clue_number', ''),
+                    clue_data.get('direction', 'across'),
+                    clue_data.get('clue_text', ''),
+                    clue_data.get('answer', ''),
+                    clue_data.get('enumeration', ''),
+                    hints[0] if len(hints) > 0 else '',
+                    hints[1] if len(hints) > 1 else '',
+                    hints[2] if len(hints) > 2 else '',
+                    hints[3] if len(hints) > 3 else '',
+                    False, False, False, False
+                ))
+            
+            conn.commit()
+            
+        except Exception as db_error:
+            conn.rollback()
+            raise db_error
+        finally:
+            cursor.close()
+            conn.close()
         
-        conn.commit()
-        cursor.close()
-        conn.close()
+        # Build response message
+        message = f"Successfully imported puzzle {puzzle_number}"
+        if clues_with_hints == 0:
+            message += " (No hints found - you'll need to write hints manually)"
+        elif clues_with_hints < len(puzzle_data.get('clues', [])):
+            message += f" ({clues_with_hints}/{len(puzzle_data['clues'])} clues have hints)"
         
         return jsonify({
             'success': True,
             'puzzle_id': puzzle_id,
-            'puzzle_number': puzzle_data['puzzle_number'],
-            'setter': puzzle_data['setter'],
-            'clue_count': len(puzzle_data['clues']),
-            'message': f"Successfully imported puzzle {puzzle_number}"
+            'puzzle_number': puzzle_data.get('puzzle_number', puzzle_number),
+            'setter': puzzle_data.get('setter', 'Unknown'),
+            'clue_count': len(puzzle_data.get('clues', [])),
+            'hints_found': clues_with_hints,
+            'message': message
         })
         
     except Exception as e:
         print(f"Error in scrape_and_import: {e}")
         import traceback
-        traceback.print_exc()
+        error_details = traceback.format_exc()
+        print(error_details)
         return jsonify({
             'success': False, 
             'message': str(e),
-            'details': 'Error during import process'
+            'details': error_details[:500]  # First 500 chars of traceback
         })
 
 
