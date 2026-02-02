@@ -479,7 +479,7 @@ def publish_puzzle(puzzle_id):
     return jsonify({'success': True, 'message': 'Puzzle published successfully!'})
 
 
-@app.route('/admin/api/puzzle/<int:puzzle_id>/unpublish', methods='POST'])
+@app.route('/admin/api/puzzle/<int:puzzle_id>/unpublish', methods=['POST'])
 @login_required
 def unpublish_puzzle(puzzle_id):
     """Unpublish a puzzle (take it offline)"""
