@@ -383,7 +383,7 @@ def admin_login():
                 .then(r => r.json())
                 .then(data => {
                     if (data.success) {
-                        window.location.href = '/admin/review';
+                        window.location.href = '/admin';
                     } else {
                         document.getElementById('error').style.display = 'block';
                     }
