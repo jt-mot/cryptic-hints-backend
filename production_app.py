@@ -129,20 +129,69 @@ def index():
 
 @app.route('/api/puzzle/today')
 def get_today_puzzle():
-    """Get today's published puzzle"""
-    db = get_db()
-    
-    # Get the most recent published puzzle
-    puzzle = db.execute('''
-        SELECT * FROM puzzles 
-        WHERE status = 'published'
-        AND date <= DATE('now')
-        ORDER BY date DESC 
-        LIMIT 1
-    ''').fetchone()
-    
-    if not puzzle:
-        return jsonify({'error': 'No puzzle available'}), 404
+    """Get today's published puzzle - now loads from puzzle_data"""
+    try:
+        # Load from puzzle_data instead of database
+        active = puzzle_manager.get_active_puzzle()
+        if not active:
+            return jsonify({'error': 'No puzzle available'}), 404
+        
+        # Format the response to match what the frontend expects
+        formatted_clues = []
+        
+        # Add across clues
+        for num, clue_data in active['clues']['across'].items():
+            formatted_clues.append({
+                'id': f'across-{num}',
+                'direction': 'across',
+                'number': int(num),
+                'clue': clue_data['clue'],
+                'enumeration': clue_data['length'],
+                'answer': clue_data.get('answer', ''),
+                'hint_level_1': f"Look for the definition and wordplay indicators",
+                'hint_level_2': f"The answer is {clue_data['length']} letters",
+                'hint_level_3': f"Answer: {clue_data.get('answer', 'Not available')}",
+                'hint_level_4': f"Full explanation coming soon"
+            })
+        
+        # Add down clues
+        for num, clue_data in active['clues']['down'].items():
+            formatted_clues.append({
+                'id': f'down-{num}',
+                'direction': 'down',
+                'number': int(num),
+                'clue': clue_data['clue'],
+                'enumeration': clue_data['length'],
+                'answer': clue_data.get('answer', ''),
+                'hint_level_1': f"Look for the definition and wordplay indicators",
+                'hint_level_2': f"The answer is {clue_data['length']} letters",
+                'hint_level_3': f"Answer: {clue_data.get('answer', 'Not available')}",
+                'hint_level_4': f"Full explanation coming soon"
+            })
+        
+        return jsonify({
+            'id': 1,
+            'publication': 'Guardian',
+            'puzzle_number': active['number'],
+            'setter': active['setter'],
+            'date': active['date'],
+            'clues': formatted_clues
+        })
+        
+    except Exception as e:
+        # Fallback to database if puzzle_data fails
+        db = get_db()
+        
+        puzzle = db.execute('''
+            SELECT * FROM puzzles 
+            WHERE status = 'published'
+            AND date <= DATE('now')
+            ORDER BY date DESC 
+            LIMIT 1
+        ''').fetchone()
+        
+        if not puzzle:
+            return jsonify({'error': 'No puzzle available'}), 404
     
     # Get all clues for this puzzle
     clues = db.execute('''
@@ -566,7 +615,14 @@ puzzle_manager = PuzzleManager(data_dir='puzzle_data')
 
 @app.route('/admin/import')
 def admin_import():
-    return send_from_directory('static', 'admin_import_panel.html')
+    # Check if file is in static folder
+    if os.path.exists('static/admin_import_panel.html'):
+        return send_from_directory('static', 'admin_import_panel.html')
+    # Otherwise check root
+    elif os.path.exists('admin_import_panel.html'):
+        return send_from_directory('.', 'admin_import_panel.html')
+    else:
+        return "Admin import panel not found. Please upload admin_import_panel.html to the static folder.", 404
 
 @app.route('/api/puzzles/current')
 def get_current_puzzle():
