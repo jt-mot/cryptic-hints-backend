@@ -553,7 +553,7 @@
                                     </button>
                                     <div class="hint-content" id="hint-${clue.id}-${level}">
                                         <div class="hint-inner">
-                                            <p>${clue.hints[level-1]}</p>
+                                            <p></p>
                                         </div>
                                     </div>
                                 </div>
@@ -564,14 +564,29 @@
             `;
         }
         
-        function toggleHint(clueId, level) {
+        async function toggleHint(clueId, level) {
             const toggle = event.currentTarget;
             const content = document.getElementById(`hint-${clueId}-${level}`);
+            const hintText = content.querySelector('p');
             
             if (toggle.classList.contains('active')) {
                 toggle.classList.remove('active');
                 content.classList.remove('show');
             } else {
+                // Load hint from API if not already loaded
+                if (!hintText.textContent) {
+                    hintText.textContent = 'Loading...';
+                    
+                    try {
+                        const response = await fetch(`/api/clue/${clueId}/hint/${level}`);
+                        const data = await response.json();
+                        hintText.textContent = data.hint_text || 'Hint not available';
+                    } catch (error) {
+                        hintText.textContent = 'Error loading hint';
+                        console.error('Error loading hint:', error);
+                    }
+                }
+                
                 toggle.classList.add('active');
                 content.classList.add('show');
             }
