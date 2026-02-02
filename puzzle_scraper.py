@@ -174,6 +174,23 @@ class FifteensquaredScraper:
                 # FIRST: Extract ALL definitions from entire content
                 # PeterO uses: <span style="...italic...underline">definition</span>
                 all_definitions_by_text = {}
+                
+                # DEBUG: Check what we're actually getting
+                all_paras = content.find_all('p')
+                print(f"   DEBUG: Content has {len(all_paras)} paragraphs")
+                
+                all_spans = content.find_all('span')
+                print(f"   DEBUG: Content has {len(all_spans)} total spans")
+                
+                styled_spans = content.find_all('span', style=True)
+                print(f"   DEBUG: Found {len(styled_spans)} spans with style attribute")
+                
+                if styled_spans:
+                    # Show first few styles
+                    for i, span in enumerate(styled_spans[:3]):
+                        print(f"   DEBUG: Span {i+1} style: {span.get('style')[:100]}")
+                        print(f"   DEBUG: Span {i+1} text: {span.get_text()[:50]}")
+                
                 for para in content.find_all('p'):
                     para_text = para.get_text()
                     # Find spans with both italic and underline styles
