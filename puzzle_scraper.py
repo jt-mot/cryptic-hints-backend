@@ -146,7 +146,7 @@ class FifteensquaredScraper:
         return None
     
     def fetch_hints(self, url: str) -> Dict[str, List[str]]:
-        """Fetch hints from post with retry logic"""
+        """Fetch hints from post with retry logic and flexible parsing"""
         for attempt in range(3):
             try:
                 print(f"Fetching hints from post... (attempt {attempt + 1}/3)")
@@ -159,6 +159,7 @@ class FifteensquaredScraper:
                     content = soup.find('article')
                 
                 if not content:
+                    print("⚠️  Could not find main content area")
                     return {}
                 
                 hints_map = {}
@@ -166,35 +167,67 @@ class FifteensquaredScraper:
                 current_clue_id = None
                 hint_buffer = []
                 
-                for elem in content.find_all(['p', 'h2', 'h3', 'h4', 'strong']):
+                # Get all potential elements (try multiple tags)
+                elements = content.find_all(['p', 'div', 'h2', 'h3', 'h4', 'strong', 'b'])
+                
+                print(f"   Parsing {len(elements)} elements...")
+                
+                for elem in elements:
                     text = elem.get_text().strip()
-                    if not text:
+                    if not text or len(text) > 500:  # Skip empty or very long
                         continue
                     
-                    # Check for direction
-                    if re.match(r'^(across|down)$', text, re.IGNORECASE):
-                        current_direction = text.lower()
+                    # Check for direction headers - be more flexible
+                    if re.match(r'^(across|down)[\s:]*$', text, re.IGNORECASE):
+                        current_direction = text.lower().replace(':', '').strip()
+                        print(f"   Found direction: {current_direction}")
                         continue
                     
-                    # Check for clue line
-                    clue_match = re.match(r'^(\d+[a-z]?)\s+([A-Z][A-Z\s\-\']+?)\s*\(([0-9,\-]+)\)', text)
+                    # Try multiple clue patterns
+                    # Pattern 1: "1 ANSWER (7) Clue text"
+                    clue_match = re.match(r'^(\d+[a-z]?)[.\s]+([A-Z][A-Z\s\-\']+?)\s*\(([0-9,\-]+)\)', text)
+                    
+                    # Pattern 2: "1. ANSWER (7)"
+                    if not clue_match:
+                        clue_match = re.match(r'^(\d+[a-z]?)[.\s]+([A-Z][A-Z\s\-\']+?)\s*\(([0-9,\-]+)\)', text)
+                    
+                    # Pattern 3: Just "1 ANSWER"
+                    if not clue_match:
+                        clue_match = re.match(r'^(\d+[a-z]?)[.\s]+([A-Z][A-Z\s\-\']{2,})', text)
                     
                     if clue_match and current_direction:
+                        # Save previous clue
                         if current_clue_id and hint_buffer:
                             hints_map[current_clue_id] = hint_buffer
                             hint_buffer = []
                         
-                        clue_num = clue_match.group(1)
+                        clue_num = clue_match.group(1).strip()
                         current_clue_id = f"{clue_num}-{current_direction}"
+                        print(f"   Found clue: {current_clue_id}")
                     
-                    elif current_clue_id and text and len(text) > 20:
-                        if not any(skip in text.lower() for skip in ['posted', 'comment', 'this entry was']):
+                    elif current_clue_id and len(text) > 15:
+                        # This is explanation text
+                        # Skip common meta text
+                        skip_phrases = ['posted', 'comment', 'this entry was', 'tagged', 
+                                       'bookmark', 'permalink', 'navigation', 'leave a reply',
+                                       'you must be logged', 'fill in your details']
+                        
+                        if not any(skip in text.lower() for skip in skip_phrases):
                             hint_buffer.append(text)
                 
+                # Save last clue
                 if current_clue_id and hint_buffer:
                     hints_map[current_clue_id] = hint_buffer
                 
                 print(f"✓ Extracted hints for {len(hints_map)} clues")
+                
+                # Debug output if no hints found
+                if len(hints_map) == 0:
+                    print("\n⚠️  DEBUG: No hints extracted. Checking first 10 elements:")
+                    for i, elem in enumerate(elements[:10]):
+                        text = elem.get_text().strip()[:100]
+                        print(f"     {i}. <{elem.name}> {text}")
+                
                 return hints_map
                 
             except requests.exceptions.Timeout:
