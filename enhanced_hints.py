@@ -18,10 +18,30 @@ class AuthorStyleDetector:
         
         Returns author name or 'generic'
         """
+        # Check content for "by AuthorName" pattern (most reliable)
+        # Pattern: "at 2:29 am by PeterO" or "posted by PeterO"
+        content_lower = content.lower()
+        
+        # Look for "by [author]" pattern
+        by_match = re.search(r'(?:at|posted)\s+.*?\s+by\s+([a-z]+)', content_lower, re.IGNORECASE)
+        if by_match:
+            author = by_match.group(1).lower()
+            # Map known authors
+            known_authors = ['petero', 'verlaine', 'vinyl', 'pommers', 'jackkt', 
+                           'bertandjoyce', 'alankd', 'cornick']
+            if author in known_authors:
+                return author
+        
+        # Fallback: check for author name anywhere in content
+        if 'petero' in content_lower:
+            return 'petero'
+        elif 'verlaine' in content_lower:
+            return 'verlaine'
+        elif 'vinyl' in content_lower:
+            return 'vinyl'
+        
         # Check URL for author name
         url_lower = url.lower()
-        
-        # Common fifteensquared authors
         authors = ['petero', 'verlaine', 'vinyl', 'pommers', 'jackkt', 
                    'bertandjoyce', 'alankd', 'cornick']
         
@@ -29,15 +49,7 @@ class AuthorStyleDetector:
             if author in url_lower:
                 return author
         
-        # Check content for signature phrases
-        content_lower = content.lower()
-        
-        if 'petero' in content_lower or 'posted by peter' in content_lower:
-            return 'petero'
-        elif 'verlaine' in content_lower:
-            return 'verlaine'
-        elif 'vinyl' in content_lower:
-            return 'vinyl'
+        return 'generic'
         
         return 'generic'
 
