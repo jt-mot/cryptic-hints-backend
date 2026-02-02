@@ -324,6 +324,13 @@ def check_answer(clue_id):
 # ADMIN AUTHENTICATION
 # ============================================================================
 
+@app.route('/admin')
+@login_required
+def admin_dashboard():
+    """Admin dashboard landing page"""
+    return send_from_directory('static', 'admin-dashboard.html')
+
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     """Admin login page"""
