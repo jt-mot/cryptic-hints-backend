@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardian Cryptic 29,914 - With Progressive Hints</title>
+    <title>Loading puzzle...</title>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -508,6 +508,12 @@
         }
         
         function updateHeader(data) {
+            // Update masthead title
+            const mastheadH1 = document.querySelector('.masthead h1');
+            if (mastheadH1) {
+                mastheadH1.textContent = `🧩 ${data.publication} Cryptic #${data.puzzle_number}`;
+            }
+            
             const header = document.querySelector('.puzzle-meta');
             if (header) {
                 header.innerHTML = `
