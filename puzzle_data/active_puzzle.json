@@ -1,176 +1,382 @@
 {
-  "puzzle_number": "29915",
+  "number": "29915",
   "date": "2026-01-28",
   "setter": "Qaos",
-  "source": "Guardian Cryptic",
-  "theme": "HEAD - contains 24+ words related to 'head'",
-  "across": {
-    "9": {
-      "clue": "Look into firm's capital",
-      "length": "5",
-      "answer": "CAIRO"
+  "clues": {
+    "across": {
+      "9": {
+        "clue": "Look into firm's capital",
+        "length": "5",
+        "answer": "CAIRO"
+      },
+      "10": {
+        "clue": "'Increase risk from chopped peanut' \u2013 inspiring article",
+        "length": "2,3,4",
+        "answer": "UP THE ANTE"
+      },
+      "11": {
+        "clue": "Record bird circling me \u2013 it won't last long",
+        "length": "9",
+        "answer": "EPHEMERON"
+      },
+      "12": {
+        "clue": "In Polish, 'time' means 'resistance'",
+        "length": "5",
+        "answer": "STAND"
+      },
+      "13": {
+        "clue": "Perhaps the Sun let being hacked shock",
+        "length": "7",
+        "answer": "STARTLE"
+      },
+      "15": {
+        "clue": "Dagger, not a dessert, smuggled into prison",
+        "length": "7",
+        "answer": "STICKER"
+      },
+      "17": {
+        "clue": "Car with one wheel \u2013 sound?",
+        "length": "5",
+        "answer": "AUDIO"
+      },
+      "18": {
+        "clue": "Firm sofa 50% off",
+        "length": "3",
+        "answer": "SET"
+      },
+      "20": {
+        "clue": "Punches produce shiners",
+        "length": "5",
+        "answer": "LAMPS"
+      },
+      "22": {
+        "clue": "Clasp them briefly with heaving moobs",
+        "length": "7",
+        "answer": "EMBOSOM"
+      },
+      "25": {
+        "clue": "Helps donkey get first and second",
+        "length": "7",
+        "answer": "ASSISTS"
+      },
+      "26": {
+        "clue": "Ship to remain without any goods",
+        "length": "5",
+        "answer": "LINER"
+      },
+      "27": {
+        "clue": "Must elder play this instrument?",
+        "length": "5,4",
+        "answer": "STEEL DRUM"
+      },
+      "30": {
+        "clue": "Not half clever getting solutions without soap?",
+        "length": "9",
+        "answer": "CLEANSERS"
+      },
+      "31": {
+        "clue": "Examples of luggage",
+        "length": "5",
+        "answer": "CASES"
+      }
     },
-    "10": {
-      "clue": "'Increase risk from chopped peanut' – inspiring article",
-      "length": "2,3,4",
-      "answer": "UP THE ANTE"
-    },
-    "11": {
-      "clue": "Record bird circling me – it won't last long",
-      "length": "9",
-      "answer": "EPHEMERON"
-    },
-    "12": {
-      "clue": "In Polish, 'time' means 'resistance'",
-      "length": "5",
-      "answer": "STAND"
-    },
-    "13": {
-      "clue": "Perhaps the Sun let being hacked shock",
-      "length": "7",
-      "answer": "STARTLE"
-    },
-    "15": {
-      "clue": "Dagger, not a dessert, smuggled into prison",
-      "length": "7",
-      "answer": "STICKER"
-    },
-    "17": {
-      "clue": "Car with one wheel – sound?",
-      "length": "5",
-      "answer": "AUDIO"
-    },
-    "18": {
-      "clue": "Firm sofa 50% off",
-      "length": "3",
-      "answer": "SET"
-    },
-    "20": {
-      "clue": "Punches produce shiners",
-      "length": "5",
-      "answer": "LAMPS"
-    },
-    "22": {
-      "clue": "Clasp them briefly with heaving moobs",
-      "length": "7",
-      "answer": "EMBOSOM"
-    },
-    "25": {
-      "clue": "Helps donkey get first and second",
-      "length": "7",
-      "answer": "ASSISTS"
-    },
-    "26": {
-      "clue": "Ship to remain without any goods",
-      "length": "5",
-      "answer": "LINER"
-    },
-    "27": {
-      "clue": "Must elder play this instrument?",
-      "length": "5,4",
-      "answer": "STEEL DRUM"
-    },
-    "30": {
-      "clue": "Not half clever getting solutions without soap?",
-      "length": "9",
-      "answer": "CLEANSERS"
-    },
-    "31": {
-      "clue": "Examples of luggage",
-      "length": "5",
-      "answer": "CASES"
+    "down": {
+      "1": {
+        "clue": "Companion enters hospital department in pain",
+        "length": "4",
+        "answer": "ACHE"
+      },
+      "2": {
+        "clue": "Trip to arrive in mountainous area",
+        "length": "8",
+        "answer": "HIGHLAND"
+      },
+      "3": {
+        "clue": "Ring in memory of 13 down",
+        "length": "4",
+        "answer": "ROOM"
+      },
+      "4": {
+        "clue": "3 + 3 + 3 = 1/4 + 1/4 +1/4?",
+        "length": "8",
+        "answer": "QUARTERS"
+      },
+      "5": {
+        "clue": "Last one standing carries lots of weight",
+        "length": "6",
+        "answer": "STONES"
+      },
+      "6": {
+        "clue": "Silver seal broken in palace",
+        "length": "10",
+        "answer": "VERSAILLES"
+      },
+      "7": {
+        "clue": "Expose country defending man's rambling",
+        "length": "6",
+        "answer": "UNMASK"
+      },
+      "8": {
+        "clue": "Discovering they made leader",
+        "length": "4",
+        "answer": "HEAD"
+      },
+      "13": {
+        "clue": "Well, church builds no character",
+        "length": "5",
+        "answer": "SPACE"
+      },
+      "14": {
+        "clue": "Stealing fancy store jewellery \u2013 you involved?",
+        "length": "10",
+        "answer": "TROUSERING"
+      },
+      "16": {
+        "clue": "Soundly twists snooker equipment",
+        "length": "5",
+        "answer": "RESTS"
+      },
+      "19": {
+        "clue": "VAR rewound during short cross",
+        "length": "8",
+        "answer": "TRAVERSE"
+      },
+      "21": {
+        "clue": "Film on extremely serious Lady Hamilton?",
+        "length": "8",
+        "answer": "MISTRESS"
+      },
+      "23": {
+        "clue": "Don't allow mirrored license plate with old car",
+        "length": "6",
+        "answer": "BANGER"
+      },
+      "24": {
+        "clue": "Ruler quicker to change gender?",
+        "length": "6",
+        "answer": "MASTER"
+      },
+      "26": {
+        "clue": "Cops missing work over bugs",
+        "length": "4",
+        "answer": "LICE"
+      },
+      "28": {
+        "clue": "South of the border, we're told lake is secure",
+        "length": "4",
+        "answer": "LOCK"
+      },
+      "29": {
+        "clue": "Plant grasses someone up inside",
+        "length": "4",
+        "answer": "MOSS"
+      }
     }
   },
-  "down": {
-    "1": {
-      "clue": "Companion enters hospital department in pain",
-      "length": "4",
-      "answer": "ACHE"
+  "hints": {
+    "across": {
+      "9": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 5 letters long",
+        "answer": ""
+      },
+      "10": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 2,3,4 letters long",
+        "answer": ""
+      },
+      "11": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 9 letters long",
+        "answer": ""
+      },
+      "12": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 5 letters long",
+        "answer": ""
+      },
+      "13": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 7 letters long",
+        "answer": ""
+      },
+      "15": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 7 letters long",
+        "answer": ""
+      },
+      "17": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 5 letters long",
+        "answer": ""
+      },
+      "18": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 3 letters long",
+        "answer": ""
+      },
+      "20": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 5 letters long",
+        "answer": ""
+      },
+      "22": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 7 letters long",
+        "answer": ""
+      },
+      "25": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 7 letters long",
+        "answer": ""
+      },
+      "26": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 5 letters long",
+        "answer": ""
+      },
+      "27": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 5,4 letters long",
+        "answer": ""
+      },
+      "30": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 9 letters long",
+        "answer": ""
+      },
+      "31": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 5 letters long",
+        "answer": ""
+      }
     },
-    "2": {
-      "clue": "Trip to arrive in mountainous area",
-      "length": "8",
-      "answer": "HIGHLAND"
-    },
-    "3": {
-      "clue": "Ring in memory of 13 down",
-      "length": "4",
-      "answer": "ROOM"
-    },
-    "4": {
-      "clue": "3 + 3 + 3 = 1/4 + 1/4 +1/4?",
-      "length": "8",
-      "answer": "QUARTERS"
-    },
-    "5": {
-      "clue": "Last one standing carries lots of weight",
-      "length": "6",
-      "answer": "STONES"
-    },
-    "6": {
-      "clue": "Silver seal broken in palace",
-      "length": "10",
-      "answer": "VERSAILLES"
-    },
-    "7": {
-      "clue": "Expose country defending man's rambling",
-      "length": "6",
-      "answer": "UNMASK"
-    },
-    "8": {
-      "clue": "Discovering they made leader",
-      "length": "4",
-      "answer": "HEAD"
-    },
-    "13": {
-      "clue": "Well, church builds no character",
-      "length": "5",
-      "answer": "SPACE"
-    },
-    "14": {
-      "clue": "Stealing fancy store jewellery – you involved?",
-      "length": "10",
-      "answer": "TROUSERING"
-    },
-    "16": {
-      "clue": "Soundly twists snooker equipment",
-      "length": "5",
-      "answer": "RESTS"
-    },
-    "19": {
-      "clue": "VAR rewound during short cross",
-      "length": "8",
-      "answer": "TRAVERSE"
-    },
-    "21": {
-      "clue": "Film on extremely serious Lady Hamilton?",
-      "length": "8",
-      "answer": "MISTRESS"
-    },
-    "23": {
-      "clue": "Don't allow mirrored license plate with old car",
-      "length": "6",
-      "answer": "BANGER"
-    },
-    "24": {
-      "clue": "Ruler quicker to change gender?",
-      "length": "6",
-      "answer": "MASTER"
-    },
-    "26": {
-      "clue": "Cops missing work over bugs",
-      "length": "4",
-      "answer": "LICE"
-    },
-    "28": {
-      "clue": "South of the border, we're told lake is secure",
-      "length": "4",
-      "answer": "LOCK"
-    },
-    "29": {
-      "clue": "Plant grasses someone up inside",
-      "length": "4",
-      "answer": "MOSS"
+    "down": {
+      "1": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 4 letters long",
+        "answer": ""
+      },
+      "2": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 8 letters long",
+        "answer": ""
+      },
+      "3": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 4 letters long",
+        "answer": ""
+      },
+      "4": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 8 letters long",
+        "answer": ""
+      },
+      "5": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 6 letters long",
+        "answer": ""
+      },
+      "6": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 10 letters long",
+        "answer": ""
+      },
+      "7": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 6 letters long",
+        "answer": ""
+      },
+      "8": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 4 letters long",
+        "answer": ""
+      },
+      "13": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 5 letters long",
+        "answer": ""
+      },
+      "14": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 10 letters long",
+        "answer": ""
+      },
+      "16": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 5 letters long",
+        "answer": ""
+      },
+      "19": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 8 letters long",
+        "answer": ""
+      },
+      "21": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 8 letters long",
+        "answer": ""
+      },
+      "23": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 6 letters long",
+        "answer": ""
+      },
+      "24": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 6 letters long",
+        "answer": ""
+      },
+      "26": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 4 letters long",
+        "answer": ""
+      },
+      "28": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 4 letters long",
+        "answer": ""
+      },
+      "29": {
+        "hint1": "Start by identifying the definition in this clue",
+        "hint2": "Look for wordplay indicators",
+        "hint3": "The answer is 4 letters long",
+        "answer": ""
+      }
     }
-  }
+  },
+  "imported_at": "2026-02-02T07:44:21.378182",
+  "status": "active"
 }
