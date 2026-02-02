@@ -474,7 +474,7 @@ def scrape_and_import():
                 INSERT INTO clues (
                     puzzle_id, clue_number, direction, clue_text, 
                     answer, enumeration,
-                    hint_1, hint_2, hint_3, hint_4,
+                    hint_level_1, hint_level_2, hint_level_3, hint_level_4,
                     hint_1_approved, hint_2_approved, hint_3_approved, hint_4_approved
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ''', (
