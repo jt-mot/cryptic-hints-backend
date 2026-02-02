@@ -426,7 +426,8 @@
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
-                puzzles = await response.json();
+                const data = await response.json();
+                puzzles = data.puzzles || []; // API returns {puzzles: [...]}
                 
                 const select = document.getElementById('puzzleSelect');
                 
