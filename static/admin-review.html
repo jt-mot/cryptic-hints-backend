@@ -628,11 +628,15 @@
             const newText = textarea.value;
             
             try {
-                const response = await fetch(`/admin/api/clue/${clueId}/hint/${level}`, {
-                    method: 'PUT',
+                const response = await fetch('/admin/api/hint/update', {
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
-                    body: JSON.stringify({ hint_text: newText })
+                    body: JSON.stringify({ 
+                        clue_id: clueId, 
+                        hint_level: level, 
+                        new_text: newText 
+                    })
                 });
                 
                 if (response.ok) {
@@ -654,9 +658,14 @@
         
         async function approveHint(clueId, level) {
             try {
-                const response = await fetch(`/admin/api/clue/${clueId}/hint/${level}/approve`, {
+                const response = await fetch('/admin/api/hint/approve', {
                     method: 'POST',
-                    credentials: 'same-origin'
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ 
+                        clue_id: clueId, 
+                        hint_level: level 
+                    })
                 });
                 
                 if (response.ok) {
@@ -674,9 +683,14 @@
             
             try {
                 for (let level = 1; level <= 4; level++) {
-                    await fetch(`/admin/api/clue/${clueId}/hint/${level}/approve`, {
+                    await fetch('/admin/api/hint/approve', {
                         method: 'POST',
-                        credentials: 'same-origin'
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ 
+                            clue_id: clueId, 
+                            hint_level: level 
+                        })
                     });
                 }
                 loadPuzzle();
