@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Cryptic Crossword Hints</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+        
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: #64748b;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+        
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        
+        .card:hover {
+            border-color: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .card h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        
+        .card p {
+            color: #64748b;
+            font-size: 0.9375rem;
+        }
+        
+        .logout-btn {
+            position: fixed;
+            top: 1.5rem;
+            right: 2rem;
+            padding: 0.625rem 1.25rem;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            color: #475569;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        
+        .logout-btn:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <a href="/admin/logout" class="logout-btn">Logout</a>
+    
+    <div class="header">
+        <div class="header-content">
+            <h1>🎯 Admin Dashboard</h1>
+            <p>Manage puzzles, review hints, and configure your cryptic crossword site</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="card-grid">
+            <a href="/admin/quick-import" class="card">
+                <div class="card-icon">📥</div>
+                <h2>Import Puzzle</h2>
+                <p>Import a new puzzle with clues and hints from JSON</p>
+            </a>
+            
+            <a href="/admin/review" class="card">
+                <div class="card-icon">✏️</div>
+                <h2>Review & Edit Hints</h2>
+                <p>Review, approve, and edit hints for all puzzles</p>
+            </a>
+            
+            <a href="/admin/puzzles" class="card">
+                <div class="card-icon">📋</div>
+                <h2>Manage Puzzles</h2>
+                <p>View, publish, unpublish, and delete puzzles</p>
+            </a>
+            
+            <a href="/" target="_blank" class="card">
+                <div class="card-icon">🌐</div>
+                <h2>View Public Site</h2>
+                <p>See what users see on the live website</p>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
