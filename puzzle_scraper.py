@@ -171,6 +171,21 @@ class FifteensquaredScraper:
                 hints_map = {}
                 current_direction = None
                 
+                # FIRST: Extract ALL <em><u> definitions from entire content
+                # PeterO uses <em><u>definition</u></em> format
+                all_definitions_by_text = {}
+                for para in content.find_all('p'):
+                    para_text = para.get_text()
+                    # Find nested em+u tags (PeterO's definition style)
+                    for em in para.find_all('em'):
+                        for u in em.find_all('u'):
+                            def_text = u.get_text().strip()
+                            if len(def_text) > 2:
+                                # Store with context (paragraph text) so we can match later
+                                all_definitions_by_text[para_text[:100]] = def_text
+                
+                print(f"   DEBUG: Found {len(all_definitions_by_text)} definitions with <em><u> tags")
+                
                 # Strategy: Get text content and split by lines, but also keep HTML for parsing
                 full_text = content.get_text()
                 lines = [line.strip() for line in full_text.split('\n') if line.strip()]
@@ -232,25 +247,14 @@ class FifteensquaredScraper:
                                     
                                     j += 1
                                 
-                                # NOW extract definitions from all paragraphs that contain our hint text
+                                # Extract definitions by matching hint text to stored paragraph contexts
+                                html_definitions = []
                                 if hint_buffer:
-                                    hint_text_combined = ' '.join(hint_buffer)
-                                    matches_found = 0
-                                    for para in all_paragraphs:
-                                        para_text = para.get_text()
-                                        # If any of our hint text appears in this paragraph
-                                        if any(hint_line[:30] in para_text for hint_line in hint_buffer):
-                                            matches_found += 1
-                                            # Extract ALL em/u/i tags from this paragraph
-                                            tags = para.find_all(['em', 'u', 'i'])
-                                            if matches_found == 1 and tags:  # Debug first match only
-                                                print(f"      DEBUG: Matched paragraph has {len(tags)} em/u/i tags")
-                                            for tag in tags:
-                                                def_text = tag.get_text().strip()
-                                                if len(def_text) > 3 and def_text not in html_definitions:
-                                                    html_definitions.append(def_text)
-                                                    if len(html_definitions) == 1:  # Debug first definition
-                                                        print(f"      DEBUG: First definition extracted: '{def_text}'")
+                                    for para_context, def_text in all_definitions_by_text.items():
+                                        # If any hint line appears in this paragraph context
+                                        if any(hint_line[:50] in para_context for hint_line in hint_buffer):
+                                            if def_text not in html_definitions:
+                                                html_definitions.append(def_text)
                                 
                                 if hint_buffer:
                                     # Store both text and extracted definitions
@@ -258,7 +262,10 @@ class FifteensquaredScraper:
                                         'text': hint_buffer,
                                         'definitions': html_definitions
                                     }
-                                    print(f"      -> {len(hint_buffer)} hint lines, {len(html_definitions)} definitions")
+                                    if html_definitions:
+                                        print(f"      -> {len(hint_buffer)} hint lines, {len(html_definitions)} definitions: {html_definitions}")
+                                    else:
+                                        print(f"      -> {len(hint_buffer)} hint lines, 0 definitions")
                                 
                                 i = j - 1  # Continue from where we stopped
                     
