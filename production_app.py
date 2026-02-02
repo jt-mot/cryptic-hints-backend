@@ -484,8 +484,22 @@ def scrape_and_import():
             puzzle_id = cursor.fetchone()[0]
             
             # Insert clues with hints
+            clue_count = 0
             for clue_data in puzzle_data.get('clues', []):
                 hints = clue_data.get('hints', ['', '', '', ''])
+                
+                # Validate data
+                clue_number = str(clue_data.get('clue_number', ''))[:10]
+                direction = str(clue_data.get('direction', 'across'))[:10]
+                clue_text = str(clue_data.get('clue_text', ''))[:500]
+                answer = str(clue_data.get('answer', ''))[:100]
+                enumeration = str(clue_data.get('enumeration', ''))[:20]
+                
+                # Truncate hints if too long
+                hint1 = hints[0][:1000] if len(hints) > 0 else ''
+                hint2 = hints[1][:1000] if len(hints) > 1 else ''
+                hint3 = hints[2][:2000] if len(hints) > 2 else ''
+                hint4 = hints[3][:5000] if len(hints) > 3 else ''
                 
                 cursor.execute('''
                     INSERT INTO clues (
@@ -496,18 +510,17 @@ def scrape_and_import():
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ''', (
                     puzzle_id,
-                    clue_data.get('clue_number', ''),
-                    clue_data.get('direction', 'across'),
-                    clue_data.get('clue_text', ''),
-                    clue_data.get('answer', ''),
-                    clue_data.get('enumeration', ''),
-                    hints[0] if len(hints) > 0 else '',
-                    hints[1] if len(hints) > 1 else '',
-                    hints[2] if len(hints) > 2 else '',
-                    hints[3] if len(hints) > 3 else '',
+                    clue_number,
+                    direction,
+                    clue_text,
+                    answer,
+                    enumeration,
+                    hint1, hint2, hint3, hint4,
                     False, False, False, False
                 ))
+                clue_count += 1
             
+            print(f"Inserted {clue_count} clues into database")
             conn.commit()
             
         except Exception as db_error:
