@@ -13,6 +13,9 @@ import time
 from datetime import datetime
 from typing import Dict, List, Optional
 
+from enhanced_hints import EnhancedHintGenerator, AuthorStyleDetector
+
+
 
 class GuardianScraper:
     """Scrapes puzzle data from Guardian website"""
@@ -245,63 +248,16 @@ class FifteensquaredScraper:
         return {}
 
 
-class HintGenerator:
-    """Generate progressive hints from analysis"""
-    
-    @staticmethod
-    def generate_hints(hint_paragraphs: List[str]) -> List[str]:
-        if not hint_paragraphs:
-            return ['', '', '', '']
-        
-        full_text = ' '.join(hint_paragraphs)
-        hints = ['', '', '', '']
-        
-        # Level 1: Definition
-        def_match = re.search(r'(definition[^.]*\.)', full_text, re.IGNORECASE)
-        if def_match:
-            hints[0] = def_match.group(1).strip()
-        else:
-            sentences = re.split(r'[.!?]+', full_text)
-            if sentences:
-                hints[0] = sentences[0].strip()[:150] + '.'
-        
-        # Level 2: Wordplay type
-        wordplay_keywords = {
-            'anagram': 'This is an anagram.',
-            'reversal': 'This involves a reversal.',
-            'hidden': 'The answer is hidden in the clue.',
-            'charade': 'This is a charade (parts joined together).',
-            'container': 'This is a container clue.',
-            'homophone': 'This is a homophone (sounds like).',
-        }
-        
-        for keyword, description in wordplay_keywords.items():
-            if keyword in full_text.lower():
-                hints[1] = description
-                break
-        
-        if not hints[1]:
-            hints[1] = "Look at how the clue breaks down."
-        
-        # Level 3: Partial
-        if len(hint_paragraphs) > 1:
-            hints[2] = hint_paragraphs[1][:250]
-        else:
-            hints[2] = full_text[:250]
-        
-        # Level 4: Full
-        hints[3] = full_text
-        
-        return hints
-
-
 class PuzzleScraper:
     """Main scraper combining all sources"""
     
     def __init__(self):
         self.guardian = GuardianScraper()
         self.fifteensquared = FifteensquaredScraper()
-        self.hint_generator = HintGenerator()
+        self.hint_generator = EnhancedHintGenerator()
+        self.style_detector = AuthorStyleDetector()
+        self.current_url = ''
+        self.detected_author = 'generic'
     
     def scrape_puzzle(self, puzzle_number: str) -> Dict:
         print(f"\n{'='*60}")
@@ -319,7 +275,13 @@ class PuzzleScraper:
         
         hints_map = {}
         if post_url:
+            self.current_url = post_url
             hints_map = self.fifteensquared.fetch_hints(post_url)
+            
+            # Detect author style
+            sample_text = ' '.join([' '.join(v) for v in list(hints_map.values())[:3]]) if hints_map else ''
+            self.detected_author = self.style_detector.detect_author(post_url, sample_text)
+            print(f"   Detected author style: {self.detected_author}")
         else:
             print("⚠️  No hints available - will import with blank hints")
         
@@ -330,7 +292,8 @@ class PuzzleScraper:
             
             if clue_id in hints_map:
                 hint_paragraphs = hints_map[clue_id]
-                clue['hints'] = self.hint_generator.generate_hints(hint_paragraphs)
+                # Generate hints using detected author style
+                clue['hints'] = self.hint_generator.generate_hints(hint_paragraphs, self.detected_author)
                 
                 # Debug: Check first clue
                 if clue['clue_number'] == '1' and clue['direction'] == 'across':
