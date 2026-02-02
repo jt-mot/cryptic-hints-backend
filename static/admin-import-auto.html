@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Guardian Puzzle</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 3rem;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 0.9375rem;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .hint {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-top: 0.375rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        button {
+            flex: 1;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            display: none;
+        }
+
+        .status.loading {
+            display: block;
+            background: #dbeafe;
+            color: #1e40af;
+            border: 2px solid #93c5fd;
+        }
+
+        .status.success {
+            display: block;
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #6ee7b7;
+        }
+
+        .status.error {
+            display: block;
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #fca5a5;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #93c5fd;
+            border-top-color: #1e40af;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: #f8fafc;
+            border-left: 4px solid #667eea;
+            padding: 1rem 1.25rem;
+            margin-bottom: 2rem;
+            border-radius: 4px;
+        }
+
+        .info-box h3 {
+            font-size: 0.9375rem;
+            color: #475569;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-box ul {
+            list-style-position: inside;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+
+        .info-box li {
+            margin: 0.25rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>📥 Import Guardian Puzzle</h1>
+        <p class="subtitle">Automatically fetch and import puzzles from fifteensquared.net</p>
+
+        <div class="info-box">
+            <h3>How it works:</h3>
+            <ul>
+                <li>Enter a Guardian puzzle number</li>
+                <li>System fetches the analysis from fifteensquared.net</li>
+                <li>Extracts clues, answers, and progressive hints</li>
+                <li>Imports into your database for review</li>
+            </ul>
+        </div>
+
+        <form id="importForm">
+            <div class="form-group">
+                <label for="puzzleNumber">Guardian Puzzle Number *</label>
+                <input 
+                    type="text" 
+                    id="puzzleNumber" 
+                    name="puzzleNumber"
+                    placeholder="e.g., 29916"
+                    required
+                    pattern="[0-9]+"
+                >
+                <div class="hint">Enter the 5-digit Guardian cryptic number</div>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="btn-secondary" onclick="window.location.href='/admin'">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-primary" id="importBtn">
+                    🔍 Fetch & Import Puzzle
+                </button>
+            </div>
+        </form>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('importForm');
+        const statusDiv = document.getElementById('status');
+        const importBtn = document.getElementById('importBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const puzzleNumber = document.getElementById('puzzleNumber').value.trim();
+            
+            if (!puzzleNumber) {
+                showStatus('error', 'Please enter a puzzle number');
+                return;
+            }
+
+            // Disable button
+            importBtn.disabled = true;
+            
+            // Show loading
+            showStatus('loading', `
+                <div class="spinner"></div>
+                Fetching puzzle ${puzzleNumber} from fifteensquared.net...
+            `);
+
+            try {
+                const response = await fetch('/admin/api/scrape-and-import', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        puzzle_number: puzzleNumber
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('success', `
+                        ✓ Successfully imported puzzle ${puzzleNumber}!<br>
+                        <strong>${data.clue_count} clues</strong> imported from <strong>${data.setter}</strong><br>
+                        <button class="btn-primary" style="margin-top: 1rem;" onclick="window.location.href='/admin/review'">
+                            Review Hints →
+                        </button>
+                    `);
+                    
+                    // Clear form
+                    form.reset();
+                } else {
+                    showStatus('error', `
+                        ✗ Import failed: ${data.message || 'Unknown error'}<br>
+                        ${data.details || ''}
+                    `);
+                }
+
+            } catch (error) {
+                showStatus('error', `
+                    ✗ Error: ${error.message}<br>
+                    <small>Check that the puzzle exists on fifteensquared.net</small>
+                `);
+            } finally {
+                importBtn.disabled = false;
+            }
+        });
+
+        function showStatus(type, message) {
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = message;
+        }
+    </script>
+</body>
+</html>
