@@ -127,54 +127,118 @@ class EnhancedHintGenerator:
                     else:
                         hints[0] = "Look for the definition in the clue."
         
-        # Level 2: Wordplay type
-        wordplay_indicators = {
-            'anagram': ['anagram', 'mixed', 'confused', 'scrambled', 'rearranged'],
-            'hidden': ['hidden', 'in', 'concealed', 'some of'],
-            'reversal': ['reversal', 'back', 'returned', 'going up'],
-            'charade': ['charade', 'followed by', 'after', 'before'],
-            'container': ['container', 'around', 'outside', 'inside', 'envelope'],
-            'homophone': ['sounds like', 'homophone', 'we hear', 'on the radio'],
-            'double_def': ['double definition', 'two definitions'],
-        }
-        
-        for wp_type, indicators in wordplay_indicators.items():
-            if any(ind in full_text.lower() for ind in indicators):
-                type_descriptions = {
-                    'anagram': 'This involves an anagram.',
-                    'hidden': 'The answer is hidden within the clue.',
-                    'reversal': 'This involves a reversal.',
-                    'charade': 'This is a charade - join parts together.',
-                    'container': 'This is a container clue - one part goes inside another.',
-                    'homophone': 'This is a homophone - it sounds like something.',
-                    'double_def': 'This is a double definition.',
-                }
-                hints[1] = type_descriptions.get(wp_type, 'Look at how the clue breaks down.')
-                break
-        
-        if not hints[1]:
-            hints[1] = "Think about how the words in the clue might break down."
-        
-        # Level 3: Partial breakdown
-        # Extract key wordplay components
+        # Level 2: Extract wordplay technique using AI
         if len(paragraphs) > 1:
-            # Take second paragraph but remove the answer if mentioned
-            partial = paragraphs[1]
-            # Remove anything that looks like the full answer in caps
-            partial = re.sub(r'\b[A-Z]{5,}\b', '[ANSWER]', partial)
-            hints[2] = partial[:300]
+            wordplay_explanation = paragraphs[1]
+            
+            # Use AI to extract just the technique
+            hints[1] = self._extract_wordplay_technique(wordplay_explanation)
         else:
-            # Extract component explanations
-            components = re.findall(r"'([^']+)'\s+\(([^)]+)\)", full_text)
+            # Fallback: try to detect wordplay type if no second paragraph
+            hints[1] = self._detect_wordplay_fallback(full_text)
+        
+        # Level 3: More detailed breakdown
+        # If there are more paragraphs, use them; otherwise extract quoted components
+        if len(paragraphs) > 2:
+            # Use third paragraph or combination
+            hints[2] = ' '.join(paragraphs[1:])[:350]
+        elif len(paragraphs) > 1:
+            # Only have 2 paragraphs - extract more detail from second one
+            # Show quoted wordplay components
+            components = re.findall(r"'([^']+)'\s*\([^)]*([^)]+)\)", paragraphs[1])
             if components and len(components) >= 2:
-                hints[2] = f"Break it down: '{components[0][0]}' means {components[0][1]}, and '{components[1][0]}' means {components[1][1]}."
+                hints[2] = f"The wordplay involves: '{components[0][0]}' and '{components[1][0]}'"
+                if len(components) > 2:
+                    hints[2] += f" and '{components[2][0]}'"
             else:
-                hints[2] = full_text[:300]
+                # Just use more of the second paragraph
+                hints[2] = paragraphs[1][:350]
+        else:
+            hints[2] = full_text[:350]
         
         # Level 4: Full explanation
         hints[3] = full_text
         
         return hints
+    
+    def _extract_wordplay_technique(self, explanation: str) -> str:
+        """
+        Use AI to extract just the cryptic technique(s) from the explanation
+        
+        Examples:
+        "An anagram of LATE" -> "Anagram"
+        "A reversal of DOG in CAT" -> "Reversal + container"
+        "Two definitions" -> "Double definition"
+        """
+        try:
+            import requests
+            import json
+            
+            prompt = f"""Analyze this cryptic crossword clue explanation and identify ONLY the wordplay technique(s) used.
+
+Explanation: {explanation}
+
+Respond with ONLY a short phrase like:
+- "Anagram"
+- "Hidden word"
+- "Reversal"
+- "Container"
+- "Charade"
+- "Homophone"
+- "Double definition"
+- "Anagram + substitution"
+- "Container + reversal"
+
+Be extremely concise - just the technique name(s), maximum 4 words."""
+
+            response = requests.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={"Content-Type": "application/json"},
+                json={
+                    "model": "claude-sonnet-4-20250514",
+                    "max_tokens": 50,
+                    "messages": [{"role": "user", "content": prompt}]
+                },
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('content'):
+                    technique = data['content'][0].get('text', '').strip()
+                    if technique and len(technique) < 60:
+                        return technique
+        except Exception as e:
+            # If AI fails, fall back to keyword detection
+            print(f"      AI technique extraction failed: {e}")
+        
+        # Fallback to keyword detection
+        return self._detect_wordplay_fallback(explanation)
+    
+    def _detect_wordplay_fallback(self, text: str) -> str:
+        """Fallback keyword-based detection"""
+        text_lower = text.lower()
+        
+        techniques = []
+        if 'anagram' in text_lower or 'mixed' in text_lower or 'confused' in text_lower:
+            techniques.append('anagram')
+        if 'hidden' in text_lower or 'concealed' in text_lower:
+            techniques.append('hidden word')
+        if 'reversal' in text_lower or 'back' in text_lower or 'reversed' in text_lower:
+            techniques.append('reversal')
+        if 'container' in text_lower or 'envelope' in text_lower or 'around' in text_lower or 'inside' in text_lower:
+            techniques.append('container')
+        if 'sounds like' in text_lower or 'homophone' in text_lower:
+            techniques.append('homophone')
+        if 'double definition' in text_lower:
+            return "Double definition"
+        
+        if len(techniques) == 1:
+            return techniques[0].capitalize()
+        elif len(techniques) > 1:
+            return ' + '.join([t.capitalize() for t in techniques])
+        else:
+            return "Look at how the clue breaks down"
     
     def _generate_verlaine_style(self, paragraphs: List[str], definitions: List[str]) -> List[str]:
         """
