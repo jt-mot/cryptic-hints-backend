@@ -15,7 +15,8 @@ Run with: python production_app.py
 from flask import Flask, jsonify, request, send_from_directory, session, redirect, url_for
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import json
 from datetime import datetime, date
 import os
@@ -25,25 +26,25 @@ app = Flask(__name__, static_folder='static')
 app.secret_key = secrets.token_hex(32)  # Generate secure secret key
 CORS(app)
 
-DATABASE = 'crosswords.db'
+DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://localhost/crosswords_dev')
 ADMIN_USERNAME = 'admin'  # Change this
 ADMIN_PASSWORD_HASH = generate_password_hash('changeme123')  # CHANGE THIS PASSWORD!
 
 
 def get_db():
     """Get database connection"""
-    db = sqlite3.connect(DATABASE)
-    db.row_factory = sqlite3.Row
-    return db
+    conn = psycopg2.connect(DATABASE_URL)
+    return conn
 
 
 def init_db():
     """Initialize database with schema"""
-    db = get_db()
+    conn = get_db()
+    cursor = conn.cursor()
     
-    db.executescript('''
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS puzzles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             publication TEXT NOT NULL,
             puzzle_number TEXT,
             setter TEXT,
@@ -51,10 +52,12 @@ def init_db():
             status TEXT DEFAULT 'draft',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             published_at TIMESTAMP
-        );
-        
+        )
+    ''')
+    
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS clues (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             puzzle_id INTEGER NOT NULL,
             clue_number TEXT NOT NULL,
             direction TEXT NOT NULL,
@@ -65,46 +68,51 @@ def init_db():
             hint_level_2 TEXT,
             hint_level_3 TEXT,
             hint_level_4 TEXT,
-            hint_1_approved BOOLEAN DEFAULT 0,
-            hint_2_approved BOOLEAN DEFAULT 0,
-            hint_3_approved BOOLEAN DEFAULT 0,
-            hint_4_approved BOOLEAN DEFAULT 0,
-            hint_1_flagged BOOLEAN DEFAULT 0,
-            hint_2_flagged BOOLEAN DEFAULT 0,
-            hint_3_flagged BOOLEAN DEFAULT 0,
-            hint_4_flagged BOOLEAN DEFAULT 0,
-            FOREIGN KEY (puzzle_id) REFERENCES puzzles(id)
-        );
-        
+            hint_1_approved BOOLEAN DEFAULT FALSE,
+            hint_2_approved BOOLEAN DEFAULT FALSE,
+            hint_3_approved BOOLEAN DEFAULT FALSE,
+            hint_4_approved BOOLEAN DEFAULT FALSE,
+            hint_1_flagged BOOLEAN DEFAULT FALSE,
+            hint_2_flagged BOOLEAN DEFAULT FALSE,
+            hint_3_flagged BOOLEAN DEFAULT FALSE,
+            hint_4_flagged BOOLEAN DEFAULT FALSE,
+            FOREIGN KEY (puzzle_id) REFERENCES puzzles(id) ON DELETE CASCADE
+        )
+    ''')
+    
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS hint_revisions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             clue_id INTEGER NOT NULL,
             hint_level INTEGER NOT NULL,
             old_text TEXT,
             new_text TEXT,
             edited_by TEXT,
             edited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (clue_id) REFERENCES clues(id)
-        );
-        
+            FOREIGN KEY (clue_id) REFERENCES clues(id) ON DELETE CASCADE
+        )
+    ''')
+    
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS user_progress (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             session_id TEXT NOT NULL,
             clue_id INTEGER NOT NULL,
             hints_viewed INTEGER DEFAULT 0,
-            answered BOOLEAN DEFAULT 0,
+            answered BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (clue_id) REFERENCES clues(id)
-        );
-        
-        CREATE INDEX IF NOT EXISTS idx_puzzle_date ON puzzles(date);
-        CREATE INDEX IF NOT EXISTS idx_puzzle_status ON puzzles(status);
-        CREATE INDEX IF NOT EXISTS idx_clue_puzzle ON clues(puzzle_id);
+            FOREIGN KEY (clue_id) REFERENCES clues(id) ON DELETE CASCADE
+        )
     ''')
     
-    db.commit()
-    db.close()
-    print("✓ Database initialized successfully!")
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_date ON puzzles(date)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_status ON puzzles(status)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_clue_puzzle ON clues(puzzle_id)')
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+    print("✓ PostgreSQL database initialized successfully!")
 
 
 def login_required(f):
@@ -130,13 +138,14 @@ def index():
 @app.route('/api/puzzle/today')
 def get_today_puzzle():
     """Get today's published puzzle"""
-    db = get_db()
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     # Get the most recent published puzzle
-    puzzle = db.execute('''
+    puzzle = cursor.execute('''
         SELECT * FROM puzzles 
         WHERE status = 'published'
-        AND date <= DATE('now')
+        AND date <= CURRENT_DATE
         ORDER BY date DESC 
         LIMIT 1
     ''').fetchone()
@@ -145,16 +154,17 @@ def get_today_puzzle():
         return jsonify({'error': 'No puzzle available'}), 404
     
     # Get all clues for this puzzle
-    clues = db.execute('''
-        SELECT id, clue_number, direction, clue_text, enumeration
+    clues = cursor.execute('''
+        SELECT id, clue_number, direction, clue_text, enumeration, answer
         FROM clues
-        WHERE puzzle_id = ?
+        WHERE puzzle_id = %s
         ORDER BY 
             CASE WHEN direction = 'across' THEN 0 ELSE 1 END,
             CAST(clue_number AS INTEGER)
     ''', (puzzle['id'],)).fetchall()
     
-    db.close()
+    cursor.close()
+    conn.close()
     
     return jsonify({
         'id': puzzle['id'],
@@ -172,16 +182,18 @@ def get_hint(clue_id, level):
     if level not in [1, 2, 3, 4]:
         return jsonify({'error': 'Invalid hint level'}), 400
     
-    db = get_db()
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    clue = db.execute(f'''
+    clue = cursor.execute(f'''
         SELECT hint_level_{level} as hint_text,
                hint_{level}_approved as approved
         FROM clues
-        WHERE id = ?
+        WHERE id = %s
     ''', (clue_id,)).fetchone()
     
-    db.close()
+    cursor.close()
+    conn.close()
     
     if not clue:
         return jsonify({'error': 'Clue not found'}), 404
@@ -203,15 +215,17 @@ def check_answer(clue_id):
     if not user_answer:
         return jsonify({'error': 'No answer provided'}), 400
     
-    db = get_db()
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    clue = db.execute('''
+    clue = cursor.execute('''
         SELECT answer, clue_text
         FROM clues
-        WHERE id = ?
+        WHERE id = %s
     ''', (clue_id,)).fetchone()
     
-    db.close()
+    cursor.close()
+    conn.close()
     
     if not clue:
         return jsonify({'error': 'Clue not found'}), 404
@@ -347,9 +361,10 @@ def admin_init_db():
 @login_required
 def get_pending_puzzles():
     """Get all puzzles awaiting review"""
-    db = get_db()
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    puzzles = db.execute('''
+    puzzles = cursor.execute('''
         SELECT p.*, 
                COUNT(DISTINCT c.id) as total_clues,
                SUM(CASE WHEN c.hint_1_flagged OR c.hint_2_flagged OR c.hint_3_flagged OR c.hint_4_flagged THEN 1 ELSE 0 END) as flagged_count,
@@ -361,7 +376,8 @@ def get_pending_puzzles():
         ORDER BY p.date DESC
     ''').fetchall()
     
-    db.close()
+    cursor.close()
+    conn.close()
     
     return jsonify({
         'puzzles': [dict(p) for p in puzzles]
@@ -372,17 +388,19 @@ def get_pending_puzzles():
 @login_required
 def get_puzzle_clues_for_review(puzzle_id):
     """Get all clues for a puzzle with review status"""
-    db = get_db()
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    clues = db.execute('''
+    clues = cursor.execute('''
         SELECT * FROM clues
-        WHERE puzzle_id = ?
+        WHERE puzzle_id = %s
         ORDER BY 
             CASE WHEN direction = 'across' THEN 0 ELSE 1 END,
             CAST(clue_number AS INTEGER)
     ''', (puzzle_id,)).fetchall()
     
-    db.close()
+    cursor.close()
+    conn.close()
     
     return jsonify({
         'clues': [dict(c) for c in clues]
@@ -398,30 +416,32 @@ def update_hint():
     hint_level = data.get('hint_level')
     new_text = data.get('new_text')
     
-    db = get_db()
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     # Get old text for revision history
-    old_text = db.execute(f'''
+    old_text = cursor.execute(f'''
         SELECT hint_level_{hint_level} as old_text
-        FROM clues WHERE id = ?
+        FROM clues WHERE id = %s
     ''', (clue_id,)).fetchone()['old_text']
     
     # Update hint
-    db.execute(f'''
+    cursor.execute(f'''
         UPDATE clues 
-        SET hint_level_{hint_level} = ?,
+        SET hint_level_{hint_level} = %s,
             hint_{hint_level}_flagged = 0
-        WHERE id = ?
+        WHERE id = %s
     ''', (new_text, clue_id))
     
     # Save revision
-    db.execute('''
+    cursor.execute('''
         INSERT INTO hint_revisions (clue_id, hint_level, old_text, new_text, edited_by)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s)
     ''', (clue_id, hint_level, old_text, new_text, session.get('username')))
     
-    db.commit()
-    db.close()
+    conn.commit()
+    cursor.close()
+    conn.close()
     
     return jsonify({'success': True})
 
@@ -434,17 +454,19 @@ def approve_hint():
     clue_id = data.get('clue_id')
     hint_level = data.get('hint_level')
     
-    db = get_db()
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    db.execute(f'''
+    cursor.execute(f'''
         UPDATE clues 
         SET hint_{hint_level}_approved = 1,
             hint_{hint_level}_flagged = 0
-        WHERE id = ?
+        WHERE id = %s
     ''', (clue_id,))
     
-    db.commit()
-    db.close()
+    conn.commit()
+    cursor.close()
+    conn.close()
     
     return jsonify({'success': True})
 
@@ -457,17 +479,19 @@ def flag_hint():
     clue_id = data.get('clue_id')
     hint_level = data.get('hint_level')
     
-    db = get_db()
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    db.execute(f'''
+    cursor.execute(f'''
         UPDATE clues 
         SET hint_{hint_level}_flagged = 1,
             hint_{hint_level}_approved = 0
-        WHERE id = ?
+        WHERE id = %s
     ''', (clue_id,))
     
-    db.commit()
-    db.close()
+    conn.commit()
+    cursor.close()
+    conn.close()
     
     return jsonify({'success': True})
 
@@ -476,29 +500,32 @@ def flag_hint():
 @login_required
 def publish_puzzle(puzzle_id):
     """Publish a puzzle (make it live)"""
-    db = get_db()
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     # Check all hints are approved
-    unapproved = db.execute('''
+    unapproved = cursor.execute('''
         SELECT COUNT(*) as count FROM clues
-        WHERE puzzle_id = ?
+        WHERE puzzle_id = %s
         AND (hint_1_approved = 0 OR hint_2_approved = 0 OR hint_3_approved = 0 OR hint_4_approved = 0)
     ''', (puzzle_id,)).fetchone()['count']
     
     if unapproved > 0:
-        db.close()
+        cursor.close()
+        conn.close()
         return jsonify({'success': False, 'message': f'{unapproved} hints still need approval'}), 400
     
     # Publish
-    db.execute('''
+    cursor.execute('''
         UPDATE puzzles 
         SET status = 'published',
             published_at = CURRENT_TIMESTAMP
         WHERE id = ?
     ''', (puzzle_id,))
     
-    db.commit()
-    db.close()
+    conn.commit()
+    cursor.close()
+    conn.close()
     
     return jsonify({'success': True, 'message': 'Puzzle published successfully!'})
 
@@ -507,16 +534,18 @@ def publish_puzzle(puzzle_id):
 @login_required
 def unpublish_puzzle(puzzle_id):
     """Unpublish a puzzle (take it offline)"""
-    db = get_db()
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    db.execute('''
+    cursor.execute('''
         UPDATE puzzles 
         SET status = 'draft'
         WHERE id = ?
     ''', (puzzle_id,))
     
-    db.commit()
-    db.close()
+    conn.commit()
+    cursor.close()
+    conn.close()
     
     return jsonify({'success': True, 'message': 'Puzzle unpublished'})
 
@@ -531,12 +560,13 @@ def import_puzzle():
     """Import a puzzle with clues and AI-generated hints"""
     data = request.get_json()
     
-    db = get_db()
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     # Create puzzle
-    cursor = db.execute('''
+    cursor = cursor.execute('''
         INSERT INTO puzzles (publication, puzzle_number, setter, date, status)
-        VALUES (?, ?, ?, ?, 'draft')
+        VALUES (%s, %s, %s, %s, 'draft')
     ''', (
         data['publication'],
         data['puzzle_number'],
@@ -548,13 +578,13 @@ def import_puzzle():
     
     # Add clues with hints
     for clue_data in data['clues']:
-        db.execute('''
+        cursor.execute('''
             INSERT INTO clues (
                 puzzle_id, clue_number, direction, clue_text, 
                 enumeration, answer, 
                 hint_level_1, hint_level_2, hint_level_3, hint_level_4,
                 hint_1_flagged, hint_2_flagged, hint_3_flagged, hint_4_flagged
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, ?)
         ''', (
             puzzle_id,
             clue_data['clue_number'],
@@ -572,8 +602,9 @@ def import_puzzle():
             clue_data.get('flagged', [False, False, False, False])[3]
         ))
     
-    db.commit()
-    db.close()
+    conn.commit()
+    cursor.close()
+    conn.close()
     
     return jsonify({
         'success': True,
