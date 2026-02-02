@@ -331,6 +331,12 @@ class PuzzleScraper:
             if clue_id in hints_map:
                 hint_paragraphs = hints_map[clue_id]
                 clue['hints'] = self.hint_generator.generate_hints(hint_paragraphs)
+                
+                # Debug: Check first clue
+                if clue['clue_number'] == '1' and clue['direction'] == 'across':
+                    print(f"\n   DEBUG - First clue hints:")
+                    for i, h in enumerate(clue['hints'], 1):
+                        print(f"   Hint {i}: {h[:100] if h else '[EMPTY]'}")
             else:
                 clue['hints'] = ['', '', '', '']
         
