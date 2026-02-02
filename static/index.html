@@ -1,3 +1,15 @@
+<script>
+  // Redirect to most recent published puzzle
+  fetch('/api/puzzle/today')
+    .then(r => r.json())
+    .then(data => {
+      if (data.puzzle_number) {
+        window.location.href = `/puzzle/${data.puzzle_number}`;
+      }
+    });
+</script>
+```
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
