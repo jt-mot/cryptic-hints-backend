@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quick Import - Admin</title>
+    <title>Import Puzzle 29915</title>
     <style>
         * {
             margin: 0;
@@ -13,228 +13,257 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #f5f5f5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 2rem;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+        .card {
             background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            padding: 3rem;
+            max-width: 600px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
         }
 
         h1 {
-            color: #1a73e8;
+            color: #333;
             margin-bottom: 0.5rem;
+            font-size: 2rem;
         }
 
         .subtitle {
             color: #666;
             margin-bottom: 2rem;
+            font-size: 1.1rem;
         }
 
-        textarea {
-            width: 100%;
-            min-height: 400px;
-            padding: 1rem;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .info-box h3 {
+            color: #667eea;
             margin-bottom: 1rem;
         }
 
-        textarea:focus {
-            outline: none;
-            border-color: #1a73e8;
+        .info-box ul {
+            list-style: none;
+            line-height: 2;
+        }
+
+        .info-box li:before {
+            content: "✓ ";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 0.5rem;
         }
 
         .btn {
-            background: #1a73e8;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            font-size: 1rem;
+            padding: 1.25rem 3rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
-            margin-right: 1rem;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
         }
 
         .btn:hover {
-            background: #1557b0;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
         }
 
-        .btn-secondary {
-            background: #666;
-        }
-
-        .btn-secondary:hover {
-            background: #555;
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .result {
             margin-top: 2rem;
-            padding: 1rem;
-            border-radius: 8px;
+            padding: 1.5rem;
+            border-radius: 12px;
             display: none;
         }
 
         .result.success {
             background: #d4edda;
             color: #155724;
-            border: 1px solid #c3e6cb;
         }
 
         .result.error {
             background: #f8d7da;
             color: #721c24;
-            border: 1px solid #f5c6cb;
         }
 
-        .instructions {
-            background: #e8f4fd;
-            padding: 1.5rem;
+        .loading {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .link-btn {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.75rem 2rem;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
             border-radius: 8px;
-            margin-bottom: 2rem;
-            border-left: 4px solid #1a73e8;
+            font-weight: 600;
         }
 
-        .instructions h3 {
-            margin-bottom: 0.5rem;
-            color: #1a73e8;
-        }
-
-        .instructions ol {
-            margin-left: 1.5rem;
-            line-height: 1.8;
-        }
-
-        pre {
-            background: #f5f5f5;
-            padding: 1rem;
-            border-radius: 4px;
-            overflow-x: auto;
-            font-size: 0.85rem;
+        .link-btn:hover {
+            background: #764ba2;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎯 Quick Puzzle Import</h1>
-        <p class="subtitle">Import puzzle 29915 into the database</p>
+    <div class="card">
+        <h1>🎯 Import Puzzle 29915</h1>
+        <p class="subtitle">Guardian Cryptic by Qaos</p>
 
-        <div class="instructions">
-            <h3>📝 Instructions:</h3>
-            <ol>
-                <li>The puzzle JSON is pre-filled below</li>
-                <li>Click "Import Puzzle" button</li>
-                <li>Go to <a href="/admin/review">/admin/review</a> to review hints</li>
-                <li>Approve hints and publish the puzzle</li>
-                <li>It will appear on the homepage!</li>
-            </ol>
+        <div class="info-box">
+            <h3>What will be imported:</h3>
+            <ul>
+                <li>33 clues (15 across, 18 down)</li>
+                <li>All answers and enumerations</li>
+                <li>4 levels of hints per clue</li>
+                <li>Puzzle metadata (setter, date)</li>
+            </ul>
         </div>
 
-        <textarea id="puzzleJson" placeholder="Paste puzzle JSON here...">
-{
-  "publication": "Guardian",
-  "puzzle_number": "29915",
-  "setter": "Qaos",
-  "date": "2026-01-28",
-  "clues": []
-}
-        </textarea>
+        <button class="btn" onclick="importPuzzle()" id="importBtn">
+            Click to Import Puzzle 29915
+        </button>
 
-        <button class="btn" onclick="importPuzzle()">Import Puzzle</button>
-        <button class="btn btn-secondary" onclick="loadExample()">Load Puzzle 29915</button>
-        <a href="/admin/review" style="margin-left: 1rem;">
-            <button class="btn btn-secondary">Go to Admin Review</button>
-        </a>
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 1rem; color: #666;">Importing puzzle...</p>
+        </div>
 
         <div id="result" class="result"></div>
     </div>
 
     <script>
-        function loadExample() {
-            // This is puzzle 29915 with a few clues to demonstrate
-            // You'll need to paste the full JSON from puzzle_29915_import.json
-            const example = {
-                "publication": "Guardian",
-                "puzzle_number": "29915",
-                "setter": "Qaos",
-                "date": "2026-01-28",
-                "clues": [
-                    {
-                        "clue_number": 9,
-                        "direction": "across",
-                        "clue_text": "Look into firm's capital",
-                        "enumeration": "5",
-                        "answer": "CAIRO",
-                        "hint_level_1": "Definition: capital. Wordplay: AIR (look) inside CO (firm)",
-                        "hint_level_2": "The answer is an African capital city",
-                        "hint_level_3": "C + AIR in CO = CAIRO",
-                        "hint_level_4": "AIR (look) goes inside CO (company/firm) to give CAIRO (capital of Egypt)"
-                    }
-                    // Add more clues here...
-                ]
-            };
-            
-            document.getElementById('puzzleJson').value = JSON.stringify(example, null, 2);
-        }
+        const puzzleData = {
+            "publication": "Guardian",
+            "puzzle_number": "29915",
+            "setter": "Qaos",
+            "date": "2026-01-28",
+            "clues": [
+                {"clue_number": 9, "direction": "across", "clue_text": "Look into firm's capital", "enumeration": "5", "answer": "CAIRO", "hint_level_1": "Definition: capital. Wordplay: AIR (look) inside CO (firm)", "hint_level_2": "The answer is an African capital city", "hint_level_3": "C + AIR in CO = CAIRO", "hint_level_4": "AIR (look) goes inside CO (company/firm) to give CAIRO (capital of Egypt)"},
+                {"clue_number": 10, "direction": "across", "clue_text": "'Increase risk from chopped peanut' – inspiring article", "enumeration": "2,3,4", "answer": "UP THE ANTE", "hint_level_1": "Definition: increase risk. Anagram indicator: 'chopped'", "hint_level_2": "Anagram of PEANUT around THE (article)", "hint_level_3": "Chopped PEANUT containing THE", "hint_level_4": "UP THE ANTE is an anagram of PEANUT around THE (article)"},
+                {"clue_number": 11, "direction": "across", "clue_text": "Record bird circling me – it won't last long", "enumeration": "9", "answer": "EPHEMERON", "hint_level_1": "Definition: it won't last long. EP = record, HERON = bird", "hint_level_2": "Something short-lived, singular of ephemera", "hint_level_3": "EP + HERON around ME", "hint_level_4": "EP (record) + HERON (bird) circling ME = EPHEMERON (something short-lived)"},
+                {"clue_number": 12, "direction": "across", "clue_text": "In Polish, 'time' means 'resistance'", "enumeration": "5", "answer": "STAND", "hint_level_1": "Definition: resistance. Polish = SAND, T = time", "hint_level_2": "Put T (time) inside SAND (polish)", "hint_level_3": "S + T + AND", "hint_level_4": "T (time) inside SAND (polish) = STAND (resistance/withstand)"},
+                {"clue_number": 13, "direction": "across", "clue_text": "Perhaps the Sun let being hacked shock", "enumeration": "7", "answer": "STARTLE", "hint_level_1": "Definition: shock. STAR = perhaps the sun, anagram of LET", "hint_level_2": "STAR + anagram of LET", "hint_level_3": "STAR + (LET anagram)", "hint_level_4": "STAR (perhaps the sun) + anagram of LET (hacked) = STARTLE (shock)"},
+                {"clue_number": 15, "direction": "across", "clue_text": "Dagger, not a dessert, smuggled into prison", "enumeration": "7", "answer": "STICKER", "hint_level_1": "Definition: dagger. CAKE (dessert) without A, inside STIR (prison)", "hint_level_2": "CKE inside STIR", "hint_level_3": "ST + CKE + R", "hint_level_4": "CAKE (dessert) minus A inside STIR (prison) = STICKER (dagger/knife)"},
+                {"clue_number": 17, "direction": "across", "clue_text": "Car with one wheel – sound?", "enumeration": "5", "answer": "AUDIO", "hint_level_1": "Definition: sound. AUDI (car) + O (one/wheel)", "hint_level_2": "A car brand plus O", "hint_level_3": "AUDI + O", "hint_level_4": "AUDI (car) + O (one/wheel) = AUDIO (sound)"},
+                {"clue_number": 18, "direction": "across", "clue_text": "Firm sofa 50% off", "enumeration": "3", "answer": "SET", "hint_level_1": "Definition: firm. Half of SETTEE (sofa)", "hint_level_2": "First 50% of a word for sofa", "hint_level_3": "First half of SETTEE", "hint_level_4": "SETTEE (sofa) 50% off = SET (firm/solid)"},
+                {"clue_number": 20, "direction": "across", "clue_text": "Punches produce shiners", "enumeration": "5", "answer": "LAMPS", "hint_level_1": "Double definition: punches and shiners (lights)", "hint_level_2": "Both meanings relate to hitting and lighting", "hint_level_3": "Think of black eyes (shiners) and lights", "hint_level_4": "LAMPS = punches (hits) and shiners (lights/black eyes)"},
+                {"clue_number": 22, "direction": "across", "clue_text": "Clasp them briefly with heaving moobs", "enumeration": "7", "answer": "EMBOSOM", "hint_level_1": "Definition: clasp. 'EM (them briefly) + anagram of MOOBS", "hint_level_2": "Abbreviation of 'them' + anagram", "hint_level_3": "'EM + BOSOM", "hint_level_4": "'EM (them briefly) + anagram of MOOBS (heaving) = EMBOSOM (clasp/hug)"},
+                {"clue_number": 25, "direction": "across", "clue_text": "Helps donkey get first and second", "enumeration": "7", "answer": "ASSISTS", "hint_level_1": "Definition: helps. ASS = donkey, IST = first, S = second", "hint_level_2": "ASS + 1ST + S", "hint_level_3": "Donkey + abbreviation for first + S", "hint_level_4": "ASS (donkey) + IST (first) + S (second) = ASSISTS (helps)"},
+                {"clue_number": 26, "direction": "across", "clue_text": "Ship to remain without any goods", "enumeration": "5", "answer": "LINER", "hint_level_1": "Definition: ship. LINGER (remain) without G (goods)", "hint_level_2": "Remove G from a word meaning 'remain'", "hint_level_3": "LINGER - G", "hint_level_4": "LINGER (remain) without G (goods) = LINER (ship)"},
+                {"clue_number": 27, "direction": "across", "clue_text": "Must elder play this instrument?", "enumeration": "5,4", "answer": "STEEL DRUM", "hint_level_1": "Definition: instrument. Anagram of MUST ELDER", "hint_level_2": "Anagram indicator: 'play'", "hint_level_3": "Anagram of all the letters", "hint_level_4": "Anagram of MUST ELDER (play) = STEEL DRUM (instrument)"},
+                {"clue_number": 30, "direction": "across", "clue_text": "Not half clever getting solutions without soap?", "enumeration": "9", "answer": "CLEANSERS", "hint_level_1": "Definition: soap. CLE (half of clever) + ANSWERS without W", "hint_level_2": "First half of CLEVER + ANSWERS without W (with)", "hint_level_3": "CLE + ANSERS", "hint_level_4": "CLEVER not half (CLE) + ANSWERS without W (with) = CLEANSERS (soap)"},
+                {"clue_number": 31, "direction": "across", "clue_text": "Examples of luggage", "enumeration": "5", "answer": "CASES", "hint_level_1": "Double definition", "hint_level_2": "CASES can mean examples or luggage", "hint_level_3": "Think of legal cases and suitcases", "hint_level_4": "CASES = examples (legal cases) and luggage (suitcases)"},
+                {"clue_number": 1, "direction": "down", "clue_text": "Companion enters hospital department in pain", "enumeration": "4", "answer": "ACHE", "hint_level_1": "Definition: pain. CH (Companion of Honour) inside A&E (hospital department)", "hint_level_2": "A + CH + E", "hint_level_3": "Hospital abbreviation with CH inside", "hint_level_4": "CH (Companion) inside A&E (hospital department) = ACHE (pain)"},
+                {"clue_number": 2, "direction": "down", "clue_text": "Trip to arrive in mountainous area", "enumeration": "8", "answer": "HIGHLAND", "hint_level_1": "Definition: mountainous area. HIGH = trip, LAND = arrive", "hint_level_2": "HIGH + LAND", "hint_level_3": "Drug slang + to arrive", "hint_level_4": "HIGH (trip/drug high) + LAND (arrive) = HIGHLAND (mountainous area)"},
+                {"clue_number": 3, "direction": "down", "clue_text": "Ring in memory of 13 down", "enumeration": "4", "answer": "ROOM", "hint_level_1": "Definition: reference to 13D (SPACE). O (ring) inside ROM (memory)", "hint_level_2": "Computer memory term with O inside", "hint_level_3": "R + O + OM", "hint_level_4": "O (ring) inside ROM (memory) = ROOM (space)"},
+                {"clue_number": 4, "direction": "down", "clue_text": "3 + 3 + 3 = 1/4 + 1/4 +1/4?", "enumeration": "8", "answer": "QUARTERS", "hint_level_1": "Mathematical wordplay: 3 ROOMs = ROOMS = QUARTERS", "hint_level_2": "Three quarters = three 1/4s", "hint_level_3": "ROOM + ROOM + ROOM = QUARTERS", "hint_level_4": "Three of 3D (ROOM) = ROOMS = QUARTERS (three 1/4s)"},
+                {"clue_number": 5, "direction": "down", "clue_text": "Last one standing carries lots of weight", "enumeration": "6", "answer": "STONES", "hint_level_1": "Definition: weight. Hidden in 'last one standing'", "hint_level_2": "Hidden word indicator: 'carries'", "hint_level_3": "Look in 'laST ONE Standing'", "hint_level_4": "Hidden in 'laST ONE Standing' = STONES (weight measurement)"},
+                {"clue_number": 6, "direction": "down", "clue_text": "Silver seal broken in palace", "enumeration": "10", "answer": "VERSAILLES", "hint_level_1": "Definition: palace. Anagram of SILVER SEAL", "hint_level_2": "Anagram indicator: 'broken'", "hint_level_3": "All letters rearranged", "hint_level_4": "Anagram of SILVER SEAL (broken) = VERSAILLES (palace in France)"},
+                {"clue_number": 7, "direction": "down", "clue_text": "Expose country defending man's rambling", "enumeration": "6", "answer": "UNMASK", "hint_level_1": "Definition: expose. UK (country) around anagram of MAN'S", "hint_level_2": "UK containing scrambled MAN'S", "hint_level_3": "U + NMAS + K", "hint_level_4": "UK (country) defending anagram of MAN'S (rambling) = UNMASK (expose)"},
+                {"clue_number": 8, "direction": "down", "clue_text": "Discovering they made leader", "enumeration": "4", "answer": "HEAD", "hint_level_1": "Definition: leader. Remove outer letters from THEY and MADE", "hint_level_2": "'Discovering' means remove covers/outer letters", "hint_level_3": "HE + AD (middle letters)", "hint_level_4": "Discovering (uncovering) THEY and MADE = HE + AD = HEAD (leader)"},
+                {"clue_number": 13, "direction": "down", "clue_text": "Well, church builds no character", "enumeration": "5", "answer": "SPACE", "hint_level_1": "Definition: no character (as on keyboard). SPA = well, CE = church", "hint_level_2": "SPA + CE", "hint_level_3": "Health resort + church abbreviation", "hint_level_4": "SPA (well/spa) + CE (church) = SPACE (no character on keyboard)"},
+                {"clue_number": 14, "direction": "down", "clue_text": "Stealing fancy store jewellery – you involved?", "enumeration": "10", "answer": "TROUSERING", "hint_level_1": "Definition: stealing. U (you) inside anagram of STORE + RING", "hint_level_2": "Anagram indicator: 'fancy'", "hint_level_3": "U inside (STORE + RING) anagram", "hint_level_4": "U (you) involved in anagram of STORE RING (fancy) = TROUSERING (stealing/pocketing)"},
+                {"clue_number": 16, "direction": "down", "clue_text": "Soundly twists snooker equipment", "enumeration": "5", "answer": "RESTS", "hint_level_1": "Definition: snooker equipment. Homophone of WRESTS (twists)", "hint_level_2": "Sounds like 'wrests'", "hint_level_3": "Homophone indicator: 'soundly'", "hint_level_4": "Sounds like WRESTS (twists) = RESTS (snooker equipment)"},
+                {"clue_number": 19, "direction": "down", "clue_text": "VAR rewound during short cross", "enumeration": "8", "answer": "TRAVERSE", "hint_level_1": "Definition: cross. VAR reversed inside TERSE (short)", "hint_level_2": "RAV inside TERSE", "hint_level_3": "T + RAV + ERSE", "hint_level_4": "VAR rewound (reversed) during TERSE (short) = TRAVERSE (cross)"},
+                {"clue_number": 21, "direction": "down", "clue_text": "Film on extremely serious Lady Hamilton?", "enumeration": "8", "answer": "MISTRESS", "hint_level_1": "Definition: Lady Hamilton (Nelson's mistress). MIST = film, RE = on, S...S = extremely serious", "hint_level_2": "MIST + RE + outer letters of serious", "hint_level_3": "MIST + RE + SS", "hint_level_4": "MIST (film) + RE (on) + S...S (extremely serious) = MISTRESS (Lady Hamilton)"},
+                {"clue_number": 23, "direction": "down", "clue_text": "Don't allow mirrored license plate with old car", "enumeration": "6", "answer": "BANGER", "hint_level_1": "Definition: old car. BAN = don't allow, REG (license plate) reversed", "hint_level_2": "BAN + GER (REG backwards)", "hint_level_3": "BAN + mirrored REG", "hint_level_4": "BAN (don't allow) + REG (license plate) mirrored = BANGER (old car)"},
+                {"clue_number": 24, "direction": "down", "clue_text": "Ruler quicker to change gender?", "enumeration": "6", "answer": "MASTER", "hint_level_1": "Definition: ruler. FASTER (quicker) with F changed to M (gender change)", "hint_level_2": "Change F (female) to M (male) in FASTER", "hint_level_3": "M replacing F in FASTER", "hint_level_4": "FASTER (quicker) changing gender F→M = MASTER (ruler)"},
+                {"clue_number": 26, "direction": "down", "clue_text": "Cops missing work over bugs", "enumeration": "4", "answer": "LICE", "hint_level_1": "Definition: bugs. POLICE (cops) minus OP (work) reversed", "hint_level_2": "Remove OP from POLICE and reverse", "hint_level_3": "LICE backwards from POLICE", "hint_level_4": "POLICE (cops) missing OP (work) over (reversed) = LICE (bugs)"},
+                {"clue_number": 28, "direction": "down", "clue_text": "South of the border, we're told lake is secure", "enumeration": "4", "answer": "LOCK", "hint_level_1": "Definition: secure. Homophone of LOCH (lake)", "hint_level_2": "Sounds like Scottish word for lake", "hint_level_3": "Homophone indicator: 'we're told'", "hint_level_4": "LOCH (lake) sounds like LOCK (secure) south of Scottish border"},
+                {"clue_number": 29, "direction": "down", "clue_text": "Plant grasses someone up inside", "enumeration": "4", "answer": "MOSS", "hint_level_1": "Definition: plant. Hidden reversed in 'grasses someone'", "hint_level_2": "Hidden word indicator: 'inside', reversal: 'up'", "hint_level_3": "Look in 'grasseS SOMeone' backwards", "hint_level_4": "Hidden reversed in 'grasseS SOMeone' (up/inside) = MOSS (plant)"}
+            ]
+        };
 
         async function importPuzzle() {
-            const jsonText = document.getElementById('puzzleJson').value;
+            const btn = document.getElementById('importBtn');
+            const loading = document.getElementById('loading');
             const resultDiv = document.getElementById('result');
-            
-            try {
-                // Validate JSON
-                const puzzleData = JSON.parse(jsonText);
-                
-                // Check required fields
-                if (!puzzleData.publication || !puzzleData.puzzle_number || !puzzleData.clues) {
-                    throw new Error('Missing required fields: publication, puzzle_number, or clues');
-                }
 
-                // Send to import endpoint
+            // Disable button and show loading
+            btn.disabled = true;
+            loading.style.display = 'block';
+            resultDiv.style.display = 'none';
+
+            try {
                 const response = await fetch('/admin/api/import-puzzle', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: jsonText
+                    body: JSON.stringify(puzzleData)
                 });
 
                 const result = await response.json();
+
+                loading.style.display = 'none';
 
                 if (response.ok) {
                     resultDiv.className = 'result success';
                     resultDiv.style.display = 'block';
                     resultDiv.innerHTML = `
-                        <h3>✅ Success!</h3>
-                        <p>Puzzle #${puzzleData.puzzle_number} imported successfully!</p>
+                        <h2>✅ Success!</h2>
+                        <p style="font-size: 1.1rem; margin: 1rem 0;">
+                            Puzzle #29915 imported successfully!
+                        </p>
                         <p><strong>Puzzle ID:</strong> ${result.puzzle_id}</p>
                         <p><strong>Clues imported:</strong> ${puzzleData.clues.length}</p>
-                        <p style="margin-top: 1rem;">
-                            <a href="/admin/review">
-                                <button class="btn">Go to Admin Review →</button>
-                            </a>
-                        </p>
+                        <a href="/admin/review" class="link-btn">
+                            Go to Admin Review →
+                        </a>
                     `;
                 } else {
                     throw new Error(result.error || 'Import failed');
                 }
 
             } catch (error) {
+                loading.style.display = 'none';
                 resultDiv.className = 'result error';
                 resultDiv.style.display = 'block';
                 resultDiv.innerHTML = `
                     <h3>❌ Error</h3>
                     <p>${error.message}</p>
-                    <pre>${error.stack || ''}</pre>
                 `;
+                btn.disabled = false;
             }
         }
     </script>
