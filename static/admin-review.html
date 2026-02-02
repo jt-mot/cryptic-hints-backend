@@ -486,7 +486,8 @@
                 const response = await fetch(`/admin/api/puzzle/${puzzleId}/clues`, {
                     credentials: 'same-origin'
                 });
-                currentClues = await response.json();
+                const data = await response.json();
+                currentClues = data.clues || []; // API returns {clues: [...]}
                 
                 // Update puzzle info
                 updatePuzzleInfo();
