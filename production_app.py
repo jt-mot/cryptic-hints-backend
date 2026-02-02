@@ -436,7 +436,7 @@ def update_hint():
     cursor.execute(f'''
         UPDATE clues 
         SET hint_level_{hint_level} = %s,
-            hint_{hint_level}_flagged = 0
+            hint_{hint_level}_flagged = FALSE
         WHERE id = %s
     ''', (new_text, clue_id))
     
@@ -466,8 +466,8 @@ def approve_hint():
     
     cursor.execute(f'''
         UPDATE clues 
-        SET hint_{hint_level}_approved = 1,
-            hint_{hint_level}_flagged = 0
+        SET hint_{hint_level}_approved = TRUE,
+            hint_{hint_level}_flagged = FALSE
         WHERE id = %s
     ''', (clue_id,))
     
@@ -491,8 +491,8 @@ def flag_hint():
     
     cursor.execute(f'''
         UPDATE clues 
-        SET hint_{hint_level}_flagged = 1,
-            hint_{hint_level}_approved = 0
+        SET hint_{hint_level}_flagged = TRUE,
+            hint_{hint_level}_approved = FALSE
         WHERE id = %s
     ''', (clue_id,))
     
@@ -514,7 +514,7 @@ def publish_puzzle(puzzle_id):
     cursor.execute('''
         SELECT COUNT(*) as count FROM clues
         WHERE puzzle_id = %s
-        AND (hint_1_approved = 0 OR hint_2_approved = 0 OR hint_3_approved = 0 OR hint_4_approved = 0)
+        AND (hint_1_approved = FALSE OR hint_2_approved = FALSE OR hint_3_approved = FALSE OR hint_4_approved = FALSE)
     ''', (puzzle_id,))
     unapproved = cursor.fetchone()['count']
     
