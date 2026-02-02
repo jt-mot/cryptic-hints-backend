@@ -142,26 +142,28 @@ def get_today_puzzle():
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     # Get the most recent published puzzle
-    puzzle = cursor.execute('''
+    cursor.execute('''
         SELECT * FROM puzzles 
         WHERE status = 'published'
         AND date <= CURRENT_DATE
         ORDER BY date DESC 
         LIMIT 1
-    ''').fetchone()
+    ''')
+    puzzle = cursor.fetchone()
     
     if not puzzle:
         return jsonify({'error': 'No puzzle available'}), 404
     
     # Get all clues for this puzzle
-    clues = cursor.execute('''
+    cursor.execute('''
         SELECT id, clue_number, direction, clue_text, enumeration, answer
         FROM clues
         WHERE puzzle_id = %s
         ORDER BY 
             CASE WHEN direction = 'across' THEN 0 ELSE 1 END,
             CAST(clue_number AS INTEGER)
-    ''', (puzzle['id'],)).fetchall()
+    ''', (puzzle['id'],))
+    clues = cursor.fetchall()
     
     cursor.close()
     conn.close()
@@ -185,12 +187,13 @@ def get_hint(clue_id, level):
     conn = get_db()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    clue = cursor.execute(f'''
+    cursor.execute(f'''
         SELECT hint_level_{level} as hint_text,
                hint_{level}_approved as approved
         FROM clues
         WHERE id = %s
-    ''', (clue_id,)).fetchone()
+    ''', (clue_id,))
+    clue = cursor.fetchone()
     
     cursor.close()
     conn.close()
@@ -218,11 +221,12 @@ def check_answer(clue_id):
     conn = get_db()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    clue = cursor.execute('''
+    cursor.execute('''
         SELECT answer, clue_text
         FROM clues
         WHERE id = %s
-    ''', (clue_id,)).fetchone()
+    ''', (clue_id,))
+    clue = cursor.fetchone()
     
     cursor.close()
     conn.close()
@@ -364,7 +368,7 @@ def get_pending_puzzles():
     conn = get_db()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    puzzles = cursor.execute('''
+    cursor.execute('''
         SELECT p.*, 
                COUNT(DISTINCT c.id) as total_clues,
                SUM(CASE WHEN c.hint_1_flagged OR c.hint_2_flagged OR c.hint_3_flagged OR c.hint_4_flagged THEN 1 ELSE 0 END) as flagged_count,
@@ -374,7 +378,8 @@ def get_pending_puzzles():
         WHERE p.status = 'draft'
         GROUP BY p.id
         ORDER BY p.date DESC
-    ''').fetchall()
+    ''')
+    puzzles = cursor.fetchall()
     
     cursor.close()
     conn.close()
@@ -391,13 +396,14 @@ def get_puzzle_clues_for_review(puzzle_id):
     conn = get_db()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
-    clues = cursor.execute('''
+    cursor.execute('''
         SELECT * FROM clues
         WHERE puzzle_id = %s
         ORDER BY 
             CASE WHEN direction = 'across' THEN 0 ELSE 1 END,
             CAST(clue_number AS INTEGER)
-    ''', (puzzle_id,)).fetchall()
+    ''', (puzzle_id,))
+    clues = cursor.fetchall()
     
     cursor.close()
     conn.close()
@@ -420,10 +426,11 @@ def update_hint():
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     # Get old text for revision history
-    old_text = cursor.execute(f'''
+    cursor.execute(f'''
         SELECT hint_level_{hint_level} as old_text
         FROM clues WHERE id = %s
-    ''', (clue_id,)).fetchone()['old_text']
+    ''', (clue_id,))
+    old_text = cursor.fetchone()['old_text']
     
     # Update hint
     cursor.execute(f'''
@@ -504,11 +511,12 @@ def publish_puzzle(puzzle_id):
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     # Check all hints are approved
-    unapproved = cursor.execute('''
+    cursor.execute('''
         SELECT COUNT(*) as count FROM clues
         WHERE puzzle_id = %s
         AND (hint_1_approved = 0 OR hint_2_approved = 0 OR hint_3_approved = 0 OR hint_4_approved = 0)
-    ''', (puzzle_id,)).fetchone()['count']
+    ''', (puzzle_id,))
+    unapproved = cursor.fetchone()['count']
     
     if unapproved > 0:
         cursor.close()
@@ -585,7 +593,7 @@ def import_puzzle():
                 enumeration, answer, 
                 hint_level_1, hint_level_2, hint_level_3, hint_level_4,
                 hint_1_flagged, hint_2_flagged, hint_3_flagged, hint_4_flagged
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ''', (
             puzzle_id,
             clue_data['clue_number'],
