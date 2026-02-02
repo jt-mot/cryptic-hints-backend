@@ -164,83 +164,71 @@ class FifteensquaredScraper:
                 
                 hints_map = {}
                 current_direction = None
-                current_clue_id = None
-                hint_buffer = []
                 
-                # Get all potential elements (try multiple tags)
-                elements = content.find_all(['p', 'div', 'h2', 'h3', 'h4', 'strong', 'b'])
+                # Strategy: Get text content and split by lines
+                full_text = content.get_text()
+                lines = [line.strip() for line in full_text.split('\n') if line.strip()]
                 
-                print(f"   Parsing {len(elements)} elements...")
+                print(f"   Processing {len(lines)} lines of text...")
                 
-                for elem in elements:
-                    text = elem.get_text().strip()
-                    if not text or len(text) > 500:  # Skip empty or very long
-                        continue
+                i = 0
+                while i < len(lines):
+                    line = lines[i]
                     
-                    # Check for direction headers - be more flexible
-                    if re.match(r'^(across|down)[\s:]*$', text, re.IGNORECASE):
-                        current_direction = text.lower().replace(':', '').strip()
+                    # Check for direction marker
+                    if re.match(r'^(ACROSS|DOWN)$', line, re.IGNORECASE):
+                        current_direction = line.lower()
                         print(f"   Found direction: {current_direction}")
+                        i += 1
                         continue
                     
-                    # Try multiple clue patterns
-                    # Pattern 1: "1 ANSWER (7) Clue text"
-                    clue_match = re.match(r'^(\d+[a-z]?)[.\s]+([A-Z][A-Z\s\-\']+?)\s*\(([0-9,\-]+)\)', text)
-                    
-                    # Pattern 2: "1. ANSWER (7)"
-                    if not clue_match:
-                        clue_match = re.match(r'^(\d+[a-z]?)[.\s]+([A-Z][A-Z\s\-\']+?)\s*\(([0-9,\-]+)\)', text)
-                    
-                    # Pattern 3: Just "1 ANSWER"
-                    if not clue_match:
-                        clue_match = re.match(r'^(\d+[a-z]?)[.\s]+([A-Z][A-Z\s\-\']{2,})', text)
-                    
-                    if clue_match and current_direction:
-                        # Save previous clue
-                        if current_clue_id and hint_buffer:
-                            hints_map[current_clue_id] = hint_buffer
-                            hint_buffer = []
+                    # Check if this is a clue number
+                    if current_direction and re.match(r'^\d+[a-z]?$', line):
+                        clue_num = line
                         
-                        clue_num = clue_match.group(1).strip()
-                        current_clue_id = f"{clue_num}-{current_direction}"
-                        print(f"   Found clue: {current_clue_id}")
+                        # Next line should be the answer
+                        if i + 1 < len(lines):
+                            answer_line = lines[i + 1]
+                            
+                            # Check if it looks like an answer (uppercase words)
+                            if re.match(r'^[A-Z][A-Z\s\-\']+$', answer_line):
+                                clue_id = f"{clue_num}-{current_direction}"
+                                print(f"   Found clue: {clue_id} - {answer_line}")
+                                
+                                # Collect all explanation text until next clue
+                                hint_buffer = []
+                                j = i + 2  # Start after answer
+                                
+                                while j < len(lines):
+                                    next_line = lines[j]
+                                    
+                                    # Stop if we hit another clue number or direction
+                                    if re.match(r'^\d+[a-z]?$', next_line):
+                                        break
+                                    if re.match(r'^(ACROSS|DOWN)$', next_line, re.IGNORECASE):
+                                        break
+                                    
+                                    # Skip meta text
+                                    skip_phrases = ['posted', 'comment', 'tagged', 'bookmark', 
+                                                   'permalink', 'navigation', 'leave a reply',
+                                                   'you must be logged', 'fill in your details',
+                                                   'the puzzle may be found']
+                                    
+                                    if not any(skip in next_line.lower() for skip in skip_phrases):
+                                        if len(next_line) > 10:
+                                            hint_buffer.append(next_line)
+                                    
+                                    j += 1
+                                
+                                if hint_buffer:
+                                    hints_map[clue_id] = hint_buffer
+                                    print(f"      -> {len(hint_buffer)} hint lines")
+                                
+                                i = j - 1  # Continue from where we stopped
                     
-                    elif current_clue_id and len(text) > 15:
-                        # This is explanation text
-                        # Skip common meta text
-                        skip_phrases = ['posted', 'comment', 'this entry was', 'tagged', 
-                                       'bookmark', 'permalink', 'navigation', 'leave a reply',
-                                       'you must be logged', 'fill in your details']
-                        
-                        if not any(skip in text.lower() for skip in skip_phrases):
-                            hint_buffer.append(text)
-                
-                # Save last clue
-                if current_clue_id and hint_buffer:
-                    hints_map[current_clue_id] = hint_buffer
+                    i += 1
                 
                 print(f"✓ Extracted hints for {len(hints_map)} clues")
-                
-                # Debug output if no hints found
-                if len(hints_map) == 0:
-                    print("\n⚠️  DEBUG: No hints extracted. First 15 elements:")
-                    for i, elem in enumerate(elements[:15]):
-                        text = elem.get_text().strip()
-                        if text:
-                            print(f"     {i}. <{elem.name}> {text[:120]}")
-                    
-                    print("\n⚠️  DEBUG: Looking for 'across' or 'down':")
-                    for i, elem in enumerate(elements):
-                        text = elem.get_text().strip().lower()
-                        if 'across' in text or 'down' in text:
-                            print(f"     Element {i}: {elem.get_text().strip()[:100]}")
-                    
-                    print("\n⚠️  DEBUG: Looking for patterns like '1 WORD':")
-                    for i, elem in enumerate(elements):
-                        text = elem.get_text().strip()
-                        if re.match(r'^\d+[a-z]?\s+[A-Z]', text):
-                            print(f"     Element {i}: {text[:100]}")
-                
                 return hints_map
                 
             except requests.exceptions.Timeout:
@@ -249,6 +237,8 @@ class FifteensquaredScraper:
                     time.sleep(3)
             except Exception as e:
                 print(f"Error fetching hints: {e}")
+                import traceback
+                traceback.print_exc()
                 if attempt < 2:
                     time.sleep(3)
         
