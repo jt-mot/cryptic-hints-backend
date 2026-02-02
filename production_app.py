@@ -410,6 +410,13 @@ def admin_logout():
 # ADMIN ROUTES (Hint Review & Publishing)
 # ============================================================================
 
+@app.route('/admin/puzzles')
+@login_required
+def admin_puzzles():
+    """Admin puzzle management page"""
+    return send_from_directory('static', 'admin-puzzles.html')
+
+
 @app.route('/admin/review')
 @login_required
 def admin_review():
@@ -439,6 +446,51 @@ def admin_init_db():
             'success': False,
             'error': str(e)
         }), 500
+
+
+@app.route('/admin/api/puzzles/all')
+@login_required
+def get_all_puzzles_admin():
+    """Get all puzzles (any status) for admin"""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    cursor.execute('''
+        SELECT p.*, 
+               COUNT(DISTINCT c.id) as total_clues
+        FROM puzzles p
+        LEFT JOIN clues c ON c.puzzle_id = p.id
+        GROUP BY p.id
+        ORDER BY p.date DESC, p.id DESC
+    ''')
+    puzzles = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    
+    return jsonify({
+        'puzzles': [dict(p) for p in puzzles]
+    })
+
+
+@app.route('/admin/api/puzzle/<int:puzzle_id>', methods=['DELETE'])
+@login_required
+def delete_puzzle(puzzle_id):
+    """Delete a puzzle and all its clues"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Delete clues first (cascade should handle this but be explicit)
+    cursor.execute('DELETE FROM clues WHERE puzzle_id = %s', (puzzle_id,))
+    
+    # Delete puzzle
+    cursor.execute('DELETE FROM puzzles WHERE id = %s', (puzzle_id,))
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    return jsonify({'success': True, 'message': 'Puzzle deleted'})
 
 
 @app.route('/admin/api/puzzles/pending')
