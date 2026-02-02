@@ -564,9 +564,10 @@ def import_puzzle():
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     # Create puzzle
-    cursor = cursor.execute('''
+    cursor.execute('''
         INSERT INTO puzzles (publication, puzzle_number, setter, date, status)
         VALUES (%s, %s, %s, %s, 'draft')
+        RETURNING id
     ''', (
         data['publication'],
         data['puzzle_number'],
@@ -574,7 +575,7 @@ def import_puzzle():
         data['date']
     ))
     
-    puzzle_id = cursor.lastrowid
+    puzzle_id = cursor.fetchone()['id']
     
     # Add clues with hints
     for clue_data in data['clues']:
