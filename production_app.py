@@ -716,9 +716,12 @@ def import_puzzle():
         'message': f'Imported puzzle {data["puzzle_number"]} with {len(data["clues"])} clues'
     })
 
+# REPLACE THE MULTI-PUZZLE SYSTEM SECTION IN production_app.py WITH THIS:
+
 # ===== MULTI-PUZZLE SYSTEM =====
 from puzzle_manager import PuzzleManager
 import os
+import json
 
 # Initialize puzzle manager
 puzzle_manager = PuzzleManager(data_dir='puzzle_data')
@@ -729,26 +732,60 @@ def admin_import():
 
 @app.route('/api/puzzles/current')
 def get_current_puzzle():
-    current = puzzle_manager.get_active_puzzle()
-    return jsonify(current)
+    try:
+        current = puzzle_manager.get_active_puzzle()
+        if current:
+            return jsonify(current)
+        return jsonify({"error": "No active puzzle"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/puzzles/archive')
 def get_archive():
-    archived = puzzle_manager.get_archived_puzzles()
-    return jsonify(archived)
+    try:
+        archived = puzzle_manager.get_archived_puzzles()
+        return jsonify(archived)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/puzzle/<number>')
 def view_puzzle(number):
-    active = puzzle_manager.get_active_puzzle()
-    if active and active['number'] == number:
-        return send_from_directory('static', 'index.html')
-    
-    archive_file = f'puzzle_data/archive/puzzle_{number}.json'
-    if os.path.exists(archive_file):
-        return send_from_directory('static', 'index.html')
-    
-    return "Puzzle not found", 404
+    try:
+        # Try to get active puzzle
+        active = puzzle_manager.get_active_puzzle()
+        if active and str(active.get('number')) == str(number):
+            return send_from_directory('static', 'index.html')
+        
+        # Check archive
+        archive_file = f'puzzle_data/archive/puzzle_{number}.json'
+        if os.path.exists(archive_file):
+            return send_from_directory('static', 'index.html')
+        
+        return f"Puzzle #{number} not found", 404
+    except Exception as e:
+        return f"Error loading puzzle: {str(e)}", 500
+
+@app.route('/api/puzzle/<number>/data')
+def get_puzzle_data(number):
+    """Get puzzle data for a specific puzzle number"""
+    try:
+        # Check active puzzle
+        active = puzzle_manager.get_active_puzzle()
+        if active and str(active.get('number')) == str(number):
+            return jsonify(active)
+        
+        # Check archive
+        archive_file = f'puzzle_data/archive/puzzle_{number}.json'
+        if os.path.exists(archive_file):
+            with open(archive_file, 'r') as f:
+                puzzle = json.load(f)
+            return jsonify(puzzle)
+        
+        return jsonify({"error": f"Puzzle #{number} not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 # ===== END MULTI-PUZZLE SYSTEM =====
+
 
 if __name__ == '__main__':
     # Initialize database on first run
