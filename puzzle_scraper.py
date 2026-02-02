@@ -223,10 +223,23 @@ class FifteensquaredScraper:
                 
                 # Debug output if no hints found
                 if len(hints_map) == 0:
-                    print("\n⚠️  DEBUG: No hints extracted. Checking first 10 elements:")
-                    for i, elem in enumerate(elements[:10]):
-                        text = elem.get_text().strip()[:100]
-                        print(f"     {i}. <{elem.name}> {text}")
+                    print("\n⚠️  DEBUG: No hints extracted. First 15 elements:")
+                    for i, elem in enumerate(elements[:15]):
+                        text = elem.get_text().strip()
+                        if text:
+                            print(f"     {i}. <{elem.name}> {text[:120]}")
+                    
+                    print("\n⚠️  DEBUG: Looking for 'across' or 'down':")
+                    for i, elem in enumerate(elements):
+                        text = elem.get_text().strip().lower()
+                        if 'across' in text or 'down' in text:
+                            print(f"     Element {i}: {elem.get_text().strip()[:100]}")
+                    
+                    print("\n⚠️  DEBUG: Looking for patterns like '1 WORD':")
+                    for i, elem in enumerate(elements):
+                        text = elem.get_text().strip()
+                        if re.match(r'^\d+[a-z]?\s+[A-Z]', text):
+                            print(f"     Element {i}: {text[:100]}")
                 
                 return hints_map
                 
