@@ -424,11 +424,102 @@ def admin_review():
     return send_from_directory('static', 'admin-review.html')
 
 
+@app.route('/admin/api/scrape-and-import', methods=['POST'])
+@login_required
+def scrape_and_import():
+    """Scrape puzzle from Guardian and fifteensquared, then import"""
+    data = request.json
+    puzzle_number = data.get('puzzle_number')
+    
+    if not puzzle_number:
+        return jsonify({'success': False, 'message': 'Puzzle number required'})
+    
+    try:
+        # Import the scraper
+        from puzzle_scraper import PuzzleScraper
+        
+        # Scrape the puzzle
+        scraper = PuzzleScraper()
+        puzzle_data = scraper.scrape_puzzle(puzzle_number)
+        
+        if 'error' in puzzle_data:
+            return jsonify({
+                'success': False, 
+                'message': puzzle_data['error'],
+                'details': 'Could not fetch puzzle from Guardian or fifteensquared'
+            })
+        
+        # Import into database
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Insert puzzle
+        cursor.execute('''
+            INSERT INTO puzzles (publication, puzzle_number, setter, date, status)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id
+        ''', (
+            puzzle_data['publication'],
+            puzzle_data['puzzle_number'],
+            puzzle_data['setter'],
+            puzzle_data['date'],
+            'draft'
+        ))
+        
+        puzzle_id = cursor.fetchone()[0]
+        
+        # Insert clues with hints
+        for clue_data in puzzle_data['clues']:
+            cursor.execute('''
+                INSERT INTO clues (
+                    puzzle_id, clue_number, direction, clue_text, 
+                    answer, enumeration,
+                    hint_1, hint_2, hint_3, hint_4,
+                    hint_1_approved, hint_2_approved, hint_3_approved, hint_4_approved
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ''', (
+                puzzle_id,
+                clue_data['clue_number'],
+                clue_data['direction'],
+                clue_data['clue_text'],
+                clue_data['answer'],
+                clue_data['enumeration'],
+                clue_data['hints'][0],
+                clue_data['hints'][1],
+                clue_data['hints'][2],
+                clue_data['hints'][3],
+                False, False, False, False  # Hints need review
+            ))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'puzzle_id': puzzle_id,
+            'puzzle_number': puzzle_data['puzzle_number'],
+            'setter': puzzle_data['setter'],
+            'clue_count': len(puzzle_data['clues']),
+            'message': f"Successfully imported puzzle {puzzle_number}"
+        })
+        
+    except Exception as e:
+        print(f"Error in scrape_and_import: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False, 
+            'message': str(e),
+            'details': 'Error during import process'
+        })
+
+
 @app.route('/admin/quick-import')
 @login_required  
 def admin_quick_import():
-    """Quick import page for puzzle JSON"""
-    return send_from_directory('static', 'quick-import.html')
+    """Auto-import page for Guardian puzzles"""
+    return send_from_directory('static', 'admin-import-auto.html')
 
 
 @app.route('/admin/init-db')
