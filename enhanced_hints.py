@@ -48,13 +48,14 @@ class EnhancedHintGenerator:
     def __init__(self):
         self.style_detector = AuthorStyleDetector()
     
-    def generate_hints(self, hint_paragraphs: List[str], author: str = 'generic') -> List[str]:
+    def generate_hints(self, hint_paragraphs: List[str], author: str = 'generic', definitions: List[str] = None) -> List[str]:
         """
         Generate 4-level progressive hints based on author style
         
         Args:
             hint_paragraphs: Raw text paragraphs from analysis
             author: Author name (petero, verlaine, etc.)
+            definitions: Extracted HTML definitions (underlined/italicized text)
             
         Returns:
             List of 4 hints
@@ -62,15 +63,18 @@ class EnhancedHintGenerator:
         if not hint_paragraphs:
             return ['', '', '', '']
         
+        if definitions is None:
+            definitions = []
+        
         # Choose parsing strategy based on author
         if author == 'petero':
-            return self._generate_petero_style(hint_paragraphs)
+            return self._generate_petero_style(hint_paragraphs, definitions)
         elif author == 'verlaine':
-            return self._generate_verlaine_style(hint_paragraphs)
+            return self._generate_verlaine_style(hint_paragraphs, definitions)
         else:
-            return self._generate_generic_style(hint_paragraphs)
+            return self._generate_generic_style(hint_paragraphs, definitions)
     
-    def _generate_petero_style(self, paragraphs: List[str]) -> List[str]:
+    def _generate_petero_style(self, paragraphs: List[str], definitions: List[str]) -> List[str]:
         """
         PeterO style:
         - Often starts with clue text in parentheses
@@ -84,28 +88,31 @@ class EnhancedHintGenerator:
         hints = ['', '', '', '']
         full_text = ' '.join(paragraphs)
         
-        # Level 1: Extract definition
-        # Look for definition indicator or take first meaningful phrase
-        def_patterns = [
-            r'definition[:\s]+([^.]+)',
-            r'def[:\s]+([^.]+)',
-            r"'([^']+)'\s+(?:is|means|=)",
-        ]
-        
-        for pattern in def_patterns:
-            match = re.search(pattern, full_text, re.IGNORECASE)
-            if match:
-                hints[0] = f"Look for the definition: {match.group(1).strip()}"
-                break
-        
-        if not hints[0]:
-            # Fall back to extracting quoted words from first paragraph
-            if paragraphs:
-                quoted = re.findall(r"'([^']+)'", paragraphs[0])
-                if quoted:
-                    hints[0] = f"The definition might be: {quoted[0]}"
-                else:
-                    hints[0] = "Read the clue carefully to find the definition."
+        # Level 1: Use extracted HTML definitions (underlined/italicized)
+        if definitions:
+            # PeterO underlines definitions - use the first one found
+            hints[0] = f"Definition: {definitions[0]}"
+        else:
+            # Fallback to text-based extraction
+            def_patterns = [
+                r'definition[:\s]+([^.]+)',
+                r'def[:\s]+([^.]+)',
+                r"'([^']+)'\s+(?:is|means|=)",
+            ]
+            
+            for pattern in def_patterns:
+                match = re.search(pattern, full_text, re.IGNORECASE):
+                    hints[0] = f"Look for the definition: {match.group(1).strip()}"
+                    break
+            
+            if not hints[0]:
+                # Last resort: look for quoted words
+                if paragraphs:
+                    quoted = re.findall(r"'([^']+)'", paragraphs[0])
+                    if quoted:
+                        hints[0] = f"The definition might be: {quoted[0]}"
+                    else:
+                        hints[0] = "Look for the definition in the clue."
         
         # Level 2: Wordplay type
         wordplay_indicators = {
@@ -156,7 +163,7 @@ class EnhancedHintGenerator:
         
         return hints
     
-    def _generate_verlaine_style(self, paragraphs: List[str]) -> List[str]:
+    def _generate_verlaine_style(self, paragraphs: List[str], definitions: List[str]) -> List[str]:
         """
         Verlaine style:
         - Often more conversational
@@ -174,7 +181,7 @@ class EnhancedHintGenerator:
         
         return hints
     
-    def _generate_generic_style(self, paragraphs: List[str]) -> List[str]:
+    def _generate_generic_style(self, paragraphs: List[str], definitions: List[str]) -> List[str]:
         """
         Generic fallback for unknown authors
         Uses conservative extraction
