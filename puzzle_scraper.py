@@ -109,13 +109,16 @@ class FifteensquaredScraper:
         for attempt in range(3):
             try:
                 print(f"Searching fifteensquared... (attempt {attempt + 1}/3)")
+                print(f"   URL: {search_url}")
                 response = self.session.get(search_url, timeout=30)
+                print(f"   Got response: {response.status_code}")
                 response.raise_for_status()
                 
                 soup = BeautifulSoup(response.content, 'html.parser')
                 
                 # Method 1: Look in articles
                 articles = soup.find_all('article')
+                print(f"   Found {len(articles)} articles in search results")
                 for article in articles:
                     title_elem = article.find(['h2', 'h1'])
                     if title_elem:
