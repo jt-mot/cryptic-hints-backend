@@ -716,6 +716,39 @@ def import_puzzle():
         'message': f'Imported puzzle {data["puzzle_number"]} with {len(data["clues"])} clues'
     })
 
+# ===== MULTI-PUZZLE SYSTEM =====
+from puzzle_manager import PuzzleManager
+import os
+
+# Initialize puzzle manager
+puzzle_manager = PuzzleManager(data_dir='puzzle_data')
+
+@app.route('/admin/import')
+def admin_import():
+    return send_from_directory('static', 'admin_import_panel.html')
+
+@app.route('/api/puzzles/current')
+def get_current_puzzle():
+    current = puzzle_manager.get_active_puzzle()
+    return jsonify(current)
+
+@app.route('/api/puzzles/archive')
+def get_archive():
+    archived = puzzle_manager.get_archived_puzzles()
+    return jsonify(archived)
+
+@app.route('/puzzle/<number>')
+def view_puzzle(number):
+    active = puzzle_manager.get_active_puzzle()
+    if active and active['number'] == number:
+        return send_from_directory('static', 'index.html')
+    
+    archive_file = f'puzzle_data/archive/puzzle_{number}.json'
+    if os.path.exists(archive_file):
+        return send_from_directory('static', 'index.html')
+    
+    return "Puzzle not found", 404
+# ===== END MULTI-PUZZLE SYSTEM =====
 
 if __name__ == '__main__':
     # Initialize database on first run
