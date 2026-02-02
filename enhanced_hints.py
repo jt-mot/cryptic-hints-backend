@@ -101,7 +101,8 @@ class EnhancedHintGenerator:
             ]
             
             for pattern in def_patterns:
-                match = re.search(pattern, full_text, re.IGNORECASE):
+                match = re.search(pattern, full_text, re.IGNORECASE)
+                if match:
                     hints[0] = f"Look for the definition: {match.group(1).strip()}"
                     break
             
