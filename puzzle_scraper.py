@@ -230,13 +230,17 @@ class FifteensquaredScraper:
                                             
                                             # Try to find corresponding paragraph with HTML
                                             for para in all_paragraphs:
-                                                if next_line[:50] in para.get_text():
+                                                para_text = para.get_text()
+                                                if next_line[:50] in para_text:
                                                     # Extract underlined/italicized definitions
                                                     defs = para.find_all(['em', 'u', 'i'])
+                                                    print(f"      DEBUG: Found {len(defs)} em/u/i tags in paragraph")
                                                     for d in defs:
                                                         def_text = d.get_text().strip()
+                                                        print(f"      DEBUG: Extracted definition candidate: '{def_text}'")
                                                         if len(def_text) > 3 and def_text not in html_definitions:
                                                             html_definitions.append(def_text)
+                                                    break
                                     
                                     j += 1
                                 
@@ -331,7 +335,9 @@ class PuzzleScraper:
                 
                 # Debug: Check first clue
                 if clue['clue_number'] == '1' and clue['direction'] == 'across':
-                    print(f"\n   DEBUG - First clue hints:")
+                    print(f"\n   DEBUG - First clue:")
+                    print(f"   Definitions found: {definitions}")
+                    print(f"   Generated hints:")
                     for i, h in enumerate(clue['hints'], 1):
                         print(f"   Hint {i}: {h[:100] if h else '[EMPTY]'}")
             else:
