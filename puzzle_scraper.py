@@ -235,15 +235,22 @@ class FifteensquaredScraper:
                                 # NOW extract definitions from all paragraphs that contain our hint text
                                 if hint_buffer:
                                     hint_text_combined = ' '.join(hint_buffer)
+                                    matches_found = 0
                                     for para in all_paragraphs:
                                         para_text = para.get_text()
                                         # If any of our hint text appears in this paragraph
                                         if any(hint_line[:30] in para_text for hint_line in hint_buffer):
+                                            matches_found += 1
                                             # Extract ALL em/u/i tags from this paragraph
-                                            for tag in para.find_all(['em', 'u', 'i']):
+                                            tags = para.find_all(['em', 'u', 'i'])
+                                            if matches_found == 1 and tags:  # Debug first match only
+                                                print(f"      DEBUG: Matched paragraph has {len(tags)} em/u/i tags")
+                                            for tag in tags:
                                                 def_text = tag.get_text().strip()
                                                 if len(def_text) > 3 and def_text not in html_definitions:
                                                     html_definitions.append(def_text)
+                                                    if len(html_definitions) == 1:  # Debug first definition
+                                                        print(f"      DEBUG: First definition extracted: '{def_text}'")
                                 
                                 if hint_buffer:
                                     # Store both text and extracted definitions
@@ -302,11 +309,18 @@ class PuzzleScraper:
         hints_map = {}
         if post_url:
             self.current_url = post_url
+            
+            # Fetch the full page content for author detection
+            try:
+                response = self.fifteensquared.session.get(post_url, timeout=30)
+                page_content = response.text
+            except:
+                page_content = ''
+            
             hints_map = self.fifteensquared.fetch_hints(post_url)
             
-            # Detect author style
-            sample_text = ' '.join([' '.join(v) for v in list(hints_map.values())[:3]]) if hints_map else ''
-            self.detected_author = self.style_detector.detect_author(post_url, sample_text)
+            # Detect author style using full page content
+            self.detected_author = self.style_detector.detect_author(post_url, page_content)
             print(f"   Detected author style: {self.detected_author}")
         else:
             print("⚠️  No hints available - will import with blank hints")
