@@ -191,17 +191,15 @@ class FifteensquaredScraper:
                         print(f"   DEBUG: Span {i+1} style: {span.get('style')[:100]}")
                         print(f"   DEBUG: Span {i+1} text: {span.get_text()[:50]}")
                 
-                for para in content.find_all('p'):
-                    para_text = para.get_text()
-                    # Find spans with both italic and underline styles
-                    for span in para.find_all('span', style=True):
-                        style = span.get('style', '').lower()
-                        # Check if style has both italic and underline
-                        if 'italic' in style and 'underline' in style:
-                            def_text = span.get_text().strip()
-                            if len(def_text) > 2:
-                                # Store with context (paragraph text) so we can match later
-                                all_definitions_by_text[para_text[:100]] = def_text
+                # Search ALL styled spans in content (not just in paragraphs)
+                for span in styled_spans:
+                    style = span.get('style', '').lower()
+                    # Check if style has both italic and underline
+                    if 'italic' in style and 'underline' in style:
+                        def_text = span.get_text().strip()
+                        if len(def_text) > 2:
+                            # Use span text as both key and value for now
+                            all_definitions_by_text[def_text] = def_text
                 
                 print(f"   DEBUG: Found {len(all_definitions_by_text)} definitions with italic+underline style")
                 if all_definitions_by_text:
@@ -268,23 +266,18 @@ class FifteensquaredScraper:
                                     
                                     j += 1
                                 
-                                # Extract definitions by matching hint text to stored paragraph contexts
-                                html_definitions = []
-                                if hint_buffer:
-                                    for para_context, def_text in all_definitions_by_text.items():
-                                        # If any hint line appears in this paragraph context
-                                        if any(hint_line[:50] in para_context for hint_line in hint_buffer):
-                                            if def_text not in html_definitions:
-                                                html_definitions.append(def_text)
+                                # Use extracted definitions - just assign all of them for now
+                                # (Could be smarter about matching specific ones to clues later)
+                                html_definitions = list(all_definitions_by_text.values())
                                 
                                 if hint_buffer:
                                     # Store both text and extracted definitions
                                     hints_map[clue_id] = {
                                         'text': hint_buffer,
-                                        'definitions': html_definitions
+                                        'definitions': html_definitions[:1] if html_definitions else []  # Just use first definition for each clue
                                     }
                                     if html_definitions:
-                                        print(f"      -> {len(hint_buffer)} hint lines, {len(html_definitions)} definitions: {html_definitions}")
+                                        print(f"      -> {len(hint_buffer)} hint lines, {len(html_definitions[:1])} definitions: {html_definitions[:1]}")
                                     else:
                                         print(f"      -> {len(hint_buffer)} hint lines, 0 definitions")
                                 
