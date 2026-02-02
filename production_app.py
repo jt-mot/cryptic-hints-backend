@@ -326,6 +326,23 @@ def admin_quick_import():
     return send_from_directory('static', 'quick-import.html')
 
 
+@app.route('/admin/init-db')
+@login_required
+def admin_init_db():
+    """Initialize the database (creates tables)"""
+    try:
+        init_db()
+        return jsonify({
+            'success': True,
+            'message': 'Database initialized successfully!'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @app.route('/admin/api/puzzles/pending')
 @login_required
 def get_pending_puzzles():
