@@ -129,69 +129,20 @@ def index():
 
 @app.route('/api/puzzle/today')
 def get_today_puzzle():
-    """Get today's published puzzle - now loads from puzzle_data"""
-    try:
-        # Load from puzzle_data instead of database
-        active = puzzle_manager.get_active_puzzle()
-        if not active:
-            return jsonify({'error': 'No puzzle available'}), 404
-        
-        # Format the response to match what the frontend expects
-        formatted_clues = []
-        
-        # Add across clues
-        for num, clue_data in active['clues']['across'].items():
-            formatted_clues.append({
-                'id': f'across-{num}',
-                'direction': 'across',
-                'number': int(num),
-                'clue': clue_data['clue'],
-                'enumeration': clue_data['length'],
-                'answer': clue_data.get('answer', ''),
-                'hint_level_1': f"Look for the definition and wordplay indicators",
-                'hint_level_2': f"The answer is {clue_data['length']} letters",
-                'hint_level_3': f"Answer: {clue_data.get('answer', 'Not available')}",
-                'hint_level_4': f"Full explanation coming soon"
-            })
-        
-        # Add down clues
-        for num, clue_data in active['clues']['down'].items():
-            formatted_clues.append({
-                'id': f'down-{num}',
-                'direction': 'down',
-                'number': int(num),
-                'clue': clue_data['clue'],
-                'enumeration': clue_data['length'],
-                'answer': clue_data.get('answer', ''),
-                'hint_level_1': f"Look for the definition and wordplay indicators",
-                'hint_level_2': f"The answer is {clue_data['length']} letters",
-                'hint_level_3': f"Answer: {clue_data.get('answer', 'Not available')}",
-                'hint_level_4': f"Full explanation coming soon"
-            })
-        
-        return jsonify({
-            'id': 1,
-            'publication': 'Guardian',
-            'puzzle_number': active['number'],
-            'setter': active['setter'],
-            'date': active['date'],
-            'clues': formatted_clues
-        })
-        
-    except Exception as e:
-        # Fallback to database if puzzle_data fails
-        db = get_db()
-        
-        puzzle = db.execute('''
-            SELECT * FROM puzzles 
-            WHERE status = 'published'
-            AND date <= DATE('now')
-            ORDER BY date DESC 
-            LIMIT 1
-        ''').fetchone()
-        
-        if not puzzle:
-            return jsonify({'error': 'No puzzle available'}), 404
+    """Get today's published puzzle"""
+    db = get_db()
+    
+    # Get the most recent published puzzle
+    puzzle = db.execute('''
+        SELECT * FROM puzzles 
+        WHERE status = 'published'
+        AND date <= DATE('now')
+        ORDER BY date DESC 
+        LIMIT 1
+    ''').fetchone()
+    
+    if not puzzle:
+        return jsonify({'error': 'No puzzle available'}), 404
     
     # Get all clues for this puzzle
     clues = db.execute('''
@@ -528,7 +479,7 @@ def publish_puzzle(puzzle_id):
     return jsonify({'success': True, 'message': 'Puzzle published successfully!'})
 
 
-@app.route('/admin/api/puzzle/<int:puzzle_id>/unpublish', methods=['POST'])
+@app.route('/admin/api/puzzle/<int:puzzle_id>/unpublish', methods='POST'])
 @login_required
 def unpublish_puzzle(puzzle_id):
     """Unpublish a puzzle (take it offline)"""
@@ -605,130 +556,6 @@ def import_puzzle():
         'puzzle_id': puzzle_id,
         'message': f'Imported puzzle {data["puzzle_number"]} with {len(data["clues"])} clues'
     })
-
-
-# ===== MULTI-PUZZLE SYSTEM =====
-from puzzle_manager import PuzzleManager
-
-# Initialize puzzle manager
-puzzle_manager = PuzzleManager(data_dir='puzzle_data')
-
-@app.route('/admin/import')
-def admin_import():
-    # Check if file is in static folder
-    if os.path.exists('static/admin_import_panel.html'):
-        return send_from_directory('static', 'admin_import_panel.html')
-    # Otherwise check root
-    elif os.path.exists('admin_import_panel.html'):
-        return send_from_directory('.', 'admin_import_panel.html')
-    else:
-        return "Admin import panel not found. Please upload admin_import_panel.html to the static folder.", 404
-
-@app.route('/api/puzzles/current')
-def get_current_puzzle():
-    try:
-        current = puzzle_manager.get_active_puzzle()
-        if current:
-            return jsonify(current)
-        return jsonify({"error": "No active puzzle"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/puzzles/archive')
-def get_archive():
-    try:
-        archived = puzzle_manager.get_archived_puzzles()
-        return jsonify(archived)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/puzzle/<number>')
-def view_puzzle(number):
-    try:
-        # Try to get active puzzle
-        active = puzzle_manager.get_active_puzzle()
-        if active and str(active.get('number')) == str(number):
-            return send_from_directory('static', 'index.html')
-        
-        # Check archive
-        archive_file = f'puzzle_data/archive/puzzle_{number}.json'
-        if os.path.exists(archive_file):
-            return send_from_directory('static', 'index.html')
-        
-        return f"Puzzle #{number} not found", 404
-    except Exception as e:
-        return f"Error loading puzzle: {str(e)}", 500
-
-@app.route('/api/puzzle/<number>/data')
-def get_puzzle_data(number):
-    """Get puzzle data for a specific puzzle number"""
-    try:
-        # Check active puzzle
-        active = puzzle_manager.get_active_puzzle()
-        if active and str(active.get('number')) == str(number):
-            return jsonify(active)
-        
-        # Check archive
-        archive_file = f'puzzle_data/archive/puzzle_{number}.json'
-        if os.path.exists(archive_file):
-            with open(archive_file, 'r') as f:
-                puzzle = json.load(f)
-            return jsonify(puzzle)
-        
-        return jsonify({"error": f"Puzzle #{number} not found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/debug/files')
-def debug_files():
-    """Debug route to see what files exist"""
-    output = ["<h1>File System Debug</h1>"]
-    
-    # Check if puzzle_data exists
-    output.append(f"<h2>Current directory: {os.getcwd()}</h2>")
-    output.append("<h3>Files in current directory:</h3><ul>")
-    for item in os.listdir('.'):
-        output.append(f"<li>{item}</li>")
-    output.append("</ul>")
-    
-    # Check puzzle_data folder
-    if os.path.exists('puzzle_data'):
-        output.append("<h3>✅ puzzle_data folder EXISTS</h3>")
-        output.append("<ul>")
-        for item in os.listdir('puzzle_data'):
-            output.append(f"<li>{item}</li>")
-        output.append("</ul>")
-        
-        # Check active_puzzle.json
-        if os.path.exists('puzzle_data/active_puzzle.json'):
-            output.append("<h3>✅ active_puzzle.json EXISTS</h3>")
-            with open('puzzle_data/active_puzzle.json') as f:
-                data = json.load(f)
-                output.append(f"<p>Puzzle number: {data.get('number')}</p>")
-        else:
-            output.append("<h3>❌ active_puzzle.json NOT FOUND</h3>")
-            
-        # Check archive folder
-        if os.path.exists('puzzle_data/archive'):
-            output.append("<h3>✅ archive folder EXISTS</h3>")
-            output.append("<ul>")
-            for item in os.listdir('puzzle_data/archive'):
-                output.append(f"<li>{item}</li>")
-            output.append("</ul>")
-        else:
-            output.append("<h3>❌ archive folder NOT FOUND</h3>")
-    else:
-        output.append("<h3>❌ puzzle_data folder NOT FOUND</h3>")
-    
-    return "\n".join(output)
-# ===== END MULTI-PUZZLE SYSTEM =====
-
-
-# Initialize database when running with gunicorn (production)
-if not os.path.exists(DATABASE):
-    print("Initializing database for production deployment...")
-    init_db()
-    print("✓ Database initialized successfully!")
 
 
 if __name__ == '__main__':
