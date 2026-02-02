@@ -528,7 +528,7 @@ def publish_puzzle(puzzle_id):
         UPDATE puzzles 
         SET status = 'published',
             published_at = CURRENT_TIMESTAMP
-        WHERE id = ?
+        WHERE id = %s
     ''', (puzzle_id,))
     
     conn.commit()
@@ -548,7 +548,7 @@ def unpublish_puzzle(puzzle_id):
     cursor.execute('''
         UPDATE puzzles 
         SET status = 'draft'
-        WHERE id = ?
+        WHERE id = %s
     ''', (puzzle_id,))
     
     conn.commit()
