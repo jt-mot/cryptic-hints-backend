@@ -171,9 +171,12 @@ class FifteensquaredScraper:
                 hints_map = {}
                 current_direction = None
                 
-                # Strategy: Get text content and split by lines
+                # Strategy: Get text content and split by lines, but also keep HTML for parsing
                 full_text = content.get_text()
                 lines = [line.strip() for line in full_text.split('\n') if line.strip()]
+                
+                # Also get all paragraphs to extract HTML-based definitions
+                all_paragraphs = content.find_all('p')
                 
                 print(f"   Processing {len(lines)} lines of text...")
                 
@@ -201,8 +204,9 @@ class FifteensquaredScraper:
                                 clue_id = f"{clue_num}-{current_direction}"
                                 print(f"   Found clue: {clue_id} - {answer_line}")
                                 
-                                # Collect all explanation text until next clue
+                                # Collect explanation text AND extract HTML definitions
                                 hint_buffer = []
+                                html_definitions = []
                                 j = i + 2  # Start after answer
                                 
                                 while j < len(lines):
@@ -223,12 +227,26 @@ class FifteensquaredScraper:
                                     if not any(skip in next_line.lower() for skip in skip_phrases):
                                         if len(next_line) > 10:
                                             hint_buffer.append(next_line)
+                                            
+                                            # Try to find corresponding paragraph with HTML
+                                            for para in all_paragraphs:
+                                                if next_line[:50] in para.get_text():
+                                                    # Extract underlined/italicized definitions
+                                                    defs = para.find_all(['em', 'u', 'i'])
+                                                    for d in defs:
+                                                        def_text = d.get_text().strip()
+                                                        if len(def_text) > 3 and def_text not in html_definitions:
+                                                            html_definitions.append(def_text)
                                     
                                     j += 1
                                 
                                 if hint_buffer:
-                                    hints_map[clue_id] = hint_buffer
-                                    print(f"      -> {len(hint_buffer)} hint lines")
+                                    # Store both text and extracted definitions
+                                    hints_map[clue_id] = {
+                                        'text': hint_buffer,
+                                        'definitions': html_definitions
+                                    }
+                                    print(f"      -> {len(hint_buffer)} hint lines, {len(html_definitions)} definitions")
                                 
                                 i = j - 1  # Continue from where we stopped
                     
@@ -294,9 +312,22 @@ class PuzzleScraper:
             clue_id = f"{clue['clue_number']}-{clue['direction']}"
             
             if clue_id in hints_map:
-                hint_paragraphs = hints_map[clue_id]
-                # Generate hints using detected author style
-                clue['hints'] = self.hint_generator.generate_hints(hint_paragraphs, self.detected_author)
+                hint_data = hints_map[clue_id]
+                
+                # Handle both old format (list) and new format (dict)
+                if isinstance(hint_data, dict):
+                    hint_paragraphs = hint_data['text']
+                    definitions = hint_data.get('definitions', [])
+                else:
+                    hint_paragraphs = hint_data
+                    definitions = []
+                
+                # Generate hints using detected author style, passing definitions
+                clue['hints'] = self.hint_generator.generate_hints(
+                    hint_paragraphs, 
+                    self.detected_author,
+                    definitions=definitions
+                )
                 
                 # Debug: Check first clue
                 if clue['clue_number'] == '1' and clue['direction'] == 'across':
