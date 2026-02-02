@@ -32,9 +32,13 @@
         .header-content {
             max-width: 1400px;
             margin: 0 auto;
+        }
+        
+        .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 1rem;
         }
         
         .header h1 {
@@ -43,11 +47,35 @@
             color: #1e293b;
         }
         
+        .puzzle-selector {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            padding: 1rem;
+            background: #f1f5f9;
+            border-radius: 0.5rem;
+        }
+        
+        .puzzle-selector label {
+            font-weight: 600;
+            color: #475569;
+        }
+        
+        .puzzle-selector select {
+            padding: 0.5rem 1rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            font-size: 1rem;
+            min-width: 300px;
+            background: white;
+        }
+        
         .puzzle-info {
             display: flex;
             gap: 2rem;
             align-items: center;
             font-size: 0.875rem;
+            color: #64748b;
         }
         
         .status-badge {
@@ -59,12 +87,12 @@
             letter-spacing: 0.05em;
         }
         
-        .status-badge.review {
+        .status-badge.draft {
             background: #fef3c7;
             color: #92400e;
         }
         
-        .status-badge.approved {
+        .status-badge.published {
             background: #d1fae5;
             color: #065f46;
         }
@@ -84,13 +112,27 @@
             transition: all 0.2s;
         }
         
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
         .btn-primary {
             background: #2563eb;
             color: white;
         }
         
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background: #1d4ed8;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-success:hover:not(:disabled) {
+            background: #059669;
         }
         
         .btn-secondary {
@@ -99,17 +141,8 @@
             border: 1px solid #cbd5e1;
         }
         
-        .btn-secondary:hover {
+        .btn-secondary:hover:not(:disabled) {
             background: #f8fafc;
-        }
-        
-        .btn-danger {
-            background: #dc2626;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background: #b91c1c;
         }
         
         .container {
@@ -118,185 +151,160 @@
             padding: 2rem;
         }
         
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 0.5rem;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .stat-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
+        .loading {
+            text-align: center;
+            padding: 4rem;
             color: #64748b;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.5rem;
         }
         
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1e293b;
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2563eb;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
         }
         
         .clue-card {
             background: white;
-            border: 1px solid #e2e8f0;
             border-radius: 0.5rem;
+            padding: 1.5rem;
             margin-bottom: 1.5rem;
-            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .clue-card.approved {
+            border-color: #10b981;
+            background: #f0fdf4;
         }
         
         .clue-header {
-            background: #f8fafc;
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: start;
-        }
-        
-        .clue-info {
-            flex: 1;
+            margin-bottom: 1rem;
         }
         
         .clue-number {
             font-weight: 700;
-            font-size: 0.875rem;
             color: #2563eb;
-            margin-bottom: 0.5rem;
+            font-size: 1.125rem;
+        }
+        
+        .clue-direction {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: #e0e7ff;
+            color: #3730a3;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 0.5rem;
         }
         
         .clue-text {
             font-size: 1.125rem;
-            color: #1e293b;
             margin-bottom: 0.5rem;
+            color: #1e293b;
         }
         
-        .clue-answer {
-            font-family: monospace;
-            font-size: 0.875rem;
+        .clue-meta {
             color: #64748b;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
         }
         
-        .clue-status {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
+        .hints-section {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 1rem;
         }
         
-        .clue-body {
-            padding: 1.5rem;
+        .hints-title {
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 0.75rem;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
         .hint-row {
-            display: grid;
-            grid-template-columns: 100px 1fr auto;
-            gap: 1rem;
-            padding: 1rem;
-            border-radius: 0.375rem;
-            margin-bottom: 0.75rem;
-            border: 1px solid transparent;
-            transition: all 0.2s;
-        }
-        
-        .hint-row:hover {
             background: #f8fafc;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-left: 3px solid #cbd5e1;
         }
         
         .hint-row.flagged {
             background: #fef3c7;
-            border-color: #fbbf24;
+            border-left-color: #f59e0b;
+        }
+        
+        .hint-row.approved {
+            background: #d1fae5;
+            border-left-color: #10b981;
+        }
+        
+        .hint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
         }
         
         .hint-label {
             font-weight: 600;
             font-size: 0.875rem;
             color: #475569;
-            padding-top: 0.5rem;
-        }
-        
-        .hint-content {
-            position: relative;
-        }
-        
-        .hint-text {
-            padding: 0.75rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.375rem;
-            background: white;
-            font-size: 0.9375rem;
-            line-height: 1.6;
-            color: #334155;
-        }
-        
-        .hint-textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #2563eb;
-            border-radius: 0.375rem;
-            font-size: 0.9375rem;
-            line-height: 1.6;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 80px;
-        }
-        
-        .hint-textarea:focus {
-            outline: none;
-            border-color: #1d4ed8;
         }
         
         .hint-actions {
             display: flex;
-            flex-direction: column;
             gap: 0.5rem;
         }
         
         .hint-btn {
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.375rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
             font-size: 0.75rem;
-            font-weight: 600;
             border: none;
             cursor: pointer;
-            white-space: nowrap;
+            font-weight: 600;
             transition: all 0.2s;
         }
         
         .hint-btn-edit {
-            background: #3b82f6;
-            color: white;
-        }
-        
-        .hint-btn-edit:hover {
-            background: #2563eb;
-        }
-        
-        .hint-btn-flag {
-            background: #fbbf24;
-            color: #78350f;
-        }
-        
-        .hint-btn-flag:hover {
-            background: #f59e0b;
+            background: #e0e7ff;
+            color: #3730a3;
         }
         
         .hint-btn-approve {
-            background: #10b981;
-            color: white;
+            background: #d1fae5;
+            color: #065f46;
         }
         
-        .hint-btn-approve:hover {
-            background: #059669;
+        .hint-btn-flag {
+            background: #fed7aa;
+            color: #92400e;
         }
         
         .hint-btn-save {
@@ -305,401 +313,386 @@
         }
         
         .hint-btn-cancel {
-            background: #e2e8f0;
+            background: #cbd5e1;
             color: #475569;
         }
         
-        .flag-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #fbbf24;
-            margin-left: 0.5rem;
+        .hint-content {
+            color: #334155;
+            line-height: 1.6;
         }
         
-        .quality-check {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
+        .hint-textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e1;
             border-radius: 0.375rem;
-            padding: 1rem;
+            font-family: inherit;
+            font-size: 0.875rem;
+            resize: vertical;
+        }
+        
+        .clue-actions {
+            display: flex;
+            gap: 0.75rem;
             margin-top: 1rem;
-            font-size: 0.875rem;
-        }
-        
-        .quality-check h4 {
-            font-weight: 600;
-            color: #1e40af;
-            margin-bottom: 0.5rem;
-            font-size: 0.875rem;
-        }
-        
-        .quality-check ul {
-            margin-left: 1.25rem;
-            color: #1e40af;
-        }
-        
-        .quality-check li {
-            margin-bottom: 0.25rem;
-        }
-        
-        .bulk-actions {
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .bulk-actions-left {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-        
-        .filter-group {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
-        .filter-btn {
-            padding: 0.5rem 1rem;
-            border: 1px solid #e2e8f0;
-            background: white;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .filter-btn.active {
-            background: #2563eb;
-            color: white;
-            border-color: #2563eb;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
         }
         
         .progress-bar {
+            background: #e2e8f0;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
             margin-top: 1rem;
         }
         
-        .progress-label {
-            display: flex;
-            justify-content: space-between;
+        .progress-fill {
+            background: #10b981;
+            height: 100%;
+            transition: width 0.3s;
+        }
+        
+        .progress-text {
+            text-align: center;
+            margin-top: 0.5rem;
             font-size: 0.875rem;
             color: #64748b;
+        }
+        
+        .no-puzzles {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #64748b;
+        }
+        
+        .no-puzzles h2 {
+            font-size: 1.5rem;
             margin-bottom: 0.5rem;
-        }
-        
-        .progress-track {
-            height: 8px;
-            background: #e2e8f0;
-            border-radius: 9999px;
-            overflow: hidden;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #10b981, #059669);
-            border-radius: 9999px;
-            transition: width 0.3s;
+            color: #475569;
         }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="header-content">
-            <div>
-                <h1>🔍 Hint Review Queue</h1>
-                <div class="puzzle-info">
-                    <span><strong>Guardian Cryptic 29,914</strong> by Fed</span>
-                    <span>•</span>
-                    <span>Monday, 27 January 2026</span>
-                    <span class="status-badge review">Awaiting Review</span>
+            <div class="header-top">
+                <h1>🎯 Admin Review Panel</h1>
+                <div class="actions">
+                    <button class="btn btn-secondary" onclick="window.location.href='/admin/quick-import'">
+                        📥 Import New Puzzle
+                    </button>
+                    <button class="btn btn-success" id="publishBtn" onclick="publishPuzzle()" disabled>
+                        ✓ Publish Puzzle
+                    </button>
                 </div>
             </div>
-            <div class="actions">
-                <button class="btn btn-secondary" onclick="regenerateAll()">🔄 Regenerate All</button>
-                <button class="btn btn-primary" onclick="approveAll()">✓ Approve & Publish</button>
+            
+            <div class="puzzle-selector">
+                <label for="puzzleSelect">Select Puzzle:</label>
+                <select id="puzzleSelect" onchange="loadPuzzle()">
+                    <option value="">Loading puzzles...</option>
+                </select>
+                <div class="puzzle-info" id="puzzleInfo"></div>
             </div>
         </div>
     </div>
     
     <div class="container">
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">Total Clues</div>
-                <div class="stat-value">31</div>
+        <div id="content">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading puzzles...</p>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Reviewed</div>
-                <div class="stat-value" id="reviewed-count">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Flagged</div>
-                <div class="stat-value" id="flagged-count">3</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Ready to Publish</div>
-                <div class="stat-value" id="ready-count">0</div>
-            </div>
-        </div>
-        
-        <div class="progress-bar">
-            <div class="progress-label">
-                <span>Review Progress</span>
-                <span id="progress-text">0 of 31 reviewed</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
-            </div>
-        </div>
-        
-        <div class="bulk-actions">
-            <div class="bulk-actions-left">
-                <span style="font-weight: 600; color: #475569;">Show:</span>
-                <div class="filter-group">
-                    <button class="filter-btn active" onclick="filterView('all')">All Clues</button>
-                    <button class="filter-btn" onclick="filterView('flagged')">Flagged Only</button>
-                    <button class="filter-btn" onclick="filterView('unreviewed')">Unreviewed</button>
-                </div>
-            </div>
-            <div>
-                <button class="btn btn-secondary" onclick="approveUnflagged()">✓ Approve All Unflagged</button>
-            </div>
-        </div>
-        
-        <!-- Sample clue cards with different states -->
-        <div class="clue-card" data-reviewed="false" data-flagged="true">
-            <div class="clue-header">
-                <div class="clue-info">
-                    <div class="clue-number">1 ACROSS</div>
-                    <div class="clue-text">Prisoner finally does bird over murder</div>
-                    <div class="clue-answer">Answer: CONSUME (7)</div>
-                </div>
-                <div class="clue-status">
-                    <span style="color: #fbbf24; font-weight: 600; font-size: 0.875rem;">⚠️ 1 hint flagged</span>
-                </div>
-            </div>
-            <div class="clue-body">
-                <div class="hint-row">
-                    <div class="hint-label">Hint 1</div>
-                    <div class="hint-content">
-                        <div class="hint-text">The definition is "murder" - but think informal usage, like "I could murder a..."</div>
-                    </div>
-                    <div class="hint-actions">
-                        <button class="hint-btn hint-btn-approve">✓ OK</button>
-                        <button class="hint-btn hint-btn-edit" onclick="editHint(this)">✏️ Edit</button>
-                    </div>
-                </div>
-                
-                <div class="hint-row">
-                    <div class="hint-label">Hint 2</div>
-                    <div class="hint-content">
-                        <div class="hint-text">This combines: a prisoner (3 letters) + something from "does" + a bird, reversed.</div>
-                    </div>
-                    <div class="hint-actions">
-                        <button class="hint-btn hint-btn-approve">✓ OK</button>
-                        <button class="hint-btn hint-btn-edit" onclick="editHint(this)">✏️ Edit</button>
-                    </div>
-                </div>
-                
-                <div class="hint-row flagged">
-                    <div class="hint-label">Hint 3 <span class="flag-indicator"></span></div>
-                    <div class="hint-content">
-                        <div class="hint-text">"Prisoner" gives you a 3-letter abbreviation. "Finally does" means take the last letter. "Bird over" means a bird name backwards.</div>
-                        <div class="quality-check">
-                            <h4>⚠️ AI Quality Check:</h4>
-                            <ul>
-                                <li>Possible spoiler: Mentions specific construction without letting user think</li>
-                                <li>Consider: Remove details about which letters to take</li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="hint-actions">
-                        <button class="hint-btn hint-btn-approve">✓ OK Anyway</button>
-                        <button class="hint-btn hint-btn-edit" onclick="editHint(this)">✏️ Fix</button>
-                    </div>
-                </div>
-                
-                <div class="hint-row">
-                    <div class="hint-label">Hint 4</div>
-                    <div class="hint-content">
-                        <div class="hint-text">Answer: CONSUME. Prisoner=CON, finally does=S, bird over=UME (EMU backwards). Definition: to murder (consume greedily).</div>
-                    </div>
-                    <div class="hint-actions">
-                        <button class="hint-btn hint-btn-approve">✓ OK</button>
-                        <button class="hint-btn hint-btn-edit" onclick="editHint(this)">✏️ Edit</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="clue-card" data-reviewed="false" data-flagged="false">
-            <div class="clue-header">
-                <div class="clue-info">
-                    <div class="clue-number">5 ACROSS</div>
-                    <div class="clue-text">Spooner's old man wagered unrecoverable liability</div>
-                    <div class="clue-answer">Answer: BAD DEBT (3,4)</div>
-                </div>
-                <div class="clue-status">
-                    <span style="color: #10b981; font-weight: 600; font-size: 0.875rem;">✓ Looks good</span>
-                </div>
-            </div>
-            <div class="clue-body">
-                <div class="hint-row">
-                    <div class="hint-label">Hint 1</div>
-                    <div class="hint-content">
-                        <div class="hint-text">The definition is "unrecoverable liability". This is a Spoonerism - swap initial sounds.</div>
-                    </div>
-                    <div class="hint-actions">
-                        <button class="hint-btn hint-btn-approve">✓ OK</button>
-                        <button class="hint-btn hint-btn-edit" onclick="editHint(this)">✏️ Edit</button>
-                    </div>
-                </div>
-                
-                <div class="hint-row">
-                    <div class="hint-label">Hint 2</div>
-                    <div class="hint-content">
-                        <div class="hint-text">Find synonyms for "old man" and "wagered". Both are 3 letters.</div>
-                    </div>
-                    <div class="hint-actions">
-                        <button class="hint-btn hint-btn-approve">✓ OK</button>
-                        <button class="hint-btn hint-btn-edit" onclick="editHint(this)">✏️ Edit</button>
-                    </div>
-                </div>
-                
-                <div class="hint-row">
-                    <div class="hint-label">Hint 3</div>
-                    <div class="hint-content">
-                        <div class="hint-text">Think: what's slang for old man or father? What's another word for wagered?</div>
-                    </div>
-                    <div class="hint-actions">
-                        <button class="hint-btn hint-btn-approve">✓ OK</button>
-                        <button class="hint-btn hint-btn-edit" onclick="editHint(this)">✏️ Edit</button>
-                    </div>
-                </div>
-                
-                <div class="hint-row">
-                    <div class="hint-label">Hint 4</div>
-                    <div class="hint-content">
-                        <div class="hint-text">Answer: BAD DEBT. Spoonerism of "Dad bet" - swap the D and B sounds.</div>
-                    </div>
-                    <div class="hint-actions">
-                        <button class="hint-btn hint-btn-approve">✓ OK</button>
-                        <button class="hint-btn hint-btn-edit" onclick="editHint(this)">✏️ Edit</button>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 1rem; text-align: right;">
-                    <button class="btn btn-primary" onclick="approveClue(this)">✓ Approve All 4 Hints</button>
-                </div>
-            </div>
-        </div>
-        
-        <div style="text-align: center; padding: 3rem; color: #64748b;">
-            <p>+ 29 more clues to review...</p>
-            <p style="margin-top: 0.5rem; font-size: 0.875rem;">(This is a demo showing the review interface concept)</p>
         </div>
     </div>
     
     <script>
-        function editHint(button) {
-            const hintRow = button.closest('.hint-row');
-            const hintContent = hintRow.querySelector('.hint-content');
-            const currentText = hintContent.querySelector('.hint-text').textContent;
+        let currentPuzzle = null;
+        let currentClues = [];
+        let puzzles = [];
+        
+        // Load all pending puzzles on page load
+        async function loadPuzzles() {
+            try {
+                const response = await fetch('/admin/api/puzzles/pending');
+                puzzles = await response.json();
+                
+                const select = document.getElementById('puzzleSelect');
+                
+                if (puzzles.length === 0) {
+                    document.getElementById('content').innerHTML = `
+                        <div class="no-puzzles">
+                            <h2>No Puzzles to Review</h2>
+                            <p>Import a new puzzle to get started!</p>
+                            <button class="btn btn-primary" onclick="window.location.href='/admin/quick-import'" style="margin-top: 1rem;">
+                                📥 Import Puzzle
+                            </button>
+                        </div>
+                    `;
+                    select.innerHTML = '<option value="">No puzzles available</option>';
+                    return;
+                }
+                
+                // Populate dropdown
+                select.innerHTML = puzzles.map(p => 
+                    `<option value="${p.id}">
+                        Puzzle #${p.puzzle_number} - ${p.setter} (${p.date}) - ${p.approved_count || 0}/${p.total_clues} approved
+                    </option>`
+                ).join('');
+                
+                // Load first puzzle
+                loadPuzzle();
+                
+            } catch (error) {
+                document.getElementById('content').innerHTML = `
+                    <div class="error">
+                        <strong>Error loading puzzles:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // Load selected puzzle's clues
+        async function loadPuzzle() {
+            const select = document.getElementById('puzzleSelect');
+            const puzzleId = select.value;
             
-            hintContent.innerHTML = `
-                <textarea class="hint-textarea">${currentText}</textarea>
-                <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
-                    <button class="hint-btn hint-btn-save" onclick="saveHint(this)">💾 Save</button>
-                    <button class="hint-btn hint-btn-cancel" onclick="cancelEdit(this)">✕ Cancel</button>
+            if (!puzzleId) return;
+            
+            document.getElementById('content').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading clues...</p>
                 </div>
             `;
             
-            hintContent.querySelector('textarea').focus();
-        }
-        
-        function saveHint(button) {
-            const hintContent = button.closest('.hint-content');
-            const newText = hintContent.querySelector('textarea').value;
-            
-            hintContent.innerHTML = `<div class="hint-text">${newText}</div>`;
-            
-            // Remove flagged status if it was edited
-            const hintRow = button.closest('.hint-row');
-            hintRow.classList.remove('flagged');
-            
-            alert('Hint saved! ✓');
-        }
-        
-        function cancelEdit(button) {
-            location.reload(); // Simple way to restore original state in demo
-        }
-        
-        function approveClue(button) {
-            const card = button.closest('.clue-card');
-            card.style.opacity = '0.5';
-            card.style.pointerEvents = 'none';
-            
-            setTimeout(() => {
-                card.style.border = '2px solid #10b981';
-                alert('Clue approved! ✓');
-            }, 300);
-        }
-        
-        function filterView(type) {
-            // Update active filter button
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            const cards = document.querySelectorAll('.clue-card');
-            cards.forEach(card => {
-                const isFlagged = card.dataset.flagged === 'true';
-                const isReviewed = card.dataset.reviewed === 'true';
+            try {
+                // Get puzzle details
+                currentPuzzle = puzzles.find(p => p.id == puzzleId);
                 
-                if (type === 'all') {
-                    card.style.display = 'block';
-                } else if (type === 'flagged' && isFlagged) {
-                    card.style.display = 'block';
-                } else if (type === 'unreviewed' && !isReviewed) {
-                    card.style.display = 'block';
+                // Get clues
+                const response = await fetch(`/admin/api/puzzle/${puzzleId}/clues`);
+                currentClues = await response.json();
+                
+                // Update puzzle info
+                updatePuzzleInfo();
+                
+                // Render clues
+                renderClues();
+                
+            } catch (error) {
+                document.getElementById('content').innerHTML = `
+                    <div class="error">
+                        <strong>Error loading clues:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function updatePuzzleInfo() {
+            const info = document.getElementById('puzzleInfo');
+            const approvedCount = currentClues.filter(c => 
+                c.hint_1_approved && c.hint_2_approved && c.hint_3_approved && c.hint_4_approved
+            ).length;
+            
+            const allApproved = approvedCount === currentClues.length;
+            
+            info.innerHTML = `
+                <span><strong>Publication:</strong> ${currentPuzzle.publication}</span>
+                <span><strong>Setter:</strong> ${currentPuzzle.setter}</span>
+                <span><strong>Date:</strong> ${currentPuzzle.date}</span>
+                <span class="status-badge ${currentPuzzle.status}">${currentPuzzle.status}</span>
+            `;
+            
+            // Enable/disable publish button
+            document.getElementById('publishBtn').disabled = !allApproved;
+        }
+        
+        function renderClues() {
+            const approved = currentClues.filter(c => 
+                c.hint_1_approved && c.hint_2_approved && c.hint_3_approved && c.hint_4_approved
+            ).length;
+            
+            const html = `
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${(approved / currentClues.length) * 100}%"></div>
+                </div>
+                <div class="progress-text">
+                    ${approved} of ${currentClues.length} clues fully approved
+                </div>
+                
+                ${currentClues.map(clue => renderClue(clue)).join('')}
+            `;
+            
+            document.getElementById('content').innerHTML = html;
+        }
+        
+        function renderClue(clue) {
+            const allApproved = clue.hint_1_approved && clue.hint_2_approved && 
+                               clue.hint_3_approved && clue.hint_4_approved;
+            
+            return `
+                <div class="clue-card ${allApproved ? 'approved' : ''}" id="clue-${clue.id}">
+                    <div class="clue-header">
+                        <div>
+                            <span class="clue-number">${clue.clue_number}</span>
+                            <span class="clue-direction">${clue.direction}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="clue-text">${clue.clue_text}</div>
+                    <div class="clue-meta">
+                        <strong>Enumeration:</strong> ${clue.enumeration} | 
+                        <strong>Answer:</strong> ${clue.answer || 'Not provided'}
+                    </div>
+                    
+                    <div class="hints-section">
+                        <div class="hints-title">Progressive Hints</div>
+                        ${renderHint(clue, 1)}
+                        ${renderHint(clue, 2)}
+                        ${renderHint(clue, 3)}
+                        ${renderHint(clue, 4)}
+                    </div>
+                    
+                    <div class="clue-actions">
+                        <button class="btn btn-success" onclick="approveAllHints(${clue.id})" ${allApproved ? 'disabled' : ''}>
+                            ✓ Approve All Hints
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderHint(clue, level) {
+            const approved = clue[`hint_${level}_approved`];
+            const flagged = clue[`hint_${level}_flagged`];
+            const text = clue[`hint_level_${level}`];
+            
+            let statusClass = '';
+            if (approved) statusClass = 'approved';
+            else if (flagged) statusClass = 'flagged';
+            
+            return `
+                <div class="hint-row ${statusClass}" id="hint-${clue.id}-${level}">
+                    <div class="hint-header">
+                        <span class="hint-label">Hint ${level}</span>
+                        <div class="hint-actions">
+                            <button class="hint-btn hint-btn-edit" onclick="editHint(${clue.id}, ${level})">
+                                ✏️ Edit
+                            </button>
+                            <button class="hint-btn hint-btn-approve" onclick="approveHint(${clue.id}, ${level})" ${approved ? 'disabled' : ''}>
+                                ✓ Approve
+                            </button>
+                        </div>
+                    </div>
+                    <div class="hint-content" id="hint-content-${clue.id}-${level}">
+                        <div class="hint-text">${text}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function editHint(clueId, level) {
+            const content = document.getElementById(`hint-content-${clueId}-${level}`);
+            const clue = currentClues.find(c => c.id === clueId);
+            const currentText = clue[`hint_level_${level}`];
+            
+            content.innerHTML = `
+                <textarea class="hint-textarea" id="hint-edit-${clueId}-${level}">${currentText}</textarea>
+                <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                    <button class="hint-btn hint-btn-save" onclick="saveHint(${clueId}, ${level})">💾 Save</button>
+                    <button class="hint-btn hint-btn-cancel" onclick="loadPuzzle()">✕ Cancel</button>
+                </div>
+            `;
+            
+            document.getElementById(`hint-edit-${clueId}-${level}`).focus();
+        }
+        
+        async function saveHint(clueId, level) {
+            const textarea = document.getElementById(`hint-edit-${clueId}-${level}`);
+            const newText = textarea.value;
+            
+            try {
+                const response = await fetch(`/admin/api/clue/${clueId}/hint/${level}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hint_text: newText })
+                });
+                
+                if (response.ok) {
+                    // Update local data
+                    const clue = currentClues.find(c => c.id === clueId);
+                    clue[`hint_level_${level}`] = newText;
+                    
+                    // Re-render
+                    loadPuzzle();
+                    
+                    alert('Hint saved successfully! ✓');
                 } else {
-                    card.style.display = 'none';
+                    throw new Error('Failed to save hint');
                 }
-            });
-        }
-        
-        function approveUnflagged() {
-            if (confirm('Approve all unflagged hints? Flagged hints will still need review.')) {
-                alert('12 clues approved! 3 flagged clues still need review.');
-                updateProgress(12);
+            } catch (error) {
+                alert('Error saving hint: ' + error.message);
             }
         }
         
-        function approveAll() {
-            if (confirm('Approve and publish all hints? This will make the puzzle live on your site.')) {
-                alert('✓ Puzzle approved and published!\n\nGuardian 29,914 is now live at:\nhttps://yoursite.com/puzzles/guardian-29914');
-                updateProgress(31);
+        async function approveHint(clueId, level) {
+            try {
+                const response = await fetch(`/admin/api/clue/${clueId}/hint/${level}/approve`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    loadPuzzle();
+                } else {
+                    throw new Error('Failed to approve hint');
+                }
+            } catch (error) {
+                alert('Error approving hint: ' + error.message);
             }
         }
         
-        function regenerateAll() {
-            if (confirm('Regenerate all hints with AI? This will replace current hints.')) {
-                alert('🔄 Regenerating hints with improved prompts...\n\n(In production, this would call the Claude API again)');
+        async function approveAllHints(clueId) {
+            if (!confirm('Approve all 4 hints for this clue?')) return;
+            
+            try {
+                for (let level = 1; level <= 4; level++) {
+                    await fetch(`/admin/api/clue/${clueId}/hint/${level}/approve`, {
+                        method: 'POST'
+                    });
+                }
+                loadPuzzle();
+            } catch (error) {
+                alert('Error approving hints: ' + error.message);
             }
         }
         
-        function updateProgress(reviewed) {
-            document.getElementById('reviewed-count').textContent = reviewed;
-            document.getElementById('ready-count').textContent = reviewed;
-            document.getElementById('progress-text').textContent = `${reviewed} of 31 reviewed`;
-            document.getElementById('progress-fill').style.width = `${(reviewed / 31) * 100}%`;
+        async function publishPuzzle() {
+            if (!confirm(`Publish puzzle #${currentPuzzle.puzzle_number}? This will make it live on the homepage.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/admin/api/puzzle/${currentPuzzle.id}/publish`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    alert('Puzzle published successfully! ✓');
+                    loadPuzzles(); // Reload the list
+                } else {
+                    throw new Error('Failed to publish puzzle');
+                }
+            } catch (error) {
+                alert('Error publishing puzzle: ' + error.message);
+            }
         }
+        
+        // Initialize
+        loadPuzzles();
     </script>
 </body>
 </html>
