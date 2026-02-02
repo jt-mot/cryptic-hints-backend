@@ -266,18 +266,25 @@ class FifteensquaredScraper:
                                     
                                     j += 1
                                 
-                                # Use extracted definitions - just assign all of them for now
-                                # (Could be smarter about matching specific ones to clues later)
-                                html_definitions = list(all_definitions_by_text.values())
+                                # Match definitions to this specific clue
+                                # by finding which definition text appears in the hint paragraphs
+                                matched_definitions = []
+                                hint_text_combined = ' '.join(hint_buffer)
+                                
+                                for def_text in all_definitions_by_text.values():
+                                    # Check if this definition appears in any of the hint text
+                                    if def_text in hint_text_combined:
+                                        matched_definitions.append(def_text)
+                                        break  # Only use the first matched definition per clue
                                 
                                 if hint_buffer:
                                     # Store both text and extracted definitions
                                     hints_map[clue_id] = {
                                         'text': hint_buffer,
-                                        'definitions': html_definitions[:1] if html_definitions else []  # Just use first definition for each clue
+                                        'definitions': matched_definitions
                                     }
-                                    if html_definitions:
-                                        print(f"      -> {len(hint_buffer)} hint lines, {len(html_definitions[:1])} definitions: {html_definitions[:1]}")
+                                    if matched_definitions:
+                                        print(f"      -> {len(hint_buffer)} hint lines, {len(matched_definitions)} definitions: {matched_definitions}")
                                     else:
                                         print(f"      -> {len(hint_buffer)} hint lines, 0 definitions")
                                 
