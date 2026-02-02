@@ -171,20 +171,24 @@ class FifteensquaredScraper:
                 hints_map = {}
                 current_direction = None
                 
-                # FIRST: Extract ALL <em><u> definitions from entire content
-                # PeterO uses <em><u>definition</u></em> format
+                # FIRST: Extract ALL definitions from entire content
+                # PeterO uses: <span style="...italic...underline">definition</span>
                 all_definitions_by_text = {}
                 for para in content.find_all('p'):
                     para_text = para.get_text()
-                    # Find nested em+u tags (PeterO's definition style)
-                    for em in para.find_all('em'):
-                        for u in em.find_all('u'):
-                            def_text = u.get_text().strip()
+                    # Find spans with both italic and underline styles
+                    for span in para.find_all('span', style=True):
+                        style = span.get('style', '').lower()
+                        # Check if style has both italic and underline
+                        if 'italic' in style and 'underline' in style:
+                            def_text = span.get_text().strip()
                             if len(def_text) > 2:
                                 # Store with context (paragraph text) so we can match later
                                 all_definitions_by_text[para_text[:100]] = def_text
                 
-                print(f"   DEBUG: Found {len(all_definitions_by_text)} definitions with <em><u> tags")
+                print(f"   DEBUG: Found {len(all_definitions_by_text)} definitions with italic+underline style")
+                if all_definitions_by_text:
+                    print(f"   DEBUG: Sample definitions: {list(all_definitions_by_text.values())[:3]}")
                 
                 # Strategy: Get text content and split by lines, but also keep HTML for parsing
                 full_text = content.get_text()
