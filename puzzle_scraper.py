@@ -204,10 +204,12 @@ class FifteensquaredScraper:
                                 clue_id = f"{clue_num}-{current_direction}"
                                 print(f"   Found clue: {clue_id} - {answer_line}")
                                 
-                                # Collect explanation text AND extract HTML definitions
+                                # Collect explanation text
                                 hint_buffer = []
-                                html_definitions = []
                                 j = i + 2  # Start after answer
+                                
+                                # Also find ALL definitions in this clue's paragraphs
+                                html_definitions = []
                                 
                                 while j < len(lines):
                                     next_line = lines[j]
@@ -227,22 +229,21 @@ class FifteensquaredScraper:
                                     if not any(skip in next_line.lower() for skip in skip_phrases):
                                         if len(next_line) > 10:
                                             hint_buffer.append(next_line)
-                                            
-                                            # Try to find corresponding paragraph with HTML
-                                            for para in all_paragraphs:
-                                                para_text = para.get_text()
-                                                if next_line[:50] in para_text:
-                                                    # Extract underlined/italicized definitions
-                                                    defs = para.find_all(['em', 'u', 'i'])
-                                                    print(f"      DEBUG: Found {len(defs)} em/u/i tags in paragraph")
-                                                    for d in defs:
-                                                        def_text = d.get_text().strip()
-                                                        print(f"      DEBUG: Extracted definition candidate: '{def_text}'")
-                                                        if len(def_text) > 3 and def_text not in html_definitions:
-                                                            html_definitions.append(def_text)
-                                                    break
                                     
                                     j += 1
+                                
+                                # NOW extract definitions from all paragraphs that contain our hint text
+                                if hint_buffer:
+                                    hint_text_combined = ' '.join(hint_buffer)
+                                    for para in all_paragraphs:
+                                        para_text = para.get_text()
+                                        # If any of our hint text appears in this paragraph
+                                        if any(hint_line[:30] in para_text for hint_line in hint_buffer):
+                                            # Extract ALL em/u/i tags from this paragraph
+                                            for tag in para.find_all(['em', 'u', 'i']):
+                                                def_text = tag.get_text().strip()
+                                                if len(def_text) > 3 and def_text not in html_definitions:
+                                                    html_definitions.append(def_text)
                                 
                                 if hint_buffer:
                                     # Store both text and extracted definitions
