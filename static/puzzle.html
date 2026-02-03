@@ -352,8 +352,11 @@
 
         async function loadPuzzle() {
             try {
+                console.log('Loading puzzle:', puzzleNumber);
                 const response = await fetch(`/api/puzzle/${puzzleNumber}`);
                 puzzleData = await response.json();
+                
+                console.log('Puzzle data:', puzzleData);
                 
                 if (puzzleData.error) {
                     alert('Puzzle not found');
@@ -365,30 +368,48 @@
                 
                 // Show grid if available
                 if (puzzleData.grid && puzzleData.grid.grid) {
+                    console.log('Grid available, rendering...');
                     document.getElementById('gridSection').style.display = 'block';
                     renderGrid();
+                } else {
+                    console.warn('No grid data available');
                 }
+                
+                // Show loading message
+                document.getElementById('cluesAcross').innerHTML = '<p>Loading hints...</p>';
+                document.getElementById('cluesDown').innerHTML = '<p>Loading hints...</p>';
                 
                 // Fetch hints for each clue
                 await fetchHints();
                 
+                console.log('Rendering clues...');
                 renderClues();
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error loading puzzle');
+                alert('Error loading puzzle: ' + error.message);
             }
         }
 
         async function fetchHints() {
+            console.log('Fetching hints for clues...');
             for (let clue of puzzleData.clues) {
                 try {
+                    console.log(`Fetching hints for clue ${clue.id}`);
                     const response = await fetch(`/api/clue/${clue.id}/hints`);
+                    if (!response.ok) {
+                        console.error(`Failed to fetch hints for clue ${clue.id}: ${response.status}`);
+                        clue.hints = ['', '', '', ''];
+                        continue;
+                    }
                     const data = await response.json();
                     clue.hints = data.hints || ['', '', '', ''];
+                    console.log(`Got hints for clue ${clue.id}:`, clue.hints);
                 } catch (error) {
+                    console.error(`Error fetching hints for clue ${clue.id}:`, error);
                     clue.hints = ['', '', '', ''];
                 }
             }
+            console.log('Finished fetching hints');
         }
 
         function renderGrid() {
