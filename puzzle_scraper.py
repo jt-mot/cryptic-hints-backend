@@ -14,6 +14,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from enhanced_hints import EnhancedHintGenerator, AuthorStyleDetector
+from grid_builder import GridBuilder
 
 
 
@@ -388,5 +389,15 @@ class PuzzleScraper:
         
         clues_with_hints = len([c for c in puzzle_data['clues'] if any(c['hints'])])
         print(f"\n✓ Complete! {clues_with_hints}/{len(puzzle_data['clues'])} clues have hints")
+        
+        # Step 4: Build grid
+        print("\nBuilding crossword grid...")
+        try:
+            grid_builder = GridBuilder(puzzle_data)
+            puzzle_data['grid'] = grid_builder.build_and_export()
+            print(f"✓ Grid built: {puzzle_data['grid']['size']}x{puzzle_data['grid']['size']}")
+        except Exception as e:
+            print(f"⚠️  Grid building failed: {e}")
+            puzzle_data['grid'] = None
         
         return puzzle_data
