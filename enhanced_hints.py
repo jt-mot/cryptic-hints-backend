@@ -163,40 +163,41 @@ class EnhancedHintGenerator:
     
     def _extract_wordplay_technique(self, explanation: str) -> str:
         """
-        Use AI to extract just the cryptic technique(s) from the explanation
+        Use AI to extract the cryptic technique and format as a helpful hint
         
         Examples:
-        "An anagram of LATE" -> "Anagram"
-        "A reversal of DOG in CAT" -> "Reversal + container"
-        "Two definitions" -> "Double definition"
+        "An anagram of LATE" -> "This clue uses an anagram indicator"
+        "A reversal of DOG in CAT" -> "This clue uses a reversal inside a container"
+        "Two definitions" -> "This is a double definition clue"
         """
         try:
             import requests
             import json
             
-            prompt = f"""Analyze this cryptic crossword clue explanation and identify ONLY the wordplay technique(s) used.
+            prompt = f"""You are helping someone solve a cryptic crossword. Based on this explanation of how the clue works, write a friendly hint that tells them what technique to look for, without giving away the answer.
 
 Explanation: {explanation}
 
-Respond with ONLY a short phrase like:
-- "Anagram"
-- "Hidden word"
-- "Reversal"
-- "Container"
-- "Charade"
-- "Homophone"
-- "Double definition"
-- "Anagram + substitution"
-- "Container + reversal"
+Write a single sentence hint that:
+- Starts with "This clue uses..." or "Look for..." or "This is..."
+- Mentions the cryptic technique (anagram, hidden word, reversal, container, charade, homophone, double definition, etc.)
+- Is encouraging and helpful
+- Does NOT include any part of the answer
+- Is maximum 15 words
 
-Be extremely concise - just the technique name(s), maximum 4 words."""
+Examples:
+"This clue uses an anagram indicator"
+"Look for a hidden word in the clue"
+"This is a container clue - one word goes inside another"
+"This clue uses a reversal plus a charade"
+"Look for two separate definitions of the same word"
 
             response = requests.post(
                 "https://api.anthropic.com/v1/messages",
                 headers={"Content-Type": "application/json"},
                 json={
                     "model": "claude-sonnet-4-20250514",
-                    "max_tokens": 50,
+                    "max_tokens": 100,
                     "messages": [{"role": "user", "content": prompt}]
                 },
                 timeout=5
@@ -206,7 +207,7 @@ Be extremely concise - just the technique name(s), maximum 4 words."""
                 data = response.json()
                 if data.get('content'):
                     technique = data['content'][0].get('text', '').strip()
-                    if technique and len(technique) < 60:
+                    if technique and len(technique) < 150:
                         return technique
         except Exception as e:
             # If AI fails, fall back to keyword detection
@@ -216,29 +217,31 @@ Be extremely concise - just the technique name(s), maximum 4 words."""
         return self._detect_wordplay_fallback(explanation)
     
     def _detect_wordplay_fallback(self, text: str) -> str:
-        """Fallback keyword-based detection"""
+        """Fallback keyword-based detection with friendly phrasing"""
         text_lower = text.lower()
         
         techniques = []
         if 'anagram' in text_lower or 'mixed' in text_lower or 'confused' in text_lower:
-            techniques.append('anagram')
+            techniques.append('an anagram')
         if 'hidden' in text_lower or 'concealed' in text_lower:
-            techniques.append('hidden word')
+            techniques.append('a hidden word')
         if 'reversal' in text_lower or 'back' in text_lower or 'reversed' in text_lower:
-            techniques.append('reversal')
+            techniques.append('a reversal')
         if 'container' in text_lower or 'envelope' in text_lower or 'around' in text_lower or 'inside' in text_lower:
-            techniques.append('container')
+            techniques.append('a container')
         if 'sounds like' in text_lower or 'homophone' in text_lower:
-            techniques.append('homophone')
+            techniques.append('a homophone')
         if 'double definition' in text_lower:
-            return "Double definition"
+            return "This is a double definition clue"
         
         if len(techniques) == 1:
-            return techniques[0].capitalize()
-        elif len(techniques) > 1:
-            return ' + '.join([t.capitalize() for t in techniques])
+            return f"This clue uses {techniques[0]}"
+        elif len(techniques) == 2:
+            return f"This clue uses {techniques[0]} and {techniques[1]}"
+        elif len(techniques) > 2:
+            return f"This clue combines {', '.join(techniques[:-1])} and {techniques[-1]}"
         else:
-            return "Look at how the clue breaks down"
+            return "Look at how the clue breaks down into parts"
     
     def _generate_verlaine_style(self, paragraphs: List[str], definitions: List[str]) -> List[str]:
         """
