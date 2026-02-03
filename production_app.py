@@ -975,7 +975,9 @@ def import_puzzle():
 # This runs on module import, before any requests
 try:
     db_test = get_db()
-    db_test.execute("SELECT 1 FROM puzzles LIMIT 1")
+    cursor = db_test.cursor()
+    cursor.execute("SELECT 1 FROM puzzles LIMIT 1")
+    cursor.close()
     db_test.close()
     print("✓ Database tables exist")
 except:
