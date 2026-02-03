@@ -137,29 +137,79 @@ class EnhancedHintGenerator:
             # Fallback: try to detect wordplay type if no second paragraph
             hints[1] = self._detect_wordplay_fallback(full_text)
         
-        # Level 3: More detailed breakdown
-        # If there are more paragraphs, use them; otherwise extract quoted components
-        if len(paragraphs) > 2:
-            # Use third paragraph or combination
-            hints[2] = ' '.join(paragraphs[1:])[:350]
-        elif len(paragraphs) > 1:
-            # Only have 2 paragraphs - extract more detail from second one
-            # Show quoted wordplay components
-            components = re.findall(r"'([^']+)'\s*\([^)]*([^)]+)\)", paragraphs[1])
-            if components and len(components) >= 2:
-                hints[2] = f"The wordplay involves: '{components[0][0]}' and '{components[1][0]}'"
-                if len(components) > 2:
-                    hints[2] += f" and '{components[2][0]}'"
-            else:
-                # Just use more of the second paragraph
-                hints[2] = paragraphs[1][:350]
+        # Level 3: Partial wordplay hints without revealing the answer
+        # Extract clue references (words in quotes) but hide the answer parts (all caps)
+        if len(paragraphs) > 1:
+            hints[2] = self._create_partial_hint(paragraphs[1])
         else:
-            hints[2] = full_text[:350]
+            hints[2] = "Break down the clue into its component parts"
         
-        # Level 4: Full explanation
-        hints[3] = full_text
+        # Level 4: Full explanation with wordplay mechanics
+        hints[3] = self._create_full_explanation(paragraphs, definitions)
         
         return hints
+    
+    def _create_partial_hint(self, wordplay_text: str) -> str:
+        """
+        Create a Level 3 hint that's helpful but doesn't give away the answer
+        
+        Strategy:
+        - Keep clue references (text in quotes after words like 'simple', 'old comedian')
+        - Remove or mask answer components (words in all caps like EASY, GOON)
+        - Keep structural words (in, inside, around, after, etc.)
+        """
+        # Remove answer components (all-caps words)
+        hint = re.sub(r'\b[A-Z]{2,}\b', '[...]', wordplay_text)
+        
+        # Extract the clue references to highlight
+        clue_refs = re.findall(r"'([^']+)'", hint)
+        
+        if len(clue_refs) >= 2:
+            # Build a helpful hint
+            if 'envelope' in hint.lower() or 'container' in hint.lower() or 'in' in hint.lower() or 'inside' in hint.lower():
+                return f"Put '{clue_refs[0]}' inside '{clue_refs[1]}' (or vice versa)"
+            elif 'after' in hint.lower() or 'before' in hint.lower() or 'then' in hint.lower():
+                return f"Join '{clue_refs[0]}' and '{clue_refs[1]}' together"
+            elif 'reversal' in hint.lower() or 'back' in hint.lower():
+                return f"Reverse '{clue_refs[0]}' or '{clue_refs[1]}'"
+            else:
+                # Generic hint showing clue components
+                refs_str = "', '".join(clue_refs[:3])
+                return f"The wordplay uses: '{refs_str}'"
+        elif len(clue_refs) == 1:
+            return f"Focus on '{clue_refs[0]}' in the clue"
+        else:
+            # No quotes found, just clean up the all-caps
+            return hint[:200].strip()
+    
+    def _create_full_explanation(self, paragraphs: List[str], definitions: List[str]) -> str:
+        """
+        Create a complete Level 4 explanation
+        
+        Should include:
+        - The definition
+        - The complete wordplay breakdown
+        - How it all fits together
+        """
+        parts = []
+        
+        # Start with definition
+        if definitions:
+            parts.append(f"Definition: '{definitions[0]}'")
+        
+        # Add full wordplay explanation
+        if len(paragraphs) > 1:
+            # Clean up but keep the full explanation
+            wordplay = paragraphs[1]
+            parts.append(f"Wordplay: {wordplay}")
+        
+        # Add any additional notes from later paragraphs
+        if len(paragraphs) > 2:
+            notes = ' '.join(paragraphs[2:])
+            if notes and len(notes) > 10:
+                parts.append(notes)
+        
+        return ' '.join(parts)
     
     def _extract_wordplay_technique(self, explanation: str) -> str:
         """
@@ -253,45 +303,56 @@ Examples:
         hints = ['', '', '', '']
         full_text = ' '.join(paragraphs)
         
-        # Similar structure but different tone
-        hints[0] = self._extract_definition_hint(full_text, paragraphs)
-        hints[1] = self._extract_wordplay_type(full_text)
-        hints[2] = paragraphs[1][:300] if len(paragraphs) > 1 else full_text[:300]
-        hints[3] = full_text
+        # Use same improved structure as generic
+        hints[0] = self._extract_definition_hint(full_text, paragraphs, definitions)
+        hints[1] = self._detect_wordplay_fallback(full_text)
+        
+        if len(paragraphs) > 1:
+            hints[2] = self._create_partial_hint(paragraphs[1])
+        else:
+            hints[2] = "Look at how the different parts of the clue combine"
+        
+        hints[3] = self._create_full_explanation(paragraphs, definitions)
         
         return hints
     
     def _generate_generic_style(self, paragraphs: List[str], definitions: List[str]) -> List[str]:
         """
         Generic fallback for unknown authors
-        Uses conservative extraction
+        Uses conservative extraction with improved hints
         """
         hints = ['', '', '', '']
         full_text = ' '.join(paragraphs)
         
         # Level 1: Try to find definition
-        hints[0] = self._extract_definition_hint(full_text, paragraphs)
+        hints[0] = self._extract_definition_hint(full_text, paragraphs, definitions)
         
-        # Level 2: Wordplay type
-        hints[1] = self._extract_wordplay_type(full_text)
+        # Level 2: Wordplay type (use friendly detection)
+        hints[1] = self._detect_wordplay_fallback(full_text)
         
-        # Level 3: Middle content
+        # Level 3: Partial hint without giving away answer
         if len(paragraphs) > 1:
-            hints[2] = paragraphs[1][:250]
+            hints[2] = self._create_partial_hint(paragraphs[1])
         else:
-            sentences = re.split(r'[.!?]+', full_text)
-            if len(sentences) >= 3:
-                hints[2] = '. '.join(sentences[1:3]) + '.'
+            # Extract middle sentences without caps
+            cleaned = re.sub(r'\b[A-Z]{2,}\b', '[...]', full_text)
+            sentences = re.split(r'[.!?]+', cleaned)
+            if len(sentences) >= 2:
+                hints[2] = sentences[1].strip() + '.'
             else:
-                hints[2] = full_text[:250]
+                hints[2] = "Look at how the different parts of the clue work together"
         
-        # Level 4: Full text
-        hints[3] = full_text
+        # Level 4: Full explanation
+        hints[3] = self._create_full_explanation(paragraphs, definitions)
         
         return hints
     
-    def _extract_definition_hint(self, text: str, paragraphs: List[str]) -> str:
+    def _extract_definition_hint(self, text: str, paragraphs: List[str], definitions: List[str] = None) -> str:
         """Extract or infer the definition hint"""
+        # Use extracted HTML definitions first
+        if definitions:
+            return f"Definition: {definitions[0]}"
+        
         # Look for explicit definition mention
         def_match = re.search(r'definition[:\s]+([^.]+)', text, re.IGNORECASE)
         if def_match:
@@ -301,13 +362,6 @@ Examples:
         quoted = re.findall(r"'([^']+)'", paragraphs[0] if paragraphs else text)
         if quoted and len(quoted[0]) > 3:
             return f"The definition is likely '{quoted[0]}'"
-        
-        # Fall back to first sentence
-        sentences = re.split(r'[.!?]+', text)
-        if sentences:
-            first = sentences[0].strip()
-            if len(first) > 10 and len(first) < 100:
-                return first + '.'
         
         return "Look for the definition in the clue."
     
