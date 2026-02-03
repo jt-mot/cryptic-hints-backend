@@ -114,6 +114,19 @@ def init_db():
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_status ON puzzles(status)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_clue_puzzle ON clues(puzzle_id)')
     
+    # Add grid_data column if it doesn't exist (migration)
+    cursor.execute('''
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name='puzzles' AND column_name='grid_data'
+            ) THEN
+                ALTER TABLE puzzles ADD COLUMN grid_data JSONB;
+            END IF;
+        END $$;
+    ''')
+    
     conn.commit()
     cursor.close()
     conn.close()
