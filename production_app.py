@@ -295,6 +295,36 @@ def get_puzzle_grid(puzzle_id):
     return jsonify(result['grid_data'])
 
 
+@app.route('/api/clue/<int:clue_id>/hints')
+def get_clue_hints(clue_id):
+    """Get all hints for a clue"""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    cursor.execute('''
+        SELECT hint_level_1, hint_level_2, hint_level_3, hint_level_4
+        FROM clues
+        WHERE id = %s
+    ''', (clue_id,))
+    
+    clue = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    
+    if not clue:
+        return jsonify({'error': 'Clue not found'}), 404
+    
+    return jsonify({
+        'clue_id': clue_id,
+        'hints': [
+            clue['hint_level_1'] or '',
+            clue['hint_level_2'] or '',
+            clue['hint_level_3'] or '',
+            clue['hint_level_4'] or ''
+        ]
+    })
+
+
 @app.route('/api/clue/<int:clue_id>/hint/<int:level>')
 def get_hint(clue_id, level):
     """Get a specific hint level for a clue"""
