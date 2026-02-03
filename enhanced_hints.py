@@ -28,14 +28,14 @@ WORDPLAY_TECHNIQUES = {
         'keywords': ['reversal', 'reversed', 'back', 'backward', 'returned', 'retiring',
                      'reflected', 'flipped', 'overturned', 'up', 'rising', 'going north',
                      'returning', 'retreating', 'revolutionary'],
-        'hint': "This clue involves reversing letters or a word",
+        'hint': "This is a reversal clue - look for indicators like 'back', 'returned', 'up' (in down clues), or 'west' (in across clues)",
         'partial': "Write something backwards"
     },
     'container': {
         'keywords': ['container', 'envelope', 'around', 'outside', 'wrapping', 'holding',
                      'embracing', 'clutching', 'grasping', 'containing', 'swallowing',
                      'surrounding', 'boxing', 'circling'],
-        'hint': "One part of the answer goes around or inside another",
+        'hint': "This is a container clue - look for indicators like 'around', 'holding', 'outside', 'embracing' where one part wraps around another",
         'partial': "Put one component inside or around another"
     },
     'insertion': {
@@ -48,7 +48,7 @@ WORDPLAY_TECHNIQUES = {
         'keywords': ['sounds like', 'homophone', 'we hear', 'audibly', 'aloud', 'spoken',
                      'say', 'said', 'heard', 'orally', 'vocal', 'broadcast', 'on the radio',
                      'reportedly', 'to the ear'],
-        'hint': "The answer sounds like another word or phrase",
+        'hint': "This is a homophone clue - look for indicators like 'we hear', 'sounds like', 'say', 'aloud', or 'reportedly' - the answer sounds like another word",
         'partial': "Think about what the answer sounds like when spoken"
     },
     'double_definition': {
@@ -66,7 +66,7 @@ WORDPLAY_TECHNIQUES = {
         'keywords': ['deletion', 'removing', 'without', 'losing', 'dropping', 'missing',
                      'heartless', 'headless', 'endless', 'beheaded', 'curtailed', 'trimmed',
                      'cut', 'short', 'less', 'lacking', 'loses'],
-        'hint': "Remove a letter or letters from a word",
+        'hint': "This is a deletion clue - look for indicators like 'headless' (remove first letter), 'endless' (remove last letter), 'heartless' (remove middle letter), or 'without'",
         'partial': "Take away part of a word"
     },
     'abbreviation': {
@@ -213,70 +213,36 @@ class EnhancedHintGenerator:
     def _generate_definition_hint(self, full_text: str, paragraphs: List[str],
                                    definitions: List[str], author: str) -> str:
         """
-        Level 1: Help locate the definition
+        Level 1: Show the definition directly
 
         The definition is the "straight" part of the clue that directly means the answer.
-        This hint should help the solver identify which part of the clue is the definition
-        without giving away the answer.
+        When we have it from the underlined text, show it directly.
         """
         # Use extracted HTML definitions (underlined text) - most reliable
         if definitions:
-            # Check position - definitions are usually at start or end
-            first_def = definitions[0]
-
-            # Don't reveal the definition directly, hint at its location
             if len(definitions) == 1:
-                # Try to determine if it's at start or end
-                if paragraphs and paragraphs[0]:
-                    first_para = paragraphs[0].lower()
-                    def_lower = first_def.lower()
-
-                    # Check relative position
-                    def_pos = first_para.find(def_lower)
-                    if def_pos != -1:
-                        para_len = len(first_para)
-                        if def_pos < para_len * 0.3:
-                            return "The definition is at the beginning of the clue"
-                        elif def_pos > para_len * 0.7:
-                            return "The definition is at the end of the clue"
-
-                return f"Look for a {len(first_def.split())}-word definition"
+                return f"Definition: '{definitions[0]}'"
             else:
-                return "This clue has a double definition - both parts define the answer"
+                # Multiple definitions - double definition clue
+                return f"Definitions: '{definitions[0]}' and '{definitions[1]}'"
 
-        # Check for explicit definition indicators in the text
+        # Fallback: Check for explicit definition indicators in the text
         def_patterns = [
-            (r'definition[:\s]+["\']?([^"\'.,]+)["\']?', "definition"),
-            (r'def\.?[:\s]+["\']?([^"\'.,]+)["\']?', "definition"),
-            (r'meaning[:\s]+["\']?([^"\'.,]+)["\']?', "meaning"),
+            r'definition[:\s]+["\']?([^"\'.,]+)["\']?',
+            r'def\.?[:\s]+["\']?([^"\'.,]+)["\']?',
         ]
 
-        for pattern, indicator in def_patterns:
+        for pattern in def_patterns:
             match = re.search(pattern, full_text, re.IGNORECASE)
             if match:
-                def_text = match.group(1).strip()
-                word_count = len(def_text.split())
-                if word_count <= 3:
-                    return f"The {indicator} is a {word_count}-word phrase"
-                else:
-                    return f"Look for the {indicator} - it's a longer phrase"
+                return f"Definition: '{match.group(1).strip()}'"
 
         # Check for double definition clues
         if 'double definition' in full_text.lower() or 'two definitions' in full_text.lower():
             return "This is a double definition - find a word with two meanings"
 
-        # Analyze clue structure from first paragraph
-        if paragraphs:
-            first_para = paragraphs[0]
-            # Count quoted segments
-            quoted = re.findall(r"['\"]([^'\"]+)['\"]", first_para)
-            if len(quoted) >= 2:
-                return "The definition is one of the quoted phrases in the clue"
-            elif len(quoted) == 1:
-                return "Pay attention to the quoted phrase"
-
-        # Default based on common patterns
-        return "The definition is usually at the start or end of the clue"
+        # Default fallback
+        return "Look for the definition at the start or end of the clue"
 
     def _generate_technique_hint(self, full_text: str, paragraphs: List[str]) -> str:
         """
@@ -326,18 +292,18 @@ class EnhancedHintGenerator:
     def _generate_structural_hint(self, full_text: str, paragraphs: List[str],
                                    definitions: List[str]) -> str:
         """
-        Level 3: Structural breakdown without revealing the answer
+        Level 3: Structural breakdown - more revealing hint
 
-        This should show HOW the wordplay works without giving away the actual
-        answer components. Focus on the clue's structure and mechanics.
+        This should give a clearer picture of how the wordplay works,
+        showing the components from the clue without the final answer.
         """
         text_lower = full_text.lower()
 
-        # Extract quoted clue references (words from the clue)
+        # Extract quoted clue references (words from the clue being explained)
         clue_refs = re.findall(r"['\"]([^'\"]+)['\"]", full_text)
         clue_refs = [ref for ref in clue_refs if len(ref) > 1 and not ref.isupper()]
 
-        # Identify answer components (ALL CAPS words) - we'll hide these
+        # Identify answer components (ALL CAPS words) - we'll reference but not fully reveal
         answer_parts = re.findall(r'\b[A-Z]{2,}\b', full_text)
 
         # Determine the structure based on technique
@@ -347,6 +313,13 @@ class EnhancedHintGenerator:
             if score > 0:
                 technique_scores[tech_name] = score
 
+        # Build a useful hint from the explanation text
+        # Look for patterns like "X gives Y" or "X = Y" without showing CAPS answers
+        structural_patterns = [
+            (r"['\"]([^'\"]+)['\"]\s*(?:gives|=|means|is)\s*[A-Z]+", "'{0}' leads to part of the answer"),
+            (r"([a-z]+)\s+(?:in|around|inside|outside)\s+([a-z]+)", "Put '{0}' {1} '{2}'"),
+        ]
+
         if not technique_scores:
             if clue_refs:
                 return f"Work with these clue elements: '{', '.join(clue_refs[:3])}'"
@@ -354,53 +327,81 @@ class EnhancedHintGenerator:
 
         primary_technique = max(technique_scores.items(), key=lambda x: x[1])[0]
 
-        # Generate technique-specific structural hint
+        # Generate technique-specific structural hint with more detail
         if primary_technique == 'anagram':
-            # Find anagram fodder indicators
             fodder_hint = self._find_anagram_fodder(full_text, clue_refs)
             if fodder_hint:
                 return fodder_hint
-            return "Find the anagram indicator and identify which letters to rearrange"
+            if clue_refs:
+                return f"Rearrange the letters from '{clue_refs[0]}'"
+            return "Find the anagram indicator and rearrange those letters"
 
         elif primary_technique == 'hidden':
             if clue_refs:
-                return f"The answer is hidden within consecutive letters in '{clue_refs[0]}...'"
-            return "Scan through the clue text for the answer hidden within"
+                return f"Look for the answer hidden in the letters of '{clue_refs[0]}'"
+            return "The answer is spelled out within consecutive letters in the clue"
 
         elif primary_technique == 'reversal':
             if clue_refs:
-                return f"Reverse the letters of something related to '{clue_refs[0]}'"
-            return "Find what needs to be reversed and write it backwards"
+                return f"Write '{clue_refs[0]}' (or what it represents) backwards"
+            return "Reverse the letters of the indicated word"
 
         elif primary_technique in ('container', 'insertion'):
             if len(clue_refs) >= 2:
-                return f"One part (from '{clue_refs[0]}') goes inside/around another (from '{clue_refs[1]}')"
-            return "Identify the outer and inner components, then nest them"
+                return f"'{clue_refs[0]}' goes inside or around '{clue_refs[1]}' (or vice versa)"
+            elif len(clue_refs) == 1:
+                return f"One part goes inside '{clue_refs[0]}' or '{clue_refs[0]}' goes inside another part"
+            return "One component wraps around or goes inside another"
 
         elif primary_technique == 'charade':
-            if clue_refs:
-                parts = clue_refs[:3]
-                return f"Chain together parts from: '{', '.join(parts)}'"
-            return "Join the wordplay components in sequence"
+            if len(clue_refs) >= 2:
+                return f"Join: '{clue_refs[0]}' + '{clue_refs[1]}'" + (f" + '{clue_refs[2]}'" if len(clue_refs) > 2 else "")
+            elif len(clue_refs) == 1:
+                return f"'{clue_refs[0]}' combines with another part"
+            return "Chain the wordplay components together left to right"
 
         elif primary_technique == 'deletion':
-            if clue_refs:
-                return f"Remove letter(s) from something related to '{clue_refs[0]}'"
-            return "Find what to remove from which word"
+            # Be more specific about what kind of deletion
+            if 'headless' in text_lower or 'beheaded' in text_lower:
+                if clue_refs:
+                    return f"Remove the first letter from '{clue_refs[0]}'"
+                return "Remove the first letter from a word"
+            elif 'endless' in text_lower or 'curtailed' in text_lower:
+                if clue_refs:
+                    return f"Remove the last letter from '{clue_refs[0]}'"
+                return "Remove the last letter from a word"
+            elif 'heartless' in text_lower:
+                if clue_refs:
+                    return f"Remove the middle letter(s) from '{clue_refs[0]}'"
+                return "Remove the middle letter(s) from a word"
+            else:
+                if clue_refs:
+                    return f"Remove a letter from '{clue_refs[0]}'"
+                return "Remove the indicated letter(s) from a word"
 
         elif primary_technique == 'homophone':
-            return "The answer sounds like another word - say it out loud"
+            if clue_refs:
+                return f"'{clue_refs[0]}' sounds like the answer when spoken aloud"
+            return "Say the indicated word aloud - it sounds like the answer"
 
-        elif primary_technique == 'abbreviation' or primary_technique == 'initial_letters':
-            return "Look for standard abbreviations or take initial letters"
+        elif primary_technique == 'abbreviation':
+            if clue_refs:
+                return f"'{clue_refs[0]}' has a standard abbreviation"
+            return "Use the standard abbreviation for the indicated word"
+
+        elif primary_technique == 'initial_letters':
+            if clue_refs:
+                return f"Take the first letters from '{clue_refs[0]}'"
+            return "Take the initial letters of the indicated words"
 
         elif primary_technique == 'double_definition':
-            return "Find a single word that matches both definitions in the clue"
+            if len(definitions) >= 2:
+                return f"One word means both '{definitions[0]}' and '{definitions[1]}'"
+            return "Find a word that satisfies both meanings in the clue"
 
         else:
-            # Fallback with clue references
             if clue_refs:
-                return f"The wordplay involves: '{', '.join(clue_refs[:2])}'"
+                return f"The wordplay uses: '{', '.join(clue_refs[:3])}'"
             return WORDPLAY_TECHNIQUES[primary_technique]['partial']
 
     def _find_anagram_fodder(self, text: str, clue_refs: List[str]) -> Optional[str]:
