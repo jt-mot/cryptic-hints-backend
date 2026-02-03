@@ -55,6 +55,8 @@ class GuardianScraper:
                     'puzzle_number': str(puzzle_data.get('number', puzzle_number)),
                     'setter': puzzle_data.get('creator', {}).get('name', 'Unknown'),
                     'date': self._parse_date(puzzle_data.get('date')),
+                    'dimensions': puzzle_data.get('dimensions', {'rows': 15, 'cols': 15}),
+                    'entries': puzzle_data.get('entries', []),  # Keep full entries for grid builder
                     'clues': []
                 }
                 
