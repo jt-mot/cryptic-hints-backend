@@ -252,9 +252,27 @@ class EnhancedHintGenerator:
         without revealing how it applies to the specific answer.
         """
         text_lower = full_text.lower()
-        detected_techniques = []
 
-        # Score each technique by keyword matches
+        # Primary technique keywords - these are definitive indicators
+        # If we see "anagram" explicitly, it's definitely an anagram
+        primary_indicators = {
+            'anagram': ['anagram'],
+            'hidden': ['hidden word', 'hidden in', 'concealed in'],
+            'reversal': ['reversal', 'reversed'],
+            'container': ['container', 'envelope'],
+            'homophone': ['homophone', 'sounds like', 'we hear'],
+            'double_definition': ['double definition', 'two definitions'],
+            'deletion': ['deletion'],
+            'spoonerism': ['spoonerism'],
+        }
+
+        # Check for primary indicators first - these are definitive
+        for tech_name, indicators in primary_indicators.items():
+            for indicator in indicators:
+                if indicator in text_lower:
+                    return WORDPLAY_TECHNIQUES[tech_name]['hint']
+
+        # Secondary detection using keyword scoring (less certain)
         technique_scores: Dict[str, int] = {}
         for tech_name, tech_info in WORDPLAY_TECHNIQUES.items():
             score = 0
@@ -265,29 +283,23 @@ class EnhancedHintGenerator:
             if score > 0:
                 technique_scores[tech_name] = score
 
-        # Sort by score and take top techniques
+        # Filter out low-confidence matches
+        # Deletion needs high score to avoid false positives from words like "short"
+        if 'deletion' in technique_scores and technique_scores['deletion'] < 3:
+            del technique_scores['deletion']
+        # Charade keywords are very common, require higher threshold
+        if 'charade' in technique_scores and technique_scores['charade'] < 4:
+            del technique_scores['charade']
+
+        # Sort by score and take top technique only (avoid false combinations)
         sorted_techniques = sorted(technique_scores.items(), key=lambda x: -x[1])
 
         if not sorted_techniques:
             return "Analyze how the clue breaks down into definition and wordplay"
 
-        # Build hint based on detected techniques
-        top_techniques = sorted_techniques[:2]  # Max 2 techniques to mention
-
-        if len(top_techniques) == 1:
-            tech_name = top_techniques[0][0]
-            return WORDPLAY_TECHNIQUES[tech_name]['hint']
-        else:
-            # Multiple techniques - likely a compound clue
-            tech_names = [t[0] for t in top_techniques]
-            hints = [WORDPLAY_TECHNIQUES[t]['hint'].split(' - ')[0] for t in tech_names]
-
-            # Create combined hint
-            if 'charade' in tech_names:
-                other = [h for t, h in zip(tech_names, hints) if t != 'charade'][0]
-                return f"This combines a charade with {tech_names[0] if tech_names[0] != 'charade' else tech_names[1]} - parts join together"
-            else:
-                return f"This clue combines {tech_names[0].replace('_', ' ')} and {tech_names[1].replace('_', ' ')}"
+        # Return only the highest-scoring technique
+        tech_name = sorted_techniques[0][0]
+        return WORDPLAY_TECHNIQUES[tech_name]['hint']
 
     def _generate_structural_hint(self, full_text: str, paragraphs: List[str],
                                    definitions: List[str]) -> str:
@@ -328,6 +340,8 @@ class EnhancedHintGenerator:
         primary_technique = max(technique_scores.items(), key=lambda x: x[1])[0]
 
         # Generate technique-specific structural hint with more detail
+        # For each technique, try to identify the indicator word and explain how it works
+
         if primary_technique == 'anagram':
             fodder_hint = self._find_anagram_fodder(full_text, clue_refs)
             if fodder_hint:
@@ -337,20 +351,45 @@ class EnhancedHintGenerator:
             return "Find the anagram indicator and rearrange those letters"
 
         elif primary_technique == 'hidden':
-            if clue_refs:
-                return f"Look for the answer hidden in the letters of '{clue_refs[0]}'"
+            # Find hidden word indicator
+            indicator = self._find_indicator(text_lower, [
+                'in', 'within', 'inside', 'some', 'part of', 'held by',
+                'among', 'amidst', 'buried in', 'concealed'
+            ], clue_refs)
+            if indicator and clue_refs:
+                return f"'{indicator}' signals a hidden word - look inside '{clue_refs[0]}'"
+            elif clue_refs:
+                return f"The answer is hidden inside '{clue_refs[0]}'"
             return "The answer is spelled out within consecutive letters in the clue"
 
         elif primary_technique == 'reversal':
-            if clue_refs:
+            # Find reversal indicator
+            indicator = self._find_indicator(text_lower, [
+                'back', 'returned', 'reversed', 'up', 'over', 'around',
+                'recalled', 'reflected', 'retiring', 'retreating', 'going west',
+                'going north', 'brought back', 'set back', 'turned'
+            ], clue_refs)
+            if indicator and clue_refs:
+                return f"'{indicator}' signals reversal - write '{clue_refs[0]}' backwards"
+            elif indicator:
+                return f"'{indicator}' signals reversal - write something backwards"
+            elif clue_refs:
                 return f"Write '{clue_refs[0]}' (or what it represents) backwards"
             return "Reverse the letters of the indicated word"
 
         elif primary_technique in ('container', 'insertion'):
-            if len(clue_refs) >= 2:
-                return f"'{clue_refs[0]}' goes inside or around '{clue_refs[1]}' (or vice versa)"
-            elif len(clue_refs) == 1:
-                return f"One part goes inside '{clue_refs[0]}' or '{clue_refs[0]}' goes inside another part"
+            # Find container indicator
+            indicator = self._find_indicator(text_lower, [
+                'around', 'outside', 'about', 'holding', 'embracing', 'gripping',
+                'clutching', 'containing', 'surrounding', 'boxing', 'in',
+                'inside', 'within', 'entering', 'going into'
+            ], clue_refs)
+            if indicator and len(clue_refs) >= 2:
+                return f"'{indicator}' signals container - put '{clue_refs[0]}' inside/around '{clue_refs[1]}'"
+            elif len(clue_refs) >= 2:
+                return f"Put '{clue_refs[0]}' inside or around '{clue_refs[1]}' (or vice versa)"
+            elif indicator:
+                return f"'{indicator}' signals container - one part goes inside/around another"
             return "One component wraps around or goes inside another"
 
         elif primary_technique == 'charade':
@@ -361,26 +400,42 @@ class EnhancedHintGenerator:
             return "Chain the wordplay components together left to right"
 
         elif primary_technique == 'deletion':
-            # Be more specific about what kind of deletion
-            if 'headless' in text_lower or 'beheaded' in text_lower:
-                if clue_refs:
-                    return f"Remove the first letter from '{clue_refs[0]}'"
-                return "Remove the first letter from a word"
-            elif 'endless' in text_lower or 'curtailed' in text_lower:
-                if clue_refs:
-                    return f"Remove the last letter from '{clue_refs[0]}'"
-                return "Remove the last letter from a word"
-            elif 'heartless' in text_lower:
-                if clue_refs:
-                    return f"Remove the middle letter(s) from '{clue_refs[0]}'"
-                return "Remove the middle letter(s) from a word"
-            else:
-                if clue_refs:
-                    return f"Remove a letter from '{clue_refs[0]}'"
-                return "Remove the indicated letter(s) from a word"
+            # Be more specific about what kind of deletion and find indicator
+            deletion_indicators = {
+                'head': ['headless', 'beheaded', 'topless', 'losing head', 'no head'],
+                'tail': ['endless', 'curtailed', 'trimmed', 'docked', 'cut short', 'losing tail'],
+                'middle': ['heartless', 'gutted', 'disembowelled', 'hollow']
+            }
+
+            for del_type, indicators in deletion_indicators.items():
+                for ind in indicators:
+                    if ind in text_lower:
+                        if del_type == 'head':
+                            target = f"'{clue_refs[0]}'" if clue_refs else "a word"
+                            return f"'{ind}' means remove the first letter from {target}"
+                        elif del_type == 'tail':
+                            target = f"'{clue_refs[0]}'" if clue_refs else "a word"
+                            return f"'{ind}' means remove the last letter from {target}"
+                        elif del_type == 'middle':
+                            target = f"'{clue_refs[0]}'" if clue_refs else "a word"
+                            return f"'{ind}' means remove the middle letter(s) from {target}"
+
+            if clue_refs:
+                return f"Remove a letter from '{clue_refs[0]}'"
+            return "Remove the indicated letter(s) from a word"
 
         elif primary_technique == 'homophone':
-            if clue_refs:
+            # Find homophone indicator
+            indicator = self._find_indicator(text_lower, [
+                'say', 'said', 'sounds like', 'we hear', 'heard', 'aloud',
+                'audibly', 'spoken', 'vocal', 'orally', 'broadcast',
+                'on the radio', 'reportedly', 'they say', 'it\'s said'
+            ], clue_refs)
+            if indicator and clue_refs:
+                return f"'{indicator}' signals homophone - '{clue_refs[0]}' sounds like the answer"
+            elif indicator:
+                return f"'{indicator}' signals homophone - the answer sounds like another word"
+            elif clue_refs:
                 return f"'{clue_refs[0]}' sounds like the answer when spoken aloud"
             return "Say the indicated word aloud - it sounds like the answer"
 
@@ -390,7 +445,14 @@ class EnhancedHintGenerator:
             return "Use the standard abbreviation for the indicated word"
 
         elif primary_technique == 'initial_letters':
-            if clue_refs:
+            # Find acrostic indicator
+            indicator = self._find_indicator(text_lower, [
+                'initially', 'first', 'starts', 'heads', 'leaders',
+                'first letters', 'opening', 'beginnings'
+            ], clue_refs)
+            if indicator and clue_refs:
+                return f"'{indicator}' means take initial letters from '{clue_refs[0]}'"
+            elif clue_refs:
                 return f"Take the first letters from '{clue_refs[0]}'"
             return "Take the initial letters of the indicated words"
 
@@ -404,24 +466,110 @@ class EnhancedHintGenerator:
                 return f"The wordplay uses: '{', '.join(clue_refs[:3])}'"
             return WORDPLAY_TECHNIQUES[primary_technique]['partial']
 
-    def _find_anagram_fodder(self, text: str, clue_refs: List[str]) -> Optional[str]:
-        """Find and describe the anagram fodder without revealing the answer"""
+    def _find_indicator(self, text_lower: str, indicators: List[str], clue_refs: List[str]) -> Optional[str]:
+        """Find an indicator word from the given list in the text or clue refs"""
+        # First check if any indicator appears in quoted clue references
+        for ref in clue_refs:
+            ref_lower = ref.lower()
+            for indicator in indicators:
+                if indicator in ref_lower:
+                    return ref
+
+        # Then check in the explanation text
+        for indicator in indicators:
+            if indicator in text_lower:
+                return indicator
+
+        return None
+
+    # Common anagram indicators - words that signal letters should be rearranged
+    ANAGRAM_INDICATORS = [
+        # Disorder/chaos
+        'wild', 'crazy', 'mad', 'insane', 'lunatic', 'frantic', 'chaotic', 'messy',
+        'untidy', 'disorderly', 'confused', 'bewildered', 'muddled', 'mixed',
+        'scrambled', 'jumbled', 'tangled', 'mangled', 'garbled',
+        # Damage/destruction
+        'broken', 'shattered', 'smashed', 'wrecked', 'ruined', 'destroyed',
+        'damaged', 'crushed', 'cracked', 'split',
+        # Movement/change
+        'moving', 'dancing', 'spinning', 'whirling', 'tumbling', 'rolling',
+        'shifting', 'changing', 'altered', 'converted', 'transformed',
+        'reformed', 'remodeled', 'revised', 'edited', 'adapted',
+        # Cooking/processing
+        'cooked', 'baked', 'fried', 'stewed', 'boiled', 'roasted', 'grilled',
+        'stirred', 'blended', 'mashed', 'minced', 'chopped', 'diced',
+        # Intoxication
+        'drunk', 'tipsy', 'plastered', 'smashed', 'wasted', 'hammered', 'stoned',
+        # Wrongness/error
+        'wrong', 'bad', 'poor', 'faulty', 'flawed', 'mistaken', 'erroneous',
+        'off', 'out', 'awry', 'amiss',
+        # Construction
+        'built', 'assembled', 'constructed', 'arranged', 'organized', 'sorted',
+        'ordered', 'designed', 'fashioned', 'devised', 'developed',
+        # Other common indicators
+        'novel', 'new', 'fresh', 'different', 'unusual', 'strange', 'odd',
+        'peculiar', 'curious', 'exotic', 'fancy', 'free', 'loose', 'rough',
+        'crude', 'raw', 'maybe', 'perhaps', 'possibly', 'potentially',
+        'could be', 'might be', 'working', 'playing', 'sporting',
+    ]
+
+    def _find_anagram_indicator(self, text: str, clue_refs: List[str]) -> Optional[str]:
+        """Find the anagram indicator word in the explanation"""
         text_lower = text.lower()
 
-        # Look for "anagram of X" patterns
+        # Look for explicit "indicator is X" or "X is the anagram indicator" patterns
+        indicator_pattern = re.search(
+            r"['\"]([^'\"]+)['\"]\s*(?:is|as|being)\s*(?:the\s*)?(?:anagram\s*)?indicator",
+            text_lower
+        )
+        if indicator_pattern:
+            return indicator_pattern.group(1)
+
+        # Look for "indicated by X" pattern
+        indicated_by = re.search(r"indicated\s+by\s+['\"]?([^'\".,]+)['\"]?", text_lower)
+        if indicated_by:
+            return indicated_by.group(1).strip()
+
+        # Search for known anagram indicators in the quoted clue references
+        for ref in clue_refs:
+            ref_lower = ref.lower()
+            for indicator in self.ANAGRAM_INDICATORS:
+                if indicator in ref_lower or ref_lower in indicator:
+                    return ref
+
+        # Search in the full text for indicator words
+        for indicator in self.ANAGRAM_INDICATORS:
+            # Look for the indicator as a standalone word
+            if re.search(r'\b' + re.escape(indicator) + r'\b', text_lower):
+                return indicator
+
+        return None
+
+    def _find_anagram_fodder(self, text: str, clue_refs: List[str]) -> Optional[str]:
+        """Find the anagram indicator and fodder to create a helpful hint"""
+        text_lower = text.lower()
+
+        # Find the indicator
+        indicator = self._find_anagram_indicator(text, clue_refs)
+
+        # Look for "anagram of X" patterns to find fodder
         anagram_of = re.search(r'anagram\s+of\s+["\']?([^"\'.,]+)["\']?', text_lower)
-        if anagram_of:
+
+        if indicator and anagram_of:
             fodder = anagram_of.group(1).strip()
-            letter_count = len(re.sub(r'[^a-z]', '', fodder.lower()))
-            if letter_count > 0:
-                return f"Find a {letter_count}-letter anagram (look for the indicator word)"
+            return f"'{indicator}' is the anagram indicator - rearrange '{fodder}'"
+        elif indicator:
+            return f"'{indicator}' is the anagram indicator - find the letters to rearrange"
+        elif anagram_of:
+            fodder = anagram_of.group(1).strip()
+            return f"Rearrange the letters of '{fodder}'"
 
         # Count letters in potential fodder from quotes
         if clue_refs:
             for ref in clue_refs:
                 clean = re.sub(r'[^a-zA-Z]', '', ref)
                 if len(clean) >= 4:
-                    return f"Rearrange letters - the fodder has {len(clean)} letters"
+                    return f"Rearrange letters - look for the anagram indicator in the clue"
 
         return None
 
@@ -430,17 +578,29 @@ class EnhancedHintGenerator:
         """
         Level 4: Complete explanation
 
-        This provides the full breakdown including the answer components.
-        Format it clearly with definition and wordplay separated.
+        This provides the full breakdown including the ANSWER and explanation.
+        Format: ANSWER: [answer] | Definition: [def] | Wordplay: [explanation]
         """
+        full_text = ' '.join(paragraphs)
         parts = []
+
+        # Extract the answer (longest ALL CAPS word, usually the answer)
+        caps_words = re.findall(r'\b[A-Z]{2,}\b', full_text)
+        if caps_words:
+            # The answer is typically the longest caps word, or appears at the end
+            # Filter out common non-answer caps like "I", "A", abbreviations
+            answer_candidates = [w for w in caps_words if len(w) >= 3]
+            if answer_candidates:
+                # Prefer the longest one, or the last one if tied
+                answer = max(answer_candidates, key=len)
+                parts.append(f"Answer: {answer}")
 
         # Definition section
         if definitions:
             if len(definitions) == 1:
                 parts.append(f"Definition: '{definitions[0]}'")
             else:
-                parts.append(f"Definitions: {', '.join([f'\"{d}\"' for d in definitions])}")
+                parts.append(f"Definitions: '{definitions[0]}' and '{definitions[1]}'")
 
         # Wordplay explanation - use the main content paragraphs
         if paragraphs:
@@ -460,24 +620,10 @@ class EnhancedHintGenerator:
                     best_para = para
 
             if best_para:
-                # Clean up the explanation
                 explanation = best_para.strip()
-
                 # Don't duplicate if it's the same as definition
-                if definitions and explanation.lower() != definitions[0].lower():
+                if not definitions or explanation.lower() != definitions[0].lower():
                     parts.append(f"Wordplay: {explanation}")
-
-            # Add any additional context from other paragraphs
-            additional = []
-            for para in paragraphs:
-                if para != best_para and len(para) > 20:
-                    # Check if it adds new information
-                    if any(phrase in para.lower() for phrase in
-                          ['also', 'note', 'reference', 'allusion', 'meaning']):
-                        additional.append(para.strip())
-
-            if additional:
-                parts.append("Notes: " + " ".join(additional[:2]))
 
         if not parts:
             return ' '.join(paragraphs) if paragraphs else "No explanation available."
