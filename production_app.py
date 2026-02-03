@@ -154,7 +154,8 @@ def get_today_puzzle():
     
     # Get the most recent published puzzle
     cursor.execute('''
-        SELECT * FROM puzzles 
+        SELECT id, publication, puzzle_number, setter, date, grid_data
+        FROM puzzles 
         WHERE status = 'published'
         AND date <= CURRENT_DATE
         ORDER BY date DESC 
@@ -185,6 +186,7 @@ def get_today_puzzle():
         'puzzle_number': puzzle['puzzle_number'],
         'setter': puzzle['setter'],
         'date': puzzle['date'],
+        'grid': puzzle.get('grid_data'),
         'clues': [dict(clue) for clue in clues]
     })
 
@@ -220,7 +222,8 @@ def get_puzzle_by_number(puzzle_number):
     
     # Get puzzle
     cursor.execute('''
-        SELECT * FROM puzzles 
+        SELECT id, publication, puzzle_number, setter, date, status, grid_data
+        FROM puzzles 
         WHERE puzzle_number = %s
         AND status = 'published'
         LIMIT 1
@@ -252,8 +255,31 @@ def get_puzzle_by_number(puzzle_number):
         'puzzle_number': puzzle['puzzle_number'],
         'setter': puzzle['setter'],
         'date': str(puzzle['date']),
+        'grid': puzzle.get('grid_data'),
         'clues': [dict(clue) for clue in clues]
     })
+
+
+@app.route('/api/puzzle/<int:puzzle_id>/grid')
+def get_puzzle_grid(puzzle_id):
+    """Get grid data for a puzzle"""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    cursor.execute('''
+        SELECT grid_data 
+        FROM puzzles 
+        WHERE id = %s
+    ''', (puzzle_id,))
+    
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    
+    if not result or not result.get('grid_data'):
+        return jsonify({'error': 'Grid not found'}), 404
+    
+    return jsonify(result['grid_data'])
 
 
 @app.route('/api/clue/<int:clue_id>/hint/<int:level>')
@@ -487,6 +513,14 @@ def scrape_and_import():
             ))
             
             puzzle_id = cursor.fetchone()[0]
+            
+            # Store grid data if available
+            if puzzle_data.get('grid'):
+                cursor.execute('''
+                    UPDATE puzzles 
+                    SET grid_data = %s 
+                    WHERE id = %s
+                ''', (json.dumps(puzzle_data['grid']), puzzle_id))
             
             # Insert clues with hints
             clue_count = 0
