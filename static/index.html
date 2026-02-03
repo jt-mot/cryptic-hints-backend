@@ -3,634 +3,357 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardian Cryptic 29,914 - With Progressive Hints</title>
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <title>Guardian Cryptic Crosswords with Progressive Hints</title>
     <style>
-        :root {
-            --ink: #0f0f0f;
-            --paper: #fffef8;
-            --blue-dark: #1a3a52;
-            --blue-accent: #2563a8;
-            --amber: #d97706;
-            --amber-light: #fef3c7;
-            --green: #065f46;
-            --green-light: #d1fae5;
-            --red: #991b1b;
-            --red-light: #fee2e2;
-            --grey-light: #f3f4f6;
-            --grey-border: #d1d5db;
-            
-            --serif: 'Crimson Pro', Georgia, serif;
-            --display: 'Cormorant Garamond', Georgia, serif;
-        }
-        
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
         
         body {
-            font-family: var(--serif);
-            background: var(--paper);
-            color: var(--ink);
-            line-height: 1.65;
-            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #121212;
+            background: #ffffff;
         }
         
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 8px;
-            background: repeating-linear-gradient(
-                90deg,
-                var(--blue-dark) 0px,
-                var(--blue-dark) 20px,
-                var(--amber) 20px,
-                var(--amber) 22px,
-                transparent 22px,
-                transparent 40px
-            );
-            z-index: 1000;
+        /* Header */
+        header {
+            border-bottom: 1px solid #e0e0e0;
+            padding: 20px 0;
         }
         
-        .masthead {
-            background: var(--blue-dark);
-            color: var(--paper);
-            padding: 3rem 2rem 2rem;
-            text-align: center;
-            position: relative;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-        }
-        
-        .masthead h1 {
-            font-family: var(--display);
-            font-size: clamp(2rem, 5vw, 3.5rem);
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            margin-bottom: 0.5rem;
-        }
-        
-        .masthead .tagline {
-            font-size: clamp(1rem, 2vw, 1.3rem);
-            opacity: 0.95;
-            font-style: italic;
-            letter-spacing: 0.03em;
-        }
-        
-        .puzzle-meta {
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid rgba(255,255,255,0.2);
-            font-size: 0.95rem;
-            letter-spacing: 0.05em;
-        }
-        
-        .container {
+        .header-content {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 3rem 1.5rem;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
-        .hero-feature {
-            background: linear-gradient(135deg, var(--amber-light) 0%, #fde68a 100%);
-            border: 2px solid var(--amber);
-            border-radius: 8px;
-            padding: 2rem;
-            margin-bottom: 3rem;
-            box-shadow: 0 4px 16px rgba(217, 119, 6, 0.1);
+        .logo {
+            font-size: 24px;
+            font-weight: 600;
+            color: #121212;
+            text-decoration: none;
         }
         
-        .hero-feature h2 {
-            font-family: var(--display);
-            font-size: 2rem;
-            color: var(--blue-dark);
-            margin-bottom: 0.75rem;
+        nav a {
+            margin-left: 32px;
+            color: #121212;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
         }
         
-        .hero-feature p {
-            font-size: 1.1rem;
-            color: #78350f;
+        nav a:hover {
+            color: #666;
         }
         
-        .clues-wrapper {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 24px rgba(0,0,0,0.08);
-            overflow: hidden;
-            margin-bottom: 3rem;
+        /* Hero Section */
+        .hero {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 80px 40px 60px;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
+        }
+        
+        .hero p {
+            font-size: 20px;
+            color: #666;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            padding: 16px 40px;
+            background: #121212;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        .cta-button:hover {
+            background: #333;
+        }
+        
+        /* Features */
+        .features {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 40px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+        }
+        
+        .feature {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .feature h3 {
+            font-size: 20px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .feature p {
+            color: #666;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        
+        /* Puzzles Section */
+        .puzzles-section {
+            background: #fafafa;
+            padding: 80px 40px;
         }
         
         .section-header {
-            background: var(--grey-light);
-            padding: 1.5rem 2rem;
-            border-bottom: 3px solid var(--blue-dark);
-        }
-        
-        .section-header h3 {
-            font-family: var(--display);
-            font-size: 1.8rem;
-            color: var(--blue-dark);
-            font-weight: 700;
-        }
-        
-        .clues-list {
-            padding: 2rem;
-        }
-        
-        .clue-item {
-            padding: 2rem 0;
-            border-bottom: 1px solid var(--grey-border);
-        }
-        
-        .clue-item:last-child {
-            border-bottom: none;
-        }
-        
-        .clue-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        
-        .clue-number {
-            font-family: var(--display);
-            font-weight: 700;
-            font-size: 1.4rem;
-            color: var(--blue-dark);
-        }
-        
-        .clue-enum {
-            font-family: monospace;
-            color: #6b7280;
-            font-size: 1rem;
-        }
-        
-        .clue-text {
-            font-size: 1.2rem;
-            line-height: 1.75;
-            margin-bottom: 1.5rem;
-            color: var(--ink);
-        }
-        
-        .answer-section {
-            background: var(--grey-light);
-            padding: 1.5rem;
-            border-radius: 6px;
-            margin-bottom: 1.5rem;
-        }
-        
-        .input-group {
-            display: flex;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-        }
-        
-        .answer-input {
-            flex: 1;
-            padding: 0.875rem 1.25rem;
-            font-family: var(--display);
-            font-size: 1.1rem;
-            text-transform: uppercase;
-            letter-spacing: 0.25em;
-            border: 2px solid var(--grey-border);
-            border-radius: 4px;
-            background: white;
-            transition: all 0.3s ease;
-        }
-        
-        .answer-input:focus {
-            outline: none;
-            border-color: var(--blue-accent);
-            box-shadow: 0 0 0 3px rgba(37, 99, 168, 0.1);
-        }
-        
-        .check-btn {
-            padding: 0.875rem 2rem;
-            background: var(--blue-dark);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-family: var(--serif);
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-        
-        .check-btn:hover {
-            background: var(--blue-accent);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(37, 99, 168, 0.3);
-        }
-        
-        .feedback {
-            padding: 1rem 1.25rem;
-            border-radius: 4px;
-            font-weight: 600;
-            margin-top: 1rem;
-            display: none;
-        }
-        
-        .feedback.show {
-            display: block;
-        }
-        
-        .feedback.correct {
-            background: var(--green-light);
-            color: var(--green);
-            border-left: 4px solid var(--green);
-        }
-        
-        .feedback.incorrect {
-            background: var(--red-light);
-            color: var(--red);
-            border-left: 4px solid var(--red);
-        }
-        
-        .hints-container {
-            background: white;
-            border: 1px solid var(--grey-border);
-            border-radius: 6px;
-            overflow: hidden;
-            margin-top: 1.5rem;
-        }
-        
-        .hint-level {
-            border-bottom: 1px solid var(--grey-border);
-        }
-        
-        .hint-level:last-child {
-            border-bottom: none;
-        }
-        
-        .hint-toggle {
-            width: 100%;
-            padding: 1.25rem 1.5rem;
-            background: transparent;
-            border: none;
-            text-align: left;
-            cursor: pointer;
-            font-family: var(--serif);
-            font-size: 1rem;
-            font-weight: 600;
+            max-width: 1200px;
+            margin: 0 auto 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: all 0.2s ease;
-            color: var(--ink);
         }
         
-        .hint-toggle:hover {
-            background: var(--grey-light);
+        .section-header h2 {
+            font-size: 32px;
+            font-weight: 600;
         }
         
-        .hint-toggle .label {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
+        .view-all {
+            color: #121212;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
         }
         
-        .hint-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            border-radius: 3px;
-            letter-spacing: 0.05em;
+        .view-all:hover {
+            text-decoration: underline;
+        }
+        
+        .puzzles-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        
+        .puzzle-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 24px;
+            text-decoration: none;
+            color: #121212;
+            transition: border-color 0.2s;
+        }
+        
+        .puzzle-card:hover {
+            border-color: #121212;
+        }
+        
+        .puzzle-meta {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 12px;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
-        .hint-badge.gentle {
-            background: #dbeafe;
-            color: #1e40af;
+        .puzzle-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
         }
         
-        .hint-badge.medium {
-            background: #fef3c7;
-            color: #92400e;
+        .puzzle-setter {
+            font-size: 14px;
+            color: #666;
         }
         
-        .hint-badge.detailed {
-            background: #fce7f3;
-            color: #9f1239;
-        }
-        
-        .hint-badge.answer {
-            background: #f3e8ff;
-            color: #6b21a8;
-        }
-        
-        .hint-icon {
-            font-size: 1.2rem;
-            color: var(--amber);
-            transition: transform 0.3s ease;
-        }
-        
-        .hint-toggle.active {
-            background: var(--amber-light);
-        }
-        
-        .hint-toggle.active .hint-icon {
-            transform: rotate(90deg);
-        }
-        
-        .hint-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s ease;
-            background: var(--grey-light);
-        }
-        
-        .hint-content.show {
-            max-height: 1000px;
-            border-top: 2px solid var(--amber);
-        }
-        
-        .hint-inner {
-            padding: 1.5rem;
-        }
-        
-        .hint-inner p {
-            font-size: 1.05rem;
-            line-height: 1.7;
-            color: #374151;
-        }
-        
-        .footer {
-            margin-top: 5rem;
-            padding: 3rem 2rem;
+        /* Footer */
+        footer {
+            border-top: 1px solid #e0e0e0;
+            padding: 40px;
             text-align: center;
-            border-top: 2px solid var(--grey-border);
-            background: var(--grey-light);
+            color: #666;
+            font-size: 14px;
         }
         
-        .footer p {
-            font-size: 0.95rem;
-            color: #6b7280;
-            margin: 0.5rem 0;
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
         }
         
         @media (max-width: 768px) {
-            .input-group {
-                flex-direction: column;
+            .hero h1 {
+                font-size: 36px;
             }
-            .check-btn {
-                width: 100%;
+            
+            .hero p {
+                font-size: 18px;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+            
+            .puzzles-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            nav {
+                display: none;
             }
         }
     </style>
 </head>
 <body>
-    <div class="masthead">
-        <h1>🧩 Guardian Cryptic 29,914</h1>
-        <p class="tagline">Progressive hints that never spoil other clues</p>
-        <div class="puzzle-meta">
-            Set by Fed • Monday, 27 January 2026 • Proof of Concept
+    <header>
+        <div class="header-content">
+            <a href="/" class="logo">Cryptic Hints</a>
+            <nav>
+                <a href="/admin/puzzles">Puzzles</a>
+                <a href="#how-it-works">How It Works</a>
+                <a href="/admin">Admin</a>
+            </nav>
         </div>
-    </div>
-    
-    <div class="container">
-        <div class="hero-feature">
-            <h2>✨ Real Guardian Puzzle with Progressive Hints!</h2>
-            <p><strong>This is your proof-of-concept!</strong> A real Guardian cryptic with progressive hints extracted from fifteensquared.net. Each clue has 4 hint levels that build on each other without spoiling the whole puzzle. Try it out, then use this to approach Guardian/FT for permission!</p>
-        </div>
-        
-        <div class="clues-wrapper">
-            <div class="section-header">
-                <h3>Across</h3>
-            </div>
-            <div class="clues-list" id="across-clues"></div>
-        </div>
-        
-        <div class="clues-wrapper">
-            <div class="section-header">
-                <h3>Down</h3>
-            </div>
-            <div class="clues-list" id="down-clues"></div>
-        </div>
-        
-        <div class="footer">
-            <p><strong>Proof of Concept - Not for Public Distribution</strong></p>
-            <p>Guardian Cryptic crossword © Guardian News & Media Ltd</p>
-            <p>Explanations adapted from Fifteensquared.net (with permission pending)</p>
-            <p style="margin-top: 1.5rem;">This demo shows how progressive hints would work with real puzzles.</p>
-        </div>
-    </div>
-    
-    <script>
-        // Real Guardian Cryptic 29,914 clues with hints extracted from fifteensquared
-        let puzzleData = {
-            across: [],
-            down: []
-        };
+    </header>
 
-        // Load puzzle dynamically from API
-        async function loadPuzzle() {
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>Master cryptic crosswords with progressive hints</h1>
+            <p>Learn to solve Guardian cryptics at your own pace with our intelligent four-level hint system</p>
+            <a href="#" class="cta-button" id="todaysPuzzleBtn">Try Today's Puzzle</a>
+        </section>
+
+        <!-- Features -->
+        <section class="features" id="how-it-works">
+            <div class="feature">
+                <div class="feature-icon">💡</div>
+                <h3>Progressive Hints</h3>
+                <p>Four levels of hints from subtle nudges to complete explanations. Reveal only what you need.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🎯</div>
+                <h3>Interactive Grid</h3>
+                <p>Type answers directly into the grid. Auto-fills intersecting clues as you solve.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">📚</div>
+                <h3>Learn As You Solve</h3>
+                <p>Understand anagrams, containers, reversals and more through detailed explanations.</p>
+            </div>
+        </section>
+
+        <!-- Recent Puzzles -->
+        <section class="puzzles-section">
+            <div class="section-header">
+                <h2>Recent Puzzles</h2>
+                <a href="/admin/puzzles" class="view-all">View all →</a>
+            </div>
+            <div id="puzzlesGrid" class="puzzles-grid">
+                <div class="loading">Loading puzzles...</div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Cryptic Hints. Guardian crosswords with progressive hints.</p>
+    </footer>
+
+    <script>
+        // Fetch today's puzzle
+        async function loadTodaysPuzzle() {
             try {
                 const response = await fetch('/api/puzzle/today');
+                const puzzle = await response.json();
                 
-                if (!response.ok) {
-                    throw new Error('No published puzzle available');
+                if (puzzle.puzzle_number) {
+                    document.getElementById('todaysPuzzleBtn').href = `/puzzle/${puzzle.puzzle_number}`;
                 }
-                
-                const data = await response.json();
-                
-                // Update title
-                document.title = `Guardian Cryptic ${data.puzzle_number} - Progressive Hints`;
-                
-                // Update meta info
-                const h2 = document.querySelector('.puzzle-meta h2');
-                if (h2) h2.textContent = `Guardian Cryptic #${data.puzzle_number}`;
-                
-                const dateP = document.querySelector('.puzzle-meta p');
-                if (dateP && dateP.innerHTML.includes('Setter:')) {
-                    dateP.innerHTML = `Setter: <strong>${data.setter}</strong> | Date: ${data.date}`;
-                }
-                
-                // Transform clues
-                puzzleData.across = data.clues
-                    .filter(c => c.direction === 'across')
-                    .map(c => ({
-                        id: c.id,
-                        number: String(c.clue_number),
-                        clue: c.clue_text,
-                        enumeration: c.enumeration,
-                        answer: c.answer || '',
-                        hints: []
-                    }));
-                
-                puzzleData.down = data.clues
-                    .filter(c => c.direction === 'down')
-                    .map(c => ({
-                        id: c.id,
-                        number: String(c.clue_number),
-                        clue: c.clue_text,
-                        enumeration: c.enumeration,
-                        answer: c.answer || '',
-                        hints: []
-                    }));
-                
-                // Render
-                const acrossContainer = document.getElementById('across-clues');
-                const downContainer = document.getElementById('down-clues');
-                
-                if (acrossContainer) {
-                    acrossContainer.innerHTML = puzzleData.across.map(clue => renderClue(clue)).join('');
-                }
-                if (downContainer) {
-                    downContainer.innerHTML = puzzleData.down.map(clue => renderClue(clue)).join('');
-                }
-                
             } catch (error) {
-                console.error('Error loading puzzle:', error);
-                const container = document.querySelector('.container');
-                if (container) {
-                    container.innerHTML = `
-                        <div style="text-align: center; padding: 4rem 2rem; color: #666;">
-                            <h2 style="margin-bottom: 1rem;">No Published Puzzle Available</h2>
-                            <p>Check back soon for new puzzles!</p>
-                        </div>
-                    `;
-                }
+                console.error('Error loading today\'s puzzle:', error);
+                // Fallback to puzzles page
+                document.getElementById('todaysPuzzleBtn').href = '/admin/puzzles';
             }
         }
 
-                // Render clues
-        function renderClues() {
-            const acrossContainer = document.getElementById('across-clues');
-            const downContainer = document.getElementById('down-clues');
-            
-            acrossContainer.innerHTML = puzzleData.across.map(clue => renderClue(clue)).join('');
-            downContainer.innerHTML = puzzleData.down.map(clue => renderClue(clue)).join('');
-        }
-        
-        function renderClue(clue) {
-            return `
-                <div class="clue-item">
-                    <div class="clue-header">
-                        <span class="clue-number">${clue.number}.</span>
-                        <span class="clue-enum">(${clue.enumeration})</span>
-                    </div>
-                    
-                    <p class="clue-text">${clue.clue}</p>
-                    
-                    <div class="answer-section">
-                        <div class="input-group">
-                            <input 
-                                type="text" 
-                                class="answer-input" 
-                                id="answer-${clue.id}"
-                                placeholder="YOUR ANSWER"
-                                data-answer="${clue.answer}"
-                            >
-                            <button class="check-btn" onclick="checkAnswer(${clue.id})">
-                                Check Answer
-                            </button>
-                        </div>
-                        <div class="feedback" id="feedback-${clue.id}"></div>
-                    </div>
-                    
-                    <div class="hints-container">
-                        ${[1,2,3,4].map(level => {
-                            const badges = ['gentle', 'medium', 'detailed', 'answer'];
-                            const labels = ['Definition', 'Wordplay Type', 'Breakdown', 'Full Answer'];
-                            return `
-                                <div class="hint-level">
-                                    <button class="hint-toggle" onclick="toggleHint(${clue.id}, ${level})">
-                                        <span class="label">
-                                            <span>Hint ${level}: ${labels[level-1]}</span>
-                                            <span class="hint-badge ${badges[level-1]}">${badges[level-1]}</span>
-                                        </span>
-                                        <span class="hint-icon">▶</span>
-                                    </button>
-                                    <div class="hint-content" id="hint-${clue.id}-${level}">
-                                        <div class="hint-inner">
-                                            <p></p>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            `;
-        }
-        
-        async function toggleHint(clueId, level) {
-            const toggle = event.currentTarget;
-            const content = document.getElementById(`hint-${clueId}-${level}`);
-            const hintText = content.querySelector('p');
-            
-            if (toggle.classList.contains('active')) {
-                toggle.classList.remove('active');
-                content.classList.remove('show');
-            } else {
-                // Load hint from API if not already loaded
-                if (!hintText.textContent) {
-                    hintText.textContent = 'Loading...';
-                    
-                    try {
-                        const response = await fetch(`/api/clue/${clueId}/hint/${level}`);
-                        const data = await response.json();
-                        hintText.textContent = data.hint_text || 'Hint not available';
-                    } catch (error) {
-                        hintText.textContent = 'Error loading hint';
-                        console.error('Error loading hint:', error);
-                    }
+        // Fetch recent puzzles
+        async function loadRecentPuzzles() {
+            try {
+                const response = await fetch('/api/puzzles/published');
+                const puzzles = await response.json();
+                
+                const grid = document.getElementById('puzzlesGrid');
+                
+                if (puzzles.length === 0) {
+                    grid.innerHTML = '<div class="loading">No puzzles available yet</div>';
+                    return;
                 }
                 
-                toggle.classList.add('active');
-                content.classList.add('show');
+                // Show first 6 puzzles
+                const recentPuzzles = puzzles.slice(0, 6);
+                
+                grid.innerHTML = recentPuzzles.map(puzzle => `
+                    <a href="/puzzle/${puzzle.puzzle_number}" class="puzzle-card">
+                        <div class="puzzle-meta">
+                            ${formatDate(puzzle.date)}
+                        </div>
+                        <div class="puzzle-title">
+                            Cryptic #${puzzle.puzzle_number}
+                        </div>
+                        <div class="puzzle-setter">
+                            by ${puzzle.setter}
+                        </div>
+                    </a>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading puzzles:', error);
+                document.getElementById('puzzlesGrid').innerHTML = 
+                    '<div class="loading">Error loading puzzles</div>';
             }
         }
-        
-        function checkAnswer(clueId) {
-            const input = document.getElementById(`answer-${clueId}`);
-            const feedback = document.getElementById(`feedback-${clueId}`);
-            const userAnswer = input.value.trim().toUpperCase().replace(/[^A-Z]/g, '');
-            const correctAnswer = input.dataset.answer.replace(/[^A-Z]/g, '');
-            
-            if (!userAnswer) {
-                feedback.textContent = 'Please enter an answer first';
-                feedback.className = 'feedback incorrect show';
-                return;
-            }
-            
-            if (userAnswer === correctAnswer) {
-                feedback.textContent = '🎉 Correct! Well done!';
-                feedback.className = 'feedback correct show';
-                input.style.borderColor = 'var(--green)';
-            } else {
-                feedback.textContent = '❌ Not quite - try the hints below!';
-                feedback.className = 'feedback incorrect show';
-                input.style.borderColor = 'var(--red)';
-            }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
         }
-        
-        // Allow Enter key
-        document.addEventListener('keypress', (e) => {
-            if (e.target.classList.contains('answer-input') && e.key === 'Enter') {
-                const clueId = parseInt(e.target.id.replace('answer-', ''));
-                checkAnswer(clueId);
-            }
-        });
-        
-        renderClues();
-    
-        // Load puzzle on page load
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', loadPuzzle);
-        } else {
-            loadPuzzle();
-        }
+
+        // Load content on page load
+        loadTodaysPuzzle();
+        loadRecentPuzzles();
     </script>
 </body>
 </html>
