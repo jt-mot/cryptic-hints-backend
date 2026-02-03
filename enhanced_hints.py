@@ -241,6 +241,7 @@ Examples:
 "This is a container clue - one word goes inside another"
 "This clue uses a reversal plus a charade"
 "Look for two separate definitions of the same word"
+"""
 
             response = requests.post(
                 "https://api.anthropic.com/v1/messages",
