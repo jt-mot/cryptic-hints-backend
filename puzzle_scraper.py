@@ -66,7 +66,7 @@ class GuardianScraper:
                         'direction': entry.get('direction', 'across'),
                         'clue_text': entry.get('clue', ''),
                         'answer': entry.get('solution', ''),
-                        'enumeration': str(entry.get('length', ''))
+                        'enumeration': self._build_enumeration(entry)
                     }
                     result['clues'].append(clue)
                 
@@ -94,6 +94,49 @@ class GuardianScraper:
             except:
                 pass
         return datetime.now().strftime('%Y-%m-%d')
+
+    def _build_enumeration(self, entry: Dict) -> str:
+        """
+        Build enumeration string from Guardian entry data.
+
+        Guardian provides:
+        - length: total length (e.g., 15)
+        - separatorLocations: {"separator": [positions]} e.g., {",": [4]} means comma after position 4
+
+        This converts to enumeration like "4, 11" or "3-2, 4"
+        """
+        length = entry.get('length', 0)
+        separator_locations = entry.get('separatorLocations', {})
+
+        if not separator_locations:
+            # No separators - just return the length
+            return str(length)
+
+        # Build list of (position, separator) tuples
+        breaks = []
+        for separator, positions in separator_locations.items():
+            for pos in positions:
+                breaks.append((pos, separator))
+
+        # Sort by position
+        breaks.sort(key=lambda x: x[0])
+
+        # Build enumeration string
+        parts = []
+        prev_pos = 0
+
+        for pos, sep in breaks:
+            word_len = pos - prev_pos
+            parts.append(str(word_len))
+            parts.append(sep + ' ' if sep == ',' else sep)  # Add space after comma
+            prev_pos = pos
+
+        # Add final part
+        final_len = length - prev_pos
+        if final_len > 0:
+            parts.append(str(final_len))
+
+        return ''.join(parts).strip()
 
 
 class FifteensquaredScraper:
