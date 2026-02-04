@@ -155,6 +155,11 @@
         .clue-item:hover {
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
+
+        .clue-item.selected {
+            box-shadow: 0 0 0 3px #2196f3;
+            background: #e3f2fd;
+        }
         
         .clue-header {
             margin-bottom: 15px;
@@ -372,6 +377,7 @@
         let userAnswers = {}; // {clueId: 'ANSWER'}
         let gridFills = {}; // {x,y: letter}
         let hintsRevealed = {}; // {clueId: [1,2,3,4]}
+        let cellToClues = {}; // {x,y: [clueIds]} - reverse mapping for click navigation
 
         async function loadPuzzle() {
             try {
@@ -435,6 +441,22 @@
             console.log('Finished fetching hints');
         }
 
+        function buildCellToCluesMapping() {
+            // Build reverse mapping from cell coordinates to clue IDs
+            cellToClues = {};
+            const clueCells = puzzleData.grid.clue_cells || {};
+
+            for (const [clueId, cells] of Object.entries(clueCells)) {
+                cells.forEach(([x, y]) => {
+                    const key = `${x},${y}`;
+                    if (!cellToClues[key]) {
+                        cellToClues[key] = [];
+                    }
+                    cellToClues[key].push(clueId);
+                });
+            }
+        }
+
         function renderGrid() {
             const grid = puzzleData.grid;
             const size = grid.size || 15;
@@ -442,18 +464,21 @@
             container.className = 'crossword-grid';
             container.style.gridTemplateColumns = `repeat(${size}, 22px)`;
             container.innerHTML = '';
-            
+
+            // Build the cell-to-clues mapping
+            buildCellToCluesMapping();
+
             for (let y = 0; y < size; y++) {
                 for (let x = 0; x < size; x++) {
                     const letter = grid.grid[y][x];
                     const number = grid.numbers[y][x];
                     const isBlack = letter === null;
-                    
+
                     const cell = document.createElement('div');
                     cell.className = `cell ${isBlack ? 'black' : 'white'}`;
                     cell.dataset.x = x;
                     cell.dataset.y = y;
-                    
+
                     if (!isBlack) {
                         if (number) {
                             const numSpan = document.createElement('span');
@@ -461,24 +486,81 @@
                             numSpan.textContent = number;
                             cell.appendChild(numSpan);
                         }
-                        
+
                         const letterSpan = document.createElement('span');
                         letterSpan.className = 'cell-letter';
                         letterSpan.dataset.x = x;
                         letterSpan.dataset.y = y;
-                        
+
                         const key = `${x},${y}`;
                         if (gridFills[key]) {
                             letterSpan.textContent = gridFills[key];
                             cell.classList.add('filled');
                         }
-                        
+
                         cell.appendChild(letterSpan);
+
+                        // Add click handler for navigation
+                        cell.style.cursor = 'pointer';
+                        cell.onclick = () => navigateToClue(x, y);
                     }
-                    
+
                     container.appendChild(cell);
                 }
             }
+        }
+
+        function navigateToClue(x, y) {
+            const key = `${x},${y}`;
+            const clueIds = cellToClues[key];
+
+            if (!clueIds || clueIds.length === 0) return;
+
+            // If there are multiple clues (intersection), alternate between them
+            // Use a simple toggle based on which one is currently highlighted
+            let targetClueId = clueIds[0];
+
+            if (clueIds.length > 1) {
+                // Check if one is already highlighted, pick the other
+                const currentHighlighted = document.querySelector('.clue-item.selected');
+                if (currentHighlighted) {
+                    const currentId = currentHighlighted.dataset.clueId;
+                    if (currentId === clueIds[0]) {
+                        targetClueId = clueIds[1];
+                    }
+                }
+            }
+
+            // Remove previous highlight
+            document.querySelectorAll('.clue-item.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            // Find and scroll to the clue
+            const clueElement = document.querySelector(`.clue-item[data-clue-id="${targetClueId}"]`);
+            if (clueElement) {
+                clueElement.classList.add('selected');
+                clueElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Also highlight the cells in the grid for this clue
+                highlightClueCells(targetClueId);
+            }
+        }
+
+        function highlightClueCells(clueId) {
+            // Remove previous highlights
+            document.querySelectorAll('.cell.highlighted').forEach(el => {
+                el.classList.remove('highlighted');
+            });
+
+            // Highlight cells for this clue
+            const cells = puzzleData.grid.clue_cells[clueId] || [];
+            cells.forEach(([x, y]) => {
+                const cell = document.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
+                if (cell) {
+                    cell.classList.add('highlighted');
+                }
+            });
         }
 
         function updateGrid(clueId, answer) {
