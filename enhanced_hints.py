@@ -221,7 +221,17 @@ class EnhancedHintGenerator:
                 full_text, definitions, clue_text, answer
             )
             if claude_hints:
+                print(f"      Claude API: Generated hints successfully")
                 return claude_hints
+            print(f"      Claude API: Failed, using regex fallback")
+        else:
+            # Log why Claude is not being used
+            if not self.use_claude:
+                print(f"      Claude API: Disabled")
+            elif not self.api_key:
+                print(f"      Claude API: No ANTHROPIC_API_KEY set")
+            elif not REQUESTS_AVAILABLE:
+                print(f"      Claude API: requests library not available")
 
         # Fallback to regex-based hint generation
         return self._generate_hints_with_regex(full_text, hint_paragraphs, definitions, author)
@@ -305,6 +315,8 @@ Respond with ONLY a JSON object in this exact format:
                         hints_data.get('hint3', ''),
                         hints_data.get('hint4', '')
                     ]
+            else:
+                print(f"      Claude API error: Status {response.status_code} - {response.text[:200]}")
 
         except requests.exceptions.Timeout:
             print("      Claude API timeout - falling back to regex")
