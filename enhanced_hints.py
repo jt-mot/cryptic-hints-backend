@@ -258,7 +258,8 @@ CONTEXT:
 Generate exactly 4 hints, each more revealing than the last:
 
 HINT 1 - DEFINITION ONLY:
-Just state the definition clearly. Example: "Definition: 'cruel'" or "Definition: 'type of bird'"
+Output ONLY the exact definition word(s) from the clue in quotes. Do NOT add any explanation, context, or extra information. Just the literal words from the clue that form the definition.
+Example: If the clue's definition is "capital", output exactly: "capital" (NOT "capital city of Congo")
 
 HINT 2 - TECHNIQUE:
 Name the cryptic technique used (anagram, hidden word, reversal, container, homophone, double definition, charade, deletion, etc.) and briefly explain what that technique means. Don't reveal specifics about this clue.
@@ -352,10 +353,10 @@ Respond with ONLY a JSON object in this exact format:
         # Use extracted HTML definitions (underlined text) - most reliable
         if definitions:
             if len(definitions) == 1:
-                return f"Definition: '{definitions[0]}'"
+                return f'"{definitions[0]}"'
             else:
                 # Multiple definitions - double definition clue
-                return f"Definitions: '{definitions[0]}' and '{definitions[1]}'"
+                return f'"{definitions[0]}" and "{definitions[1]}"'
 
         # Fallback: Check for explicit definition indicators in the text
         def_patterns = [
@@ -366,14 +367,14 @@ Respond with ONLY a JSON object in this exact format:
         for pattern in def_patterns:
             match = re.search(pattern, full_text, re.IGNORECASE)
             if match:
-                return f"Definition: '{match.group(1).strip()}'"
+                return f'"{match.group(1).strip()}"'
 
         # Check for double definition clues
         if 'double definition' in full_text.lower() or 'two definitions' in full_text.lower():
-            return "This is a double definition - find a word with two meanings"
+            return "Double definition - find a word with two meanings"
 
         # Default fallback
-        return "Look for the definition at the start or end of the clue"
+        return "Look at the start or end of the clue"
 
     def _generate_technique_hint(self, full_text: str, paragraphs: List[str]) -> str:
         """
