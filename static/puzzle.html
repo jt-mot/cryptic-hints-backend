@@ -29,7 +29,41 @@
         .header-content {
             max-width: 1400px;
             margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-center {
             text-align: center;
+            flex: 1;
+        }
+
+        .header-spacer {
+            width: 80px;
+        }
+
+        .home-link {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            width: 80px;
+        }
+
+        .home-link:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .home-link svg {
+            flex-shrink: 0;
         }
 
         h1 {
@@ -503,12 +537,22 @@
 <body>
     <div class="header">
         <div class="header-content">
-            <h1>Guardian Cryptic Crossword</h1>
-            <div class="puzzle-info" id="puzzleInfo">Loading...</div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
+            <a href="/" class="home-link" title="Back to Home">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <span>Home</span>
+            </a>
+            <div class="header-center">
+                <h1>Guardian Cryptic Crossword</h1>
+                <div class="puzzle-info" id="puzzleInfo">Loading...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">0 / 0 solved</div>
             </div>
-            <div class="progress-text" id="progressText">0 / 0 solved</div>
+            <div class="header-spacer"></div>
         </div>
     </div>
     
