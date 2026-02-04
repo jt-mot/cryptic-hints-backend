@@ -620,7 +620,12 @@
         function createClueElement(clue) {
             const clueId = `${clue.clue_number}-${clue.direction}`;
             const length = parseInt(clue.enumeration.replace(/[^0-9]/g, '')) || clue.answer.length;
-            
+
+            // Strip enumeration from clue text if it's already there (avoid duplication)
+            let displayClueText = clue.clue_text;
+            const enumPattern = /\s*\([0-9,\-\s]+\)\s*$/;
+            displayClueText = displayClueText.replace(enumPattern, '');
+
             // Parse enumeration for separators
             const enumParts = clue.enumeration.match(/\d+/g) || [clue.answer.length];
             let boxesHTML = '';
@@ -647,7 +652,7 @@
                     <div class="clue-header">
                         <div>
                             <span class="clue-number">${clue.clue_number}</span>
-                            <span class="clue-text">${clue.clue_text}</span>
+                            <span class="clue-text">${displayClueText}</span>
                             <span class="enumeration">(${clue.enumeration})</span>
                         </div>
                     </div>
