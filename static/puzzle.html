@@ -753,17 +753,17 @@
             puzzleData.clues.forEach(clue => {
                 const clueId = `${clue.clue_number}-${clue.direction}`;
                 const cells = puzzleData.grid.clue_cells[clueId] || [];
-                
+
                 cells.forEach(([ x, y], index) => {
                     const key = `${x},${y}`;
                     if (gridFills[key]) {
                         const input = document.querySelector(
                             `.answer-box[data-clue-id="${clueId}"][data-index="${index}"]`
                         );
-                        if (input && !input.value) {
+                        if (input && !input.value && !input.classList.contains('correct')) {
                             input.value = gridFills[key];
                             input.classList.add('prefilled');
-                            input.disabled = true;
+                            // Don't disable - let user edit if needed
                         }
                     }
                 });
@@ -877,9 +877,10 @@
                     const prevInput = document.querySelector(
                         `.answer-box[data-clue-id="${clueId}"][data-index="${index - 1}"]`
                     );
-                    if (prevInput) {
+                    if (prevInput && !prevInput.classList.contains('correct')) {
                         prevInput.focus();
                         prevInput.value = '';
+                        prevInput.classList.remove('prefilled');
                     }
                 }
             }
