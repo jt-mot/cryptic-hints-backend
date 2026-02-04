@@ -176,15 +176,18 @@ Sitemap: https://www.cryptic-hints.com/sitemap.xml
 @app.route('/sitemap.xml')
 def sitemap_xml():
     """Generate dynamic sitemap with all published puzzles"""
-    conn = get_db()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("""
-        SELECT puzzle_number, published_at
-        FROM puzzles
-        WHERE is_published = TRUE
-        ORDER BY published_at DESC
-    """)
-    puzzles = cursor.fetchall()
+    try:
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("""
+            SELECT puzzle_number, published_at
+            FROM puzzles
+            WHERE is_published = TRUE
+            ORDER BY published_at DESC
+        """)
+        puzzles = cursor.fetchall()
+    except Exception:
+        puzzles = []
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -199,8 +202,15 @@ def sitemap_xml():
     # Individual puzzle pages
     for puzzle in puzzles:
         lastmod = ''
-        if puzzle.get('published_at'):
-            lastmod = f'    <lastmod>{puzzle["published_at"].strftime("%Y-%m-%d")}</lastmod>\n'
+        pub_date = puzzle.get('published_at')
+        if pub_date:
+            try:
+                if hasattr(pub_date, 'strftime'):
+                    lastmod = f'    <lastmod>{pub_date.strftime("%Y-%m-%d")}</lastmod>\n'
+                else:
+                    lastmod = f'    <lastmod>{str(pub_date)[:10]}</lastmod>\n'
+            except Exception:
+                pass
         xml += '  <url>\n'
         xml += f'    <loc>https://www.cryptic-hints.com/puzzle/{puzzle["puzzle_number"]}</loc>\n'
         xml += lastmod
