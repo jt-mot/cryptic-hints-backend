@@ -46,7 +46,7 @@
         .home-link {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             color: rgba(255,255,255,0.8);
             text-decoration: none;
             font-size: 14px;
@@ -538,11 +538,26 @@
     <div class="header">
         <div class="header-content">
             <a href="/" class="home-link" title="Back to Home">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                <svg width="28" height="28" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="36" height="36" rx="6" fill="url(#logoGradPuzzle)"/>
+                    <defs>
+                        <linearGradient id="logoGradPuzzle" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#22c55e"/>
+                            <stop offset="100%" stop-color="#16a34a"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="3" y="3" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="13.5" y="3" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="24" y="3" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="3" y="13.5" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="13.5" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="24" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="3" y="24" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="13.5" y="24" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="24" y="24" width="9" height="9" rx="1.5" fill="white"/>
+                    <text x="18" y="21" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="700" font-family="Arial, sans-serif">?</text>
                 </svg>
-                <span>Home</span>
+                <span>Cryptic Hints</span>
             </a>
             <div class="header-center">
                 <h1>Guardian Cryptic Crossword</h1>
