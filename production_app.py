@@ -182,7 +182,7 @@ def sitemap_xml():
         cursor.execute("""
             SELECT puzzle_number, published_at
             FROM puzzles
-            WHERE is_published = TRUE
+            WHERE status = 'published'
             ORDER BY published_at DESC
         """)
         puzzles = cursor.fetchall()
