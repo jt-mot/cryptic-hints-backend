@@ -8,334 +8,494 @@
         * {
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 0;
-            background: #f8f9fa;
+            background: #f5f7fa;
+            color: #1a1a2e;
         }
-        
+
         .header {
-            background: white;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             position: sticky;
             top: 0;
             z-index: 200;
         }
-        
+
         .header-content {
             max-width: 1400px;
             margin: 0 auto;
             text-align: center;
         }
-        
+
         h1 {
-            margin: 0 0 5px 0;
-            color: #1a1a1a;
-            font-size: 24px;
+            margin: 0 0 8px 0;
+            color: #fff;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
-        
+
         .puzzle-info {
-            color: #666;
+            color: rgba(255,255,255,0.8);
             font-size: 14px;
         }
-        
+
+        .progress-bar {
+            max-width: 300px;
+            margin: 12px auto 0;
+            height: 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #22c55e);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 3px;
+        }
+
+        .progress-text {
+            color: rgba(255,255,255,0.7);
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
         .main-container {
             display: flex;
             max-width: 1400px;
             margin: 0 auto;
             gap: 0;
         }
-        
+
         /* Grid Sidebar - Fixed */
         .grid-sidebar {
             width: 380px;
-            background: white;
-            box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+            background: #fff;
+            box-shadow: 4px 0 12px rgba(0,0,0,0.08);
             position: sticky;
-            top: 80px;
-            height: calc(100vh - 80px);
+            top: 100px;
+            height: calc(100vh - 100px);
             overflow-y: auto;
-            padding: 15px;
+            padding: 20px;
         }
-        
+
         .grid-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: #666;
-            margin-bottom: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #94a3b8;
+            margin-bottom: 15px;
             text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
         }
-        
+
         .grid-wrapper {
             text-align: center;
             overflow: auto;
         }
-        
+
         .crossword-grid {
             display: inline-grid;
             gap: 0;
-            border: 2px solid #000;
-            background: #000;
+            border: 3px solid #1a1a2e;
+            background: #1a1a2e;
             margin: 0 auto;
+            border-radius: 4px;
+            overflow: hidden;
         }
-        
+
         .cell {
-            width: 22px;
-            height: 22px;
-            border: 1px solid #888;
+            width: 24px;
+            height: 24px;
+            border: 1px solid #cbd5e1;
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
-            font-size: 11px;
+            font-size: 12px;
             font-family: 'Arial', sans-serif;
             background: #fff;
+            transition: background 0.15s ease;
         }
-        
+
+        .cell.white:hover {
+            background: #f1f5f9;
+        }
+
         .cell.black {
-            background: #1a1a1a;
+            background: #1a1a2e;
+            border-color: #1a1a2e;
         }
-        
+
         .cell.filled {
-            color: #1976d2;
+            color: #2563eb;
             font-weight: 700;
         }
-        
+
         .cell.highlighted {
-            background: #bbdefb !important;
+            background: #dbeafe !important;
         }
-        
+
         .cell-number {
             position: absolute;
             top: 1px;
-            left: 1px;
-            font-size: 5px;
-            font-weight: normal;
-            color: #000;
+            left: 2px;
+            font-size: 7px;
+            font-weight: 600;
+            color: #64748b;
         }
-        
+
         .cell-letter {
-            margin-top: 1px;
-            font-size: 10px;
+            margin-top: 2px;
+            font-size: 12px;
         }
-        
+
         /* Clues Section */
         .clues-main {
             flex: 1;
-            padding: 30px;
+            padding: 30px 40px;
             overflow-y: auto;
         }
-        
+
         .direction-section {
-            margin-bottom: 40px;
+            margin-bottom: 50px;
         }
-        
+
         .direction-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #1a1a1a;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #2196f3;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #1a1a2e;
+            padding-bottom: 12px;
+            border-bottom: 3px solid #3b82f6;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        
+
         .clue-item {
-            margin-bottom: 30px;
-            padding: 20px;
+            margin-bottom: 24px;
+            padding: 24px;
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            transition: box-shadow 0.2s;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: all 0.2s ease;
+            border: 1px solid #e2e8f0;
         }
-        
+
         .clue-item:hover {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
         }
 
         .clue-item.selected {
-            box-shadow: 0 0 0 3px #2196f3;
-            background: #e3f2fd;
+            box-shadow: 0 0 0 3px #3b82f6, 0 4px 16px rgba(59,130,246,0.2);
+            background: #f0f7ff;
+            border-color: #3b82f6;
         }
-        
+
+        .clue-item.completed {
+            border-left: 4px solid #22c55e;
+        }
+
         .clue-header {
-            margin-bottom: 15px;
+            margin-bottom: 16px;
         }
-        
+
         .clue-number {
             display: inline-block;
-            min-width: 35px;
-            font-weight: 700;
-            color: #2196f3;
-            font-size: 16px;
+            min-width: 40px;
+            font-weight: 800;
+            color: #3b82f6;
+            font-size: 18px;
         }
-        
+
         .clue-text {
-            font-size: 16px;
-            color: #333;
-            line-height: 1.6;
+            font-size: 17px;
+            color: #334155;
+            line-height: 1.7;
         }
-        
+
         .enumeration {
-            color: #999;
+            color: #94a3b8;
             font-size: 14px;
             margin-left: 8px;
+            font-weight: 500;
         }
-        
+
         /* Answer Input */
         .answer-section {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid #e0e0e0;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
         }
-        
+
+        .answer-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .answer-boxes {
             display: flex;
-            gap: 4px;
-            margin-bottom: 10px;
+            gap: 6px;
+            margin-bottom: 14px;
             flex-wrap: wrap;
         }
-        
+
         .answer-box {
-            width: 32px;
-            height: 32px;
-            border: 2px solid #bbb;
-            border-radius: 4px;
+            width: 36px;
+            height: 36px;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
             text-align: center;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 18px;
+            font-weight: 700;
             text-transform: uppercase;
             outline: none;
             font-family: 'Arial', sans-serif;
+            transition: all 0.15s ease;
         }
-        
+
         .answer-box:focus {
-            border-color: #2196f3;
-            background: #e3f2fd;
+            border-color: #3b82f6;
+            background: #eff6ff;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
         }
-        
+
         .answer-box.correct {
-            background: #c8e6c9;
-            border-color: #4caf50;
+            background: #dcfce7;
+            border-color: #22c55e;
+            color: #166534;
         }
-        
+
         .answer-box.prefilled {
-            background: #fff9c4;
-            border-color: #fbc02d;
-            color: #f57f17;
+            background: #fef9c3;
+            border-color: #eab308;
+            color: #a16207;
         }
-        
+
         .answer-box.separator {
-            width: 8px;
+            width: 12px;
             border: none;
             pointer-events: none;
         }
-        
+
         .check-button {
-            padding: 8px 18px;
-            background: #2196f3;
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: background 0.2s;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.3);
         }
-        
+
         .check-button:hover {
-            background: #1976d2;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37,99,235,0.4);
         }
-        
+
         .check-button.correct {
-            background: #4caf50;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
             cursor: default;
+            box-shadow: 0 2px 8px rgba(34,197,94,0.3);
         }
-        
-        /* Hints */
+
+        /* Hints - Progressive colors from easy (green) to revealing (red) */
         .hints-section {
-            margin-top: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
         }
-        
+
+        .hints-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .hint-button {
             display: block;
             width: 100%;
-            padding: 8px 16px;
+            padding: 10px 16px;
             margin-bottom: 8px;
-            background: #ff9800;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 13px;
+            font-weight: 500;
             text-align: left;
-            transition: background 0.2s;
+            transition: all 0.2s ease;
         }
-        
-        .hint-button:hover {
-            background: #f57c00;
+
+        /* Hint 1 - Green (least revealing) */
+        .hint-button.hint-1 {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
         }
-        
-        .hint-button.revealed {
-            background: #ffa726;
+        .hint-button.hint-1:hover {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
         }
-        
+        .hint-button.hint-1.revealed {
+            background: #86efac;
+            color: #166534;
+        }
+
+        /* Hint 2 - Yellow/Amber */
+        .hint-button.hint-2 {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        .hint-button.hint-2:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        }
+        .hint-button.hint-2.revealed {
+            background: #fde68a;
+            color: #92400e;
+        }
+
+        /* Hint 3 - Orange */
+        .hint-button.hint-3 {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        }
+        .hint-button.hint-3:hover {
+            background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+        }
+        .hint-button.hint-3.revealed {
+            background: #fed7aa;
+            color: #9a3412;
+        }
+
+        /* Hint 4 - Red (most revealing) */
+        .hint-button.hint-4 {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        .hint-button.hint-4:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+        .hint-button.hint-4.revealed {
+            background: #fecaca;
+            color: #991b1b;
+        }
+
         .hint-text {
             margin-top: 8px;
             margin-bottom: 12px;
-            padding: 12px;
-            background: #fff3e0;
-            border-left: 3px solid #ff9800;
-            border-radius: 4px;
-            font-size: 14px;
-            line-height: 1.6;
+            padding: 14px 16px;
+            background: #f8fafc;
+            border-left: 4px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 15px;
+            line-height: 1.7;
             display: none;
+            color: #334155;
         }
-        
+
         .hint-text.visible {
             display: block;
+            animation: slideDown 0.2s ease;
         }
-        
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .feedback {
-            margin-top: 10px;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 13px;
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
             display: none;
         }
-        
+
         .feedback.visible {
             display: block;
+            animation: slideDown 0.2s ease;
         }
-        
+
         .feedback.correct {
-            background: #c8e6c9;
-            color: #2e7d32;
-            font-weight: 500;
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
         }
-        
+
         .feedback.incorrect {
-            background: #ffcdd2;
-            color: #c62828;
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
         }
-        
+
         @media (max-width: 1024px) {
             .main-container {
                 flex-direction: column;
             }
-            
+
             .grid-sidebar {
                 width: 100%;
                 position: relative;
                 height: auto;
                 top: 0;
+                padding: 15px;
             }
-            
+
+            .clues-main {
+                padding: 20px;
+            }
+
+            .crossword-grid {
+                transform: scale(0.85);
+                transform-origin: center;
+            }
+
+            .clue-item {
+                padding: 18px;
+            }
+
+            .clue-text {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 20px;
+            }
+
             .crossword-grid {
                 transform: scale(0.7);
+            }
+
+            .answer-box {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
             }
         }
     </style>
@@ -345,6 +505,10 @@
         <div class="header-content">
             <h1>Guardian Cryptic Crossword</h1>
             <div class="puzzle-info" id="puzzleInfo">Loading...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">0 / 0 solved</div>
         </div>
     </div>
     
@@ -378,6 +542,7 @@
         let gridFills = {}; // {x,y: letter}
         let hintsRevealed = {}; // {clueId: [1,2,3,4]}
         let cellToClues = {}; // {x,y: [clueIds]} - reverse mapping for click navigation
+        let completedClues = new Set(); // Track solved clues for progress
 
         async function loadPuzzle() {
             try {
@@ -410,9 +575,12 @@
                 
                 // Fetch hints for each clue
                 await fetchHints();
-                
+
                 console.log('Rendering clues...');
                 renderClues();
+
+                // Initialize progress bar
+                updateProgress();
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error loading puzzle: ' + error.message);
@@ -667,16 +835,17 @@
                     </div>
                     
                     <div class="hints-section">
-                        <button class="hint-button" onclick="revealHint('${clueId}', 1)">💡 Hint 1: Definition</button>
+                        <div class="hints-label">Progressive Hints</div>
+                        <button class="hint-button hint-1" onclick="revealHint('${clueId}', 1)">💡 Hint 1: Definition</button>
                         <div class="hint-text" id="hint-${clueId}-1">${clue.hints[0] || 'No hint available'}</div>
-                        
-                        <button class="hint-button" onclick="revealHint('${clueId}', 2)">🔧 Hint 2: Wordplay Type</button>
+
+                        <button class="hint-button hint-2" onclick="revealHint('${clueId}', 2)">🔧 Hint 2: Wordplay Type</button>
                         <div class="hint-text" id="hint-${clueId}-2">${clue.hints[1] || 'No hint available'}</div>
                         
-                        <button class="hint-button" onclick="revealHint('${clueId}', 3)">📝 Hint 3: Breakdown</button>
+                        <button class="hint-button hint-3" onclick="revealHint('${clueId}', 3)">📝 Hint 3: Breakdown</button>
                         <div class="hint-text" id="hint-${clueId}-3">${clue.hints[2] || 'No hint available'}</div>
-                        
-                        <button class="hint-button" onclick="revealHint('${clueId}', 4)">✅ Hint 4: Full Explanation</button>
+
+                        <button class="hint-button hint-4" onclick="revealHint('${clueId}', 4)">✅ Hint 4: Full Explanation</button>
                         <div class="hint-text" id="hint-${clueId}-4">${clue.hints[3] || 'No hint available'}</div>
                     </div>
                 </div>
@@ -719,39 +888,67 @@
         function checkAnswer(clueId, correctAnswer) {
             const inputs = document.querySelectorAll(`.answer-box[data-clue-id="${clueId}"]:not(.separator)`);
             let userAnswer = '';
-            
+
             inputs.forEach(input => {
                 userAnswer += input.value.toUpperCase() || '';
             });
-            
+
             const feedback = document.getElementById(`feedback-${clueId}`);
-            
+
             if (userAnswer === correctAnswer.toUpperCase()) {
                 feedback.textContent = '✓ Correct!';
                 feedback.className = 'feedback correct visible';
-                
+
                 // Fill grid
                 updateGrid(clueId, correctAnswer.toUpperCase());
-                
+
                 // Mark inputs as correct
                 inputs.forEach(input => {
                     input.classList.add('correct');
                     input.disabled = true;
                 });
-                
+
                 // Update button
-                const button = document.querySelector(`button[onclick*="${clueId}"]`);
-                button.textContent = '✓ Correct';
-                button.classList.add('correct');
-                button.disabled = true;
-                
+                const button = document.querySelector(`.check-button[onclick*="${clueId}"]`);
+                if (button) {
+                    button.textContent = '✓ Correct';
+                    button.classList.add('correct');
+                    button.disabled = true;
+                }
+
+                // Mark clue as completed
+                const clueItem = document.querySelector(`.clue-item[data-clue-id="${clueId}"]`);
+                if (clueItem) {
+                    clueItem.classList.add('completed');
+                }
+
+                // Track progress
+                completedClues.add(clueId);
+                updateProgress();
+
             } else {
                 feedback.textContent = '✗ Not quite right. Try again or use a hint!';
                 feedback.className = 'feedback incorrect visible';
-                
+
                 setTimeout(() => {
                     feedback.classList.remove('visible');
                 }, 3000);
+            }
+        }
+
+        function updateProgress() {
+            const total = puzzleData ? puzzleData.clues.length : 0;
+            const solved = completedClues.size;
+            const percent = total > 0 ? (solved / total) * 100 : 0;
+
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+
+            if (progressFill) {
+                progressFill.style.width = `${percent}%`;
+            }
+            if (progressText) {
+                progressText.textContent = `${solved} / ${total} solved`;
             }
         }
 
