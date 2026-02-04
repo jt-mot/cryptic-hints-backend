@@ -372,11 +372,13 @@ class PuzzleScraper:
                     hint_paragraphs = hint_data
                     definitions = []
                 
-                # Generate hints using detected author style, passing definitions
+                # Generate hints using detected author style, passing all available context
                 clue['hints'] = self.hint_generator.generate_hints(
-                    hint_paragraphs, 
+                    hint_paragraphs,
                     self.detected_author,
-                    definitions=definitions
+                    definitions=definitions,
+                    clue_text=clue.get('clue_text'),
+                    answer=clue.get('answer')
                 )
                 
                 # Debug: Check first clue

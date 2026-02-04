@@ -149,8 +149,8 @@ def login_required(f):
 
 @app.route('/')
 def homepage():
-    """Serve the homepage with puzzle list"""
-    return send_from_directory('static', 'home.html')
+    """Serve the homepage"""
+    return send_from_directory('static', 'index.html')
 
 
 @app.route('/puzzle/<puzzle_number>')
