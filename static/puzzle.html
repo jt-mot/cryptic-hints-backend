@@ -652,6 +652,9 @@
                 console.log('Rendering clues...');
                 renderClues();
 
+                // Restore saved progress from localStorage
+                loadProgress();
+
                 // Initialize progress bar
                 updateProgress();
             } catch (error) {
@@ -932,7 +935,7 @@
                     `.answer-box[data-clue-id="${clueId}"][data-index="${index}"]`
                 );
                 input.value = value;
-                
+
                 // Auto-advance
                 const nextInput = document.querySelector(
                     `.answer-box[data-clue-id="${clueId}"][data-index="${index + 1}"]`
@@ -940,6 +943,8 @@
                 if (nextInput) {
                     nextInput.focus();
                 }
+
+                saveProgress();
             }
         }
 
@@ -956,6 +961,7 @@
                         prevInput.classList.remove('prefilled');
                     }
                 }
+                saveProgress();
             }
         }
 
@@ -999,6 +1005,7 @@
                 // Track progress
                 completedClues.add(clueId);
                 updateProgress();
+                saveProgress();
 
             } else {
                 feedback.textContent = '✗ Not quite right. Try again or use a hint!';
@@ -1029,16 +1036,151 @@
         function revealHint(clueId, level) {
             const hint = document.getElementById(`hint-${clueId}-${level}`);
             hint.classList.add('visible');
-            
+
             // Mark button as revealed
             const buttons = document.querySelectorAll(`button[onclick*="${clueId}"]`);
             if (buttons[level - 1]) {
                 buttons[level - 1].classList.add('revealed');
             }
+
+            // Track revealed hints
+            if (!hintsRevealed[clueId]) hintsRevealed[clueId] = [];
+            if (!hintsRevealed[clueId].includes(level)) {
+                hintsRevealed[clueId].push(level);
+            }
+            saveProgress();
         }
 
         function setupEventListeners() {
             // Auto-focus first answer box when scrolling to clue
+        }
+
+        // ============================================================
+        // LocalStorage Progress Save/Load
+        // ============================================================
+
+        function getStorageKey() {
+            return `cryptic-hints-puzzle-${puzzleNumber}`;
+        }
+
+        function saveProgress() {
+            try {
+                // Collect current input values (not just gridFills, also unsolved typed letters)
+                const inputValues = {};
+                document.querySelectorAll('.answer-box:not(.separator)').forEach(input => {
+                    const clueId = input.dataset.clueId;
+                    const index = input.dataset.index;
+                    if (input.value) {
+                        if (!inputValues[clueId]) inputValues[clueId] = {};
+                        inputValues[clueId][index] = input.value.toUpperCase();
+                    }
+                });
+
+                const state = {
+                    gridFills: gridFills,
+                    completedClues: Array.from(completedClues),
+                    hintsRevealed: hintsRevealed,
+                    inputValues: inputValues,
+                    savedAt: new Date().toISOString()
+                };
+
+                localStorage.setItem(getStorageKey(), JSON.stringify(state));
+            } catch (e) {
+                console.warn('Could not save progress:', e);
+            }
+        }
+
+        function loadProgress() {
+            try {
+                const saved = localStorage.getItem(getStorageKey());
+                if (!saved) return;
+
+                const state = JSON.parse(saved);
+
+                // Restore gridFills
+                if (state.gridFills) {
+                    gridFills = state.gridFills;
+                }
+
+                // Restore completed clues
+                if (state.completedClues) {
+                    completedClues = new Set(state.completedClues);
+                }
+
+                // Restore hints revealed tracking
+                if (state.hintsRevealed) {
+                    hintsRevealed = state.hintsRevealed;
+                }
+
+                // Restore input values into answer boxes
+                if (state.inputValues) {
+                    for (const [clueId, indices] of Object.entries(state.inputValues)) {
+                        for (const [index, value] of Object.entries(indices)) {
+                            const input = document.querySelector(
+                                `.answer-box[data-clue-id="${clueId}"][data-index="${index}"]`
+                            );
+                            if (input) {
+                                input.value = value;
+                            }
+                        }
+                    }
+                }
+
+                // Restore completed clue visual state
+                completedClues.forEach(clueId => {
+                    const clueItem = document.querySelector(`.clue-item[data-clue-id="${clueId}"]`);
+                    if (clueItem) clueItem.classList.add('completed');
+
+                    // Mark inputs as correct and disabled
+                    const inputs = document.querySelectorAll(`.answer-box[data-clue-id="${clueId}"]:not(.separator)`);
+                    inputs.forEach(input => {
+                        input.classList.add('correct');
+                        input.disabled = true;
+                    });
+
+                    // Mark check button
+                    const button = document.querySelector(`.check-button[onclick*="${clueId}"]`);
+                    if (button) {
+                        button.textContent = '✓ Correct';
+                        button.classList.add('correct');
+                        button.disabled = true;
+                    }
+
+                    // Show feedback
+                    const feedback = document.getElementById(`feedback-${clueId}`);
+                    if (feedback) {
+                        feedback.textContent = '✓ Correct!';
+                        feedback.className = 'feedback correct visible';
+                    }
+                });
+
+                // Restore revealed hints
+                if (state.hintsRevealed) {
+                    for (const [clueId, levels] of Object.entries(state.hintsRevealed)) {
+                        levels.forEach(level => {
+                            const hint = document.getElementById(`hint-${clueId}-${level}`);
+                            if (hint) hint.classList.add('visible');
+
+                            const buttons = document.querySelectorAll(`button[onclick*="${clueId}"]`);
+                            if (buttons[level - 1]) {
+                                buttons[level - 1].classList.add('revealed');
+                            }
+                        });
+                    }
+                }
+
+                // Re-render grid with restored fills
+                if (puzzleData.grid && puzzleData.grid.grid) {
+                    renderGrid();
+                }
+
+                // Update progress bar
+                updateProgress();
+
+                console.log(`Restored progress: ${completedClues.size} clues solved`);
+            } catch (e) {
+                console.warn('Could not load progress:', e);
+            }
         }
 
         loadPuzzle();
