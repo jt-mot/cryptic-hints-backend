@@ -2,10 +2,20 @@
 Enhanced Hint Generation System
 
 Handles different fifteensquared author styles and produces better progressive hints
+Uses Claude API for intelligent hint generation with regex fallback
 """
 
 import re
+import os
+import json
 from typing import List, Dict, Optional, Tuple
+
+# Try to import requests for API calls
+try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
 
 
 # Comprehensive cryptic crossword technique patterns
@@ -165,26 +175,31 @@ class AuthorStyleDetector:
 
 
 class EnhancedHintGenerator:
-    """Generate progressive hints with author-aware parsing"""
+    """Generate progressive hints with author-aware parsing and Claude AI"""
 
-    def __init__(self):
+    def __init__(self, use_claude: bool = True):
         self.style_detector = AuthorStyleDetector()
+        self.use_claude = use_claude
+        self.api_key = os.environ.get('ANTHROPIC_API_KEY')
 
     def generate_hints(self, hint_paragraphs: List[str], author: str = 'generic',
-                       definitions: List[str] = None) -> List[str]:
+                       definitions: List[str] = None, clue_text: str = None,
+                       answer: str = None) -> List[str]:
         """
-        Generate 4-level progressive hints based on author style
+        Generate 4-level progressive hints using Claude AI with regex fallback
 
         Hint Levels:
-        - Level 1: Definition location/hint (gentle nudge)
-        - Level 2: Wordplay technique identification (what type of clue)
-        - Level 3: Structural breakdown without answer (how to construct)
-        - Level 4: Full explanation (complete solution)
+        - Level 1: Definition (what the answer means)
+        - Level 2: Wordplay technique (what type of cryptic device)
+        - Level 3: How to construct the answer (without revealing it)
+        - Level 4: Full answer and explanation
 
         Args:
-            hint_paragraphs: Raw text paragraphs from analysis
+            hint_paragraphs: Raw text paragraphs from fifteensquared analysis
             author: Author name (petero, verlaine, etc.)
             definitions: Extracted HTML definitions (underlined/italicized text)
+            clue_text: The original clue text (optional, improves hint quality)
+            answer: The answer (optional, improves hint quality)
 
         Returns:
             List of 4 hints, progressively more revealing
@@ -200,7 +215,111 @@ class EnhancedHintGenerator:
 
         full_text = ' '.join(hint_paragraphs)
 
-        # Generate each hint level
+        # Try Claude API first if enabled and available
+        if self.use_claude and self.api_key and REQUESTS_AVAILABLE:
+            claude_hints = self._generate_hints_with_claude(
+                full_text, definitions, clue_text, answer
+            )
+            if claude_hints:
+                return claude_hints
+
+        # Fallback to regex-based hint generation
+        return self._generate_hints_with_regex(full_text, hint_paragraphs, definitions, author)
+
+    def _generate_hints_with_claude(self, explanation: str, definitions: List[str],
+                                     clue_text: str = None, answer: str = None) -> Optional[List[str]]:
+        """
+        Use Claude API to generate intelligent progressive hints
+
+        Returns None if API call fails (triggers fallback to regex)
+        """
+        try:
+            # Build the prompt with all available context
+            definition_text = definitions[0] if definitions else "unknown"
+
+            prompt = f"""You are helping create progressive hints for a cryptic crossword clue. Your goal is to help solvers learn how cryptic clues work by guiding them step-by-step toward the answer.
+
+CONTEXT:
+- Definition (the "straight" part that means the answer): {definition_text}
+- Clue text: {clue_text if clue_text else "not provided"}
+- Answer: {answer if answer else "not provided"}
+- Expert explanation: {explanation}
+
+Generate exactly 4 hints, each more revealing than the last:
+
+HINT 1 - DEFINITION ONLY:
+Just state the definition clearly. Example: "Definition: 'cruel'" or "Definition: 'type of bird'"
+
+HINT 2 - TECHNIQUE:
+Name the cryptic technique used (anagram, hidden word, reversal, container, homophone, double definition, charade, deletion, etc.) and briefly explain what that technique means. Don't reveal specifics about this clue.
+Example: "This is an anagram - look for an indicator word that suggests mixing or rearranging letters"
+
+HINT 3 - HOW TO CONSTRUCT (most important - be helpful but don't give the answer):
+Explain the mechanics of how to construct the answer from the clue. Identify:
+- The indicator word (if applicable)
+- What letters/words to work with
+- How they combine
+Do NOT reveal the final answer, but make this hint genuinely useful.
+Example: "'wild' is the anagram indicator - rearrange the letters of 'PIRATES'"
+Example: "'reportedly' signals a homophone - think of a word for 'holy man' that sounds like..."
+
+HINT 4 - FULL ANSWER:
+Give the complete answer and full explanation of how it works.
+Example: "Answer: TRAPPIST | 'Reportedly' indicates homophone - sounds like 'trapeze artist' = TRAPPIST (type of monk)"
+
+Respond with ONLY a JSON object in this exact format:
+{{"hint1": "...", "hint2": "...", "hint3": "...", "hint4": "..."}}"""
+
+            response = requests.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "Content-Type": "application/json",
+                    "x-api-key": self.api_key,
+                    "anthropic-version": "2023-06-01"
+                },
+                json={
+                    "model": "claude-sonnet-4-20250514",
+                    "max_tokens": 1000,
+                    "messages": [{"role": "user", "content": prompt}]
+                },
+                timeout=15
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('content') and len(data['content']) > 0:
+                    text = data['content'][0].get('text', '')
+
+                    # Parse JSON from response
+                    # Handle case where response might have markdown code blocks
+                    if '```json' in text:
+                        text = text.split('```json')[1].split('```')[0]
+                    elif '```' in text:
+                        text = text.split('```')[1].split('```')[0]
+
+                    hints_data = json.loads(text.strip())
+
+                    return [
+                        hints_data.get('hint1', ''),
+                        hints_data.get('hint2', ''),
+                        hints_data.get('hint3', ''),
+                        hints_data.get('hint4', '')
+                    ]
+
+        except requests.exceptions.Timeout:
+            print("      Claude API timeout - falling back to regex")
+        except json.JSONDecodeError as e:
+            print(f"      Claude API JSON parse error: {e} - falling back to regex")
+        except Exception as e:
+            print(f"      Claude API error: {e} - falling back to regex")
+
+        return None
+
+    def _generate_hints_with_regex(self, full_text: str, hint_paragraphs: List[str],
+                                    definitions: List[str], author: str) -> List[str]:
+        """
+        Fallback regex-based hint generation when Claude is unavailable
+        """
         hint_1 = self._generate_definition_hint(full_text, paragraphs=hint_paragraphs,
                                                  definitions=definitions, author=author)
         hint_2 = self._generate_technique_hint(full_text, paragraphs=hint_paragraphs)
@@ -304,10 +423,13 @@ class EnhancedHintGenerator:
     def _generate_structural_hint(self, full_text: str, paragraphs: List[str],
                                    definitions: List[str]) -> str:
         """
-        Level 3: Structural breakdown - more revealing hint
+        Level 3: Structural breakdown - parse the explanation to extract useful info
 
-        This should give a clearer picture of how the wordplay works,
-        showing the components from the clue without the final answer.
+        Instead of generic keyword matching, parse the actual explanation to find:
+        - "indicated by X" patterns
+        - "anagram of X" patterns
+        - "X in Y" or "X around Y" structures
+        - Quoted clue words and their roles
         """
         text_lower = full_text.lower()
 
@@ -315,172 +437,135 @@ class EnhancedHintGenerator:
         clue_refs = re.findall(r"['\"]([^'\"]+)['\"]", full_text)
         clue_refs = [ref for ref in clue_refs if len(ref) > 1 and not ref.isupper()]
 
-        # Identify answer components (ALL CAPS words) - we'll reference but not fully reveal
-        answer_parts = re.findall(r'\b[A-Z]{2,}\b', full_text)
+        # Try to parse specific patterns from the explanation
 
-        # Determine the structure based on technique
-        technique_scores = {}
-        for tech_name, tech_info in WORDPLAY_TECHNIQUES.items():
-            score = sum(1 for kw in tech_info['keywords'] if kw in text_lower)
-            if score > 0:
-                technique_scores[tech_name] = score
+        # Pattern 1: "indicated by 'X'" or "'X' indicates/indicating"
+        indicator_match = re.search(
+            r"(?:indicated\s+by|signalled\s+by|flagged\s+by)\s+['\"]([^'\"]+)['\"]",
+            text_lower
+        )
+        if not indicator_match:
+            indicator_match = re.search(
+                r"['\"]([^'\"]+)['\"]\s+(?:indicates|indicating|signals|is\s+the\s+(?:anagram\s+)?indicator)",
+                text_lower
+            )
 
-        # Build a useful hint from the explanation text
-        # Look for patterns like "X gives Y" or "X = Y" without showing CAPS answers
-        structural_patterns = [
-            (r"['\"]([^'\"]+)['\"]\s*(?:gives|=|means|is)\s*[A-Z]+", "'{0}' leads to part of the answer"),
-            (r"([a-z]+)\s+(?:in|around|inside|outside)\s+([a-z]+)", "Put '{0}' {1} '{2}'"),
-        ]
+        indicator = indicator_match.group(1) if indicator_match else None
 
-        if not technique_scores:
-            if clue_refs:
-                return f"Work with these clue elements: '{', '.join(clue_refs[:3])}'"
-            return "Break down each component of the clue and combine them"
+        # Pattern 2: "anagram of X" - find the fodder
+        anagram_fodder = None
+        anagram_match = re.search(r"anagram\s+of\s+['\"]?([^'\".,]+)['\"]?", text_lower)
+        if anagram_match:
+            anagram_fodder = anagram_match.group(1).strip()
 
-        primary_technique = max(technique_scores.items(), key=lambda x: x[1])[0]
+        # Pattern 3: "X in Y" or "X around Y" for containers
+        container_match = re.search(
+            r"['\"]?([^'\"]+)['\"]?\s+(?:in|inside|within|around|outside|holding|containing)\s+['\"]?([^'\"]+)['\"]?",
+            text_lower
+        )
 
-        # Generate technique-specific structural hint with more detail
-        # For each technique, try to identify the indicator word and explain how it works
+        # Pattern 4: "X reversed" or "reversal of X"
+        reversal_match = re.search(
+            r"(?:['\"]([^'\"]+)['\"]\s+reversed|reversal\s+of\s+['\"]?([^'\".,]+)['\"]?)",
+            text_lower
+        )
 
-        if primary_technique == 'anagram':
-            fodder_hint = self._find_anagram_fodder(full_text, clue_refs)
-            if fodder_hint:
-                return fodder_hint
-            if clue_refs:
-                return f"Rearrange the letters from '{clue_refs[0]}'"
-            return "Find the anagram indicator and rearrange those letters"
+        # Pattern 5: "hidden in X" or "X contains the hidden word"
+        hidden_match = re.search(
+            r"(?:hidden\s+(?:in|within)\s+['\"]?([^'\".,]+)['\"]?|['\"]([^'\"]+)['\"]\s+contains)",
+            text_lower
+        )
 
-        elif primary_technique == 'hidden':
-            # Find hidden word indicator
-            indicator = self._find_indicator(text_lower, [
-                'in', 'within', 'inside', 'some', 'part of', 'held by',
-                'among', 'amidst', 'buried in', 'concealed'
-            ], clue_refs)
-            if indicator and clue_refs:
-                return f"'{indicator}' signals a hidden word - look inside '{clue_refs[0]}'"
-            elif clue_refs:
-                return f"The answer is hidden inside '{clue_refs[0]}'"
-            return "The answer is spelled out within consecutive letters in the clue"
+        # Now build the hint based on what we found
 
-        elif primary_technique == 'reversal':
-            # Find reversal indicator
-            indicator = self._find_indicator(text_lower, [
-                'back', 'returned', 'reversed', 'up', 'over', 'around',
-                'recalled', 'reflected', 'retiring', 'retreating', 'going west',
-                'going north', 'brought back', 'set back', 'turned'
-            ], clue_refs)
-            if indicator and clue_refs:
-                return f"'{indicator}' signals reversal - write '{clue_refs[0]}' backwards"
+        # Anagram with indicator and fodder
+        if 'anagram' in text_lower:
+            if indicator and anagram_fodder:
+                return f"'{indicator}' is the anagram indicator - rearrange '{anagram_fodder}'"
             elif indicator:
-                return f"'{indicator}' signals reversal - write something backwards"
+                return f"'{indicator}' is the anagram indicator - find the letters to rearrange"
+            elif anagram_fodder:
+                return f"Rearrange the letters of '{anagram_fodder}'"
             elif clue_refs:
-                return f"Write '{clue_refs[0]}' (or what it represents) backwards"
-            return "Reverse the letters of the indicated word"
+                return f"This is an anagram - rearrange letters from '{clue_refs[0]}'"
+            return "This is an anagram - find the indicator and the letters to rearrange"
 
-        elif primary_technique in ('container', 'insertion'):
-            # Find container indicator
-            indicator = self._find_indicator(text_lower, [
-                'around', 'outside', 'about', 'holding', 'embracing', 'gripping',
-                'clutching', 'containing', 'surrounding', 'boxing', 'in',
-                'inside', 'within', 'entering', 'going into'
-            ], clue_refs)
-            if indicator and len(clue_refs) >= 2:
-                return f"'{indicator}' signals container - put '{clue_refs[0]}' inside/around '{clue_refs[1]}'"
+        # Hidden word
+        if 'hidden' in text_lower:
+            if hidden_match:
+                source = hidden_match.group(1) or hidden_match.group(2)
+                if source:
+                    return f"The answer is hidden in the letters of '{source}'"
+            if clue_refs:
+                return f"The answer is hidden within '{clue_refs[0]}'"
+            return "The answer is hidden within consecutive letters in the clue"
+
+        # Reversal
+        if 'reversal' in text_lower or 'reversed' in text_lower:
+            if reversal_match:
+                reversed_word = reversal_match.group(1) or reversal_match.group(2)
+                if reversed_word:
+                    return f"Write '{reversed_word}' backwards"
+            if indicator:
+                return f"'{indicator}' signals reversal"
+            if clue_refs:
+                return f"Reverse '{clue_refs[0]}' (or what it represents)"
+            return "Reverse the letters of a word from the clue"
+
+        # Container/insertion
+        if any(word in text_lower for word in ['container', 'envelope', 'insertion']):
+            if container_match and len(clue_refs) >= 2:
+                return f"Put '{clue_refs[0]}' inside/around '{clue_refs[1]}'"
             elif len(clue_refs) >= 2:
-                return f"Put '{clue_refs[0]}' inside or around '{clue_refs[1]}' (or vice versa)"
-            elif indicator:
-                return f"'{indicator}' signals container - one part goes inside/around another"
-            return "One component wraps around or goes inside another"
+                return f"Combine '{clue_refs[0]}' and '{clue_refs[1]}' - one goes inside the other"
+            return "One part goes inside or around another"
 
-        elif primary_technique == 'charade':
-            if len(clue_refs) >= 2:
-                return f"Join: '{clue_refs[0]}' + '{clue_refs[1]}'" + (f" + '{clue_refs[2]}'" if len(clue_refs) > 2 else "")
-            elif len(clue_refs) == 1:
-                return f"'{clue_refs[0]}' combines with another part"
-            return "Chain the wordplay components together left to right"
-
-        elif primary_technique == 'deletion':
-            # Be more specific about what kind of deletion and find indicator
-            deletion_indicators = {
-                'head': ['headless', 'beheaded', 'topless', 'losing head', 'no head'],
-                'tail': ['endless', 'curtailed', 'trimmed', 'docked', 'cut short', 'losing tail'],
-                'middle': ['heartless', 'gutted', 'disembowelled', 'hollow']
-            }
-
-            for del_type, indicators in deletion_indicators.items():
-                for ind in indicators:
-                    if ind in text_lower:
-                        if del_type == 'head':
-                            target = f"'{clue_refs[0]}'" if clue_refs else "a word"
-                            return f"'{ind}' means remove the first letter from {target}"
-                        elif del_type == 'tail':
-                            target = f"'{clue_refs[0]}'" if clue_refs else "a word"
-                            return f"'{ind}' means remove the last letter from {target}"
-                        elif del_type == 'middle':
-                            target = f"'{clue_refs[0]}'" if clue_refs else "a word"
-                            return f"'{ind}' means remove the middle letter(s) from {target}"
-
-            if clue_refs:
-                return f"Remove a letter from '{clue_refs[0]}'"
-            return "Remove the indicated letter(s) from a word"
-
-        elif primary_technique == 'homophone':
-            # Find homophone indicator
-            indicator = self._find_indicator(text_lower, [
-                'say', 'said', 'sounds like', 'we hear', 'heard', 'aloud',
-                'audibly', 'spoken', 'vocal', 'orally', 'broadcast',
-                'on the radio', 'reportedly', 'they say', 'it\'s said'
-            ], clue_refs)
+        # Homophone
+        if 'homophone' in text_lower or 'sounds like' in text_lower:
             if indicator and clue_refs:
-                return f"'{indicator}' signals homophone - '{clue_refs[0]}' sounds like the answer"
-            elif indicator:
-                return f"'{indicator}' signals homophone - the answer sounds like another word"
-            elif clue_refs:
-                return f"'{clue_refs[0]}' sounds like the answer when spoken aloud"
-            return "Say the indicated word aloud - it sounds like the answer"
-
-        elif primary_technique == 'abbreviation':
+                return f"'{indicator}' signals a homophone - '{clue_refs[0]}' sounds like the answer"
             if clue_refs:
-                return f"'{clue_refs[0]}' has a standard abbreviation"
-            return "Use the standard abbreviation for the indicated word"
+                return f"'{clue_refs[0]}' sounds like the answer when spoken"
+            return "The answer sounds like another word"
 
-        elif primary_technique == 'initial_letters':
-            # Find acrostic indicator
-            indicator = self._find_indicator(text_lower, [
-                'initially', 'first', 'starts', 'heads', 'leaders',
-                'first letters', 'opening', 'beginnings'
-            ], clue_refs)
-            if indicator and clue_refs:
-                return f"'{indicator}' means take initial letters from '{clue_refs[0]}'"
-            elif clue_refs:
-                return f"Take the first letters from '{clue_refs[0]}'"
-            return "Take the initial letters of the indicated words"
-
-        elif primary_technique == 'double_definition':
+        # Double definition
+        if 'double definition' in text_lower or 'two definitions' in text_lower:
             if len(definitions) >= 2:
-                return f"One word means both '{definitions[0]}' and '{definitions[1]}'"
-            return "Find a word that satisfies both meanings in the clue"
+                return f"Find a word meaning both '{definitions[0]}' and '{definitions[1]}'"
+            return "Find a word with two different meanings that match the clue"
 
-        else:
-            if clue_refs:
-                return f"The wordplay uses: '{', '.join(clue_refs[:3])}'"
-            return WORDPLAY_TECHNIQUES[primary_technique]['partial']
+        # Charade (parts joined together)
+        if any(word in text_lower for word in ['charade', 'followed by', 'plus', ' + ']):
+            if len(clue_refs) >= 2:
+                parts = "' + '".join(clue_refs[:3])
+                return f"Join the parts: '{parts}'"
+            return "Join the wordplay parts together in sequence"
 
-    def _find_indicator(self, text_lower: str, indicators: List[str], clue_refs: List[str]) -> Optional[str]:
-        """Find an indicator word from the given list in the text or clue refs"""
-        # First check if any indicator appears in quoted clue references
-        for ref in clue_refs:
-            ref_lower = ref.lower()
-            for indicator in indicators:
-                if indicator in ref_lower:
-                    return ref
+        # Deletion
+        if 'deletion' in text_lower or any(word in text_lower for word in ['headless', 'endless', 'heartless', 'beheaded', 'curtailed']):
+            del_type = None
+            if any(w in text_lower for w in ['headless', 'beheaded', 'topless']):
+                del_type = "first"
+            elif any(w in text_lower for w in ['endless', 'curtailed', 'docked']):
+                del_type = "last"
+            elif any(w in text_lower for w in ['heartless', 'gutted']):
+                del_type = "middle"
 
-        # Then check in the explanation text
-        for indicator in indicators:
-            if indicator in text_lower:
-                return indicator
+            if del_type and clue_refs:
+                return f"Remove the {del_type} letter from '{clue_refs[0]}'"
+            elif del_type:
+                return f"Remove the {del_type} letter from a word"
+            elif clue_refs:
+                return f"Remove letter(s) from '{clue_refs[0]}'"
+            return "Remove letter(s) from a word"
 
-        return None
+        # Fallback: use the quoted clue references if we have them
+        if clue_refs:
+            if len(clue_refs) >= 2:
+                return f"Work with '{clue_refs[0]}' and '{clue_refs[1]}'"
+            return f"Focus on '{clue_refs[0]}' in the clue"
+
+        return "Break down the clue into definition and wordplay parts"
 
     # Common anagram indicators - words that signal letters should be rearranged
     ANAGRAM_INDICATORS = [
