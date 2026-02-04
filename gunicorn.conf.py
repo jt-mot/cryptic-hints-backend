@@ -1,8 +1,8 @@
 # Gunicorn configuration file
 
 # Timeout for workers (in seconds)
-# Increased to handle slow web scraping operations
-timeout = 120
+# Increased to handle slow web scraping + Claude API calls for all clues
+timeout = 300
 
 # Number of worker processes
 workers = 2
