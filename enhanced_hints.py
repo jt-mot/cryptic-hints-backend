@@ -258,8 +258,8 @@ CONTEXT:
 Generate exactly 4 hints, each more revealing than the last:
 
 HINT 1 - DEFINITION ONLY:
-Just output the definition word(s) in quotes, nothing else. No prefix, no explanation.
-Example: "cruel" or "type of bird"
+Output ONLY the exact definition word(s) from the clue in quotes. Do NOT add any explanation, context, or extra information. Just the literal words from the clue that form the definition.
+Example: If the clue's definition is "capital", output exactly: "capital" (NOT "capital city of Congo")
 
 HINT 2 - TECHNIQUE:
 Name the cryptic technique used (anagram, hidden word, reversal, container, homophone, double definition, charade, deletion, etc.) and briefly explain what that technique means. Don't reveal specifics about this clue.
