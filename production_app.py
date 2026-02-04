@@ -12,7 +12,7 @@ Full-featured Flask application with:
 Run with: python production_app.py
 """
 
-from flask import Flask, jsonify, request, send_from_directory, session, redirect, url_for
+from flask import Flask, jsonify, request, send_from_directory, session, redirect, url_for, Response, make_response
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
@@ -150,13 +150,69 @@ def login_required(f):
 @app.route('/')
 def homepage():
     """Serve the homepage with puzzle list"""
-    return send_from_directory('static', 'home.html')
+    return send_from_directory('static', 'index.html')
 
 
 @app.route('/puzzle/<puzzle_number>')
 def puzzle_page(puzzle_number):
     """Serve the puzzle solving page"""
     return send_from_directory('static', 'puzzle.html')
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    """Serve robots.txt for search engine crawlers"""
+    content = """User-agent: *
+Allow: /
+Allow: /puzzle/
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://www.cryptic-hints.com/sitemap.xml
+"""
+    return Response(content, mimetype='text/plain')
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    """Generate dynamic sitemap with all published puzzles"""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("""
+        SELECT puzzle_number, published_at
+        FROM puzzles
+        WHERE is_published = TRUE
+        ORDER BY published_at DESC
+    """)
+    puzzles = cursor.fetchall()
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+
+    # Homepage
+    xml += '  <url>\n'
+    xml += '    <loc>https://www.cryptic-hints.com/</loc>\n'
+    xml += '    <changefreq>daily</changefreq>\n'
+    xml += '    <priority>1.0</priority>\n'
+    xml += '  </url>\n'
+
+    # Individual puzzle pages
+    for puzzle in puzzles:
+        lastmod = ''
+        if puzzle.get('published_at'):
+            lastmod = f'    <lastmod>{puzzle["published_at"].strftime("%Y-%m-%d")}</lastmod>\n'
+        xml += '  <url>\n'
+        xml += f'    <loc>https://www.cryptic-hints.com/puzzle/{puzzle["puzzle_number"]}</loc>\n'
+        xml += lastmod
+        xml += '    <changefreq>monthly</changefreq>\n'
+        xml += '    <priority>0.8</priority>\n'
+        xml += '  </url>\n'
+
+    xml += '</urlset>'
+
+    response = make_response(xml)
+    response.headers['Content-Type'] = 'application/xml'
+    return response
 
 
 @app.route('/api/puzzle/today')
