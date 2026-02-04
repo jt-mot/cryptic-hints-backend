@@ -113,7 +113,7 @@ class FifteensquaredScraper:
             try:
                 print(f"Searching fifteensquared... (attempt {attempt + 1}/3)")
                 print(f"   URL: {search_url}")
-                response = self.session.get(search_url, timeout=30)
+                response = self.session.get(search_url, timeout=60)
                 print(f"   Got response: {response.status_code}")
                 response.raise_for_status()
                 
@@ -159,7 +159,7 @@ class FifteensquaredScraper:
         for attempt in range(3):
             try:
                 print(f"Fetching hints from post... (attempt {attempt + 1}/3)")
-                response = self.session.get(url, timeout=30)
+                response = self.session.get(url, timeout=60)
                 response.raise_for_status()
                 
                 soup = BeautifulSoup(response.content, 'html.parser')
@@ -343,7 +343,7 @@ class PuzzleScraper:
             
             # Fetch the full page content for author detection
             try:
-                response = self.fifteensquared.session.get(post_url, timeout=30)
+                response = self.fifteensquared.session.get(post_url, timeout=60)
                 page_content = response.text
             except:
                 page_content = ''
