@@ -2,10 +2,20 @@
 Enhanced Hint Generation System
 
 Handles different fifteensquared author styles and produces better progressive hints
+Uses Claude API for intelligent hint generation with regex fallback
 """
 
 import re
+import os
+import json
 from typing import List, Dict, Optional, Tuple
+
+# Try to import requests for API calls
+try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
 
 
 # Comprehensive cryptic crossword technique patterns
@@ -165,26 +175,31 @@ class AuthorStyleDetector:
 
 
 class EnhancedHintGenerator:
-    """Generate progressive hints with author-aware parsing"""
+    """Generate progressive hints with author-aware parsing and Claude AI"""
 
-    def __init__(self):
+    def __init__(self, use_claude: bool = True):
         self.style_detector = AuthorStyleDetector()
+        self.use_claude = use_claude
+        self.api_key = os.environ.get('ANTHROPIC_API_KEY')
 
     def generate_hints(self, hint_paragraphs: List[str], author: str = 'generic',
-                       definitions: List[str] = None) -> List[str]:
+                       definitions: List[str] = None, clue_text: str = None,
+                       answer: str = None) -> List[str]:
         """
-        Generate 4-level progressive hints based on author style
+        Generate 4-level progressive hints using Claude AI with regex fallback
 
         Hint Levels:
-        - Level 1: Definition location/hint (gentle nudge)
-        - Level 2: Wordplay technique identification (what type of clue)
-        - Level 3: Structural breakdown without answer (how to construct)
-        - Level 4: Full explanation (complete solution)
+        - Level 1: Definition (what the answer means)
+        - Level 2: Wordplay technique (what type of cryptic device)
+        - Level 3: How to construct the answer (without revealing it)
+        - Level 4: Full answer and explanation
 
         Args:
-            hint_paragraphs: Raw text paragraphs from analysis
+            hint_paragraphs: Raw text paragraphs from fifteensquared analysis
             author: Author name (petero, verlaine, etc.)
             definitions: Extracted HTML definitions (underlined/italicized text)
+            clue_text: The original clue text (optional, improves hint quality)
+            answer: The answer (optional, improves hint quality)
 
         Returns:
             List of 4 hints, progressively more revealing
@@ -200,7 +215,111 @@ class EnhancedHintGenerator:
 
         full_text = ' '.join(hint_paragraphs)
 
-        # Generate each hint level
+        # Try Claude API first if enabled and available
+        if self.use_claude and self.api_key and REQUESTS_AVAILABLE:
+            claude_hints = self._generate_hints_with_claude(
+                full_text, definitions, clue_text, answer
+            )
+            if claude_hints:
+                return claude_hints
+
+        # Fallback to regex-based hint generation
+        return self._generate_hints_with_regex(full_text, hint_paragraphs, definitions, author)
+
+    def _generate_hints_with_claude(self, explanation: str, definitions: List[str],
+                                     clue_text: str = None, answer: str = None) -> Optional[List[str]]:
+        """
+        Use Claude API to generate intelligent progressive hints
+
+        Returns None if API call fails (triggers fallback to regex)
+        """
+        try:
+            # Build the prompt with all available context
+            definition_text = definitions[0] if definitions else "unknown"
+
+            prompt = f"""You are helping create progressive hints for a cryptic crossword clue. Your goal is to help solvers learn how cryptic clues work by guiding them step-by-step toward the answer.
+
+CONTEXT:
+- Definition (the "straight" part that means the answer): {definition_text}
+- Clue text: {clue_text if clue_text else "not provided"}
+- Answer: {answer if answer else "not provided"}
+- Expert explanation: {explanation}
+
+Generate exactly 4 hints, each more revealing than the last:
+
+HINT 1 - DEFINITION ONLY:
+Just state the definition clearly. Example: "Definition: 'cruel'" or "Definition: 'type of bird'"
+
+HINT 2 - TECHNIQUE:
+Name the cryptic technique used (anagram, hidden word, reversal, container, homophone, double definition, charade, deletion, etc.) and briefly explain what that technique means. Don't reveal specifics about this clue.
+Example: "This is an anagram - look for an indicator word that suggests mixing or rearranging letters"
+
+HINT 3 - HOW TO CONSTRUCT (most important - be helpful but don't give the answer):
+Explain the mechanics of how to construct the answer from the clue. Identify:
+- The indicator word (if applicable)
+- What letters/words to work with
+- How they combine
+Do NOT reveal the final answer, but make this hint genuinely useful.
+Example: "'wild' is the anagram indicator - rearrange the letters of 'PIRATES'"
+Example: "'reportedly' signals a homophone - think of a word for 'holy man' that sounds like..."
+
+HINT 4 - FULL ANSWER:
+Give the complete answer and full explanation of how it works.
+Example: "Answer: TRAPPIST | 'Reportedly' indicates homophone - sounds like 'trapeze artist' = TRAPPIST (type of monk)"
+
+Respond with ONLY a JSON object in this exact format:
+{{"hint1": "...", "hint2": "...", "hint3": "...", "hint4": "..."}}"""
+
+            response = requests.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "Content-Type": "application/json",
+                    "x-api-key": self.api_key,
+                    "anthropic-version": "2023-06-01"
+                },
+                json={
+                    "model": "claude-sonnet-4-20250514",
+                    "max_tokens": 1000,
+                    "messages": [{"role": "user", "content": prompt}]
+                },
+                timeout=15
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('content') and len(data['content']) > 0:
+                    text = data['content'][0].get('text', '')
+
+                    # Parse JSON from response
+                    # Handle case where response might have markdown code blocks
+                    if '```json' in text:
+                        text = text.split('```json')[1].split('```')[0]
+                    elif '```' in text:
+                        text = text.split('```')[1].split('```')[0]
+
+                    hints_data = json.loads(text.strip())
+
+                    return [
+                        hints_data.get('hint1', ''),
+                        hints_data.get('hint2', ''),
+                        hints_data.get('hint3', ''),
+                        hints_data.get('hint4', '')
+                    ]
+
+        except requests.exceptions.Timeout:
+            print("      Claude API timeout - falling back to regex")
+        except json.JSONDecodeError as e:
+            print(f"      Claude API JSON parse error: {e} - falling back to regex")
+        except Exception as e:
+            print(f"      Claude API error: {e} - falling back to regex")
+
+        return None
+
+    def _generate_hints_with_regex(self, full_text: str, hint_paragraphs: List[str],
+                                    definitions: List[str], author: str) -> List[str]:
+        """
+        Fallback regex-based hint generation when Claude is unavailable
+        """
         hint_1 = self._generate_definition_hint(full_text, paragraphs=hint_paragraphs,
                                                  definitions=definitions, author=author)
         hint_2 = self._generate_technique_hint(full_text, paragraphs=hint_paragraphs)
