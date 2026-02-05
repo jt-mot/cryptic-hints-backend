@@ -432,7 +432,15 @@ class PuzzleScraper:
                     for i, h in enumerate(clue['hints'], 1):
                         print(f"   Hint {i}: {h[:100] if h else '[EMPTY]'}")
             else:
-                clue['hints'] = ['', '', '', '']
+                # No fifteensquared data for this clue - try Claude with just clue text + answer
+                print(f"   No fifteensquared match for {clue_id} - trying Claude with clue text only")
+                clue['hints'] = self.hint_generator.generate_hints(
+                    [],
+                    self.detected_author,
+                    definitions=[],
+                    clue_text=clue.get('clue_text'),
+                    answer=clue.get('answer')
+                )
         
         clues_with_hints = len([c for c in puzzle_data['clues'] if any(c['hints'])])
         print(f"\n✓ Complete! {clues_with_hints}/{len(puzzle_data['clues'])} clues have hints")
