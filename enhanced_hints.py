@@ -204,16 +204,17 @@ class EnhancedHintGenerator:
         Returns:
             List of 4 hints, progressively more revealing
         """
-        if not hint_paragraphs:
+        if definitions is None:
+            definitions = []
+
+        full_text = ' '.join(hint_paragraphs) if hint_paragraphs else ''
+
+        # If no fifteensquared text but we have clue_text and answer, still try Claude
+        if not hint_paragraphs and not (clue_text and answer):
             return ['Look at the clue structure.',
                     'Identify the wordplay type.',
                     'Break down each part of the clue.',
                     'No explanation available.']
-
-        if definitions is None:
-            definitions = []
-
-        full_text = ' '.join(hint_paragraphs)
 
         # Try Claude API first if enabled and available
         if self.use_claude and self.api_key and REQUESTS_AVAILABLE:
@@ -253,7 +254,7 @@ CONTEXT:
 - Definition (the "straight" part that means the answer): {definition_text}
 - Clue text: {clue_text if clue_text else "not provided"}
 - Answer: {answer if answer else "not provided"}
-- Expert explanation: {explanation}
+- Expert explanation: {explanation if explanation else "not available - please analyze the clue yourself"}
 
 Generate exactly 4 hints, each more revealing than the last:
 
