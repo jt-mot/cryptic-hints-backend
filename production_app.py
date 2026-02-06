@@ -21,6 +21,10 @@ import json
 from datetime import datetime, date
 import os
 import secrets
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import threading
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
@@ -36,6 +40,91 @@ SITE_URL = os.environ.get('SITE_URL', 'https://www.cryptic-hints.com').rstrip('/
 GA_TRACKING_ID = os.environ.get('GA_TRACKING_ID', 'G-EN3G45Y8DB')
 ADMIN_USERNAME = 'admin'  # Change this
 ADMIN_PASSWORD_HASH = generate_password_hash('changeme123')  # CHANGE THIS PASSWORD!
+
+# SMTP email settings (GoDaddy)
+SMTP_HOST = os.environ.get('SMTP_HOST', 'smtpout.secureserver.net')
+SMTP_PORT = int(os.environ.get('SMTP_PORT', '465'))
+SMTP_USER = os.environ.get('SMTP_USER', '')  # e.g. info@cryptic-hints.com
+SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
+EMAIL_FROM = os.environ.get('EMAIL_FROM', '') or SMTP_USER
+
+
+def _send_email(to_email, subject, html_body):
+    """Send a single email via SMTP. Returns True on success."""
+    if not SMTP_USER or not SMTP_PASSWORD:
+        return False
+
+    msg = MIMEMultipart('alternative')
+    msg['From'] = EMAIL_FROM
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(html_body, 'html'))
+
+    try:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(EMAIL_FROM, to_email, msg.as_string())
+        return True
+    except Exception as e:
+        app.logger.error(f"Failed to send email to {to_email}: {e}")
+        return False
+
+
+def _build_puzzle_email(puzzle_number, setter):
+    """Build the HTML email body for a new puzzle notification."""
+    puzzle_url = f"{SITE_URL}/puzzle/{puzzle_number}"
+    unsubscribe_url = f"{SITE_URL}"
+    return f"""\
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+  <h2 style="color: #1e293b; margin-bottom: 4px;">New Puzzle Available!</h2>
+  <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+    Guardian Cryptic #{puzzle_number}{f' by {setter}' if setter and setter != 'Unknown' else ''} is now live on Cryptic Hints.
+  </p>
+  <a href="{puzzle_url}"
+     style="display: inline-block; padding: 12px 28px; background: #2563eb; color: #fff;
+            text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; margin: 16px 0;">
+    Solve Puzzle #{puzzle_number}
+  </a>
+  <p style="color: #94a3b8; font-size: 13px; margin-top: 32px;">
+    You received this because you subscribed to puzzle notifications at
+    <a href="{SITE_URL}" style="color: #94a3b8;">cryptic-hints.com</a>.<br>
+    To unsubscribe, visit the site and use the unsubscribe option.
+  </p>
+</div>"""
+
+
+def notify_subscribers(puzzle_number, setter):
+    """Send new-puzzle emails to all active subscribers. Runs in a background thread."""
+    if not SMTP_USER or not SMTP_PASSWORD:
+        app.logger.info("SMTP not configured — skipping subscriber notifications")
+        return
+
+    def _send_all():
+        try:
+            conn = get_db()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute('''
+                SELECT email FROM subscribers
+                WHERE unsubscribed_at IS NULL
+            ''')
+            subscribers = cursor.fetchall()
+            cursor.close()
+            conn.close()
+
+            subject = f"New Puzzle: Guardian Cryptic #{puzzle_number}"
+            body = _build_puzzle_email(puzzle_number, setter)
+
+            sent = 0
+            for sub in subscribers:
+                if _send_email(sub['email'], subject, body):
+                    sent += 1
+
+            app.logger.info(f"Notified {sent}/{len(subscribers)} subscribers about puzzle #{puzzle_number}")
+        except Exception as e:
+            app.logger.error(f"Subscriber notification failed: {e}")
+
+    thread = threading.Thread(target=_send_all, daemon=True)
+    thread.start()
 
 
 def get_db():
@@ -127,9 +216,20 @@ def init_db():
         )
     ''')
 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS subscribers (
+            id SERIAL PRIMARY KEY,
+            email TEXT NOT NULL UNIQUE,
+            subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            confirmed BOOLEAN DEFAULT FALSE,
+            unsubscribed_at TIMESTAMP
+        )
+    ''')
+
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_date ON puzzles(date)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_status ON puzzles(status)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_clue_puzzle ON clues(puzzle_id)')
+    cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriber_email ON subscribers(email)')
     
     # Add grid_data column if it doesn't exist (migration)
     cursor.execute('''
@@ -489,6 +589,66 @@ def check_answer(clue_id):
         'message': '🎉 Correct! Well done!' if correct else '❌ Not quite - try again or check the hints',
         'clue_text': clue['clue_text']
     })
+
+
+# ============================================================================
+# EMAIL SUBSCRIPTION
+# ============================================================================
+
+@app.route('/api/subscribe', methods=['POST'])
+def subscribe_email():
+    """Subscribe an email to puzzle notifications"""
+    import re
+    data = request.get_json()
+    email = (data.get('email') or '').strip().lower()
+
+    if not email or not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        return jsonify({'success': False, 'message': 'Please enter a valid email address'}), 400
+
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        # Re-subscribe if previously unsubscribed, otherwise insert
+        cursor.execute('''
+            INSERT INTO subscribers (email, confirmed)
+            VALUES (%s, FALSE)
+            ON CONFLICT (email)
+            DO UPDATE SET unsubscribed_at = NULL, subscribed_at = CURRENT_TIMESTAMP
+        ''', (email,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': 'Unable to subscribe. Please try again.'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+    return jsonify({'success': True, 'message': 'Thanks for subscribing! You\'ll be notified when new puzzles are published.'})
+
+
+@app.route('/api/unsubscribe', methods=['POST'])
+def unsubscribe_email():
+    """Unsubscribe an email from puzzle notifications"""
+    data = request.get_json()
+    email = (data.get('email') or '').strip().lower()
+
+    if not email:
+        return jsonify({'success': False, 'message': 'Email required'}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        UPDATE subscribers
+        SET unsubscribed_at = CURRENT_TIMESTAMP
+        WHERE email = %s AND unsubscribed_at IS NULL
+    ''', (email,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'message': 'You have been unsubscribed.'})
 
 
 # ============================================================================
@@ -1004,17 +1164,40 @@ def publish_puzzle(puzzle_id):
     
     # Publish
     cursor.execute('''
-        UPDATE puzzles 
+        UPDATE puzzles
         SET status = 'published',
             published_at = CURRENT_TIMESTAMP
         WHERE id = %s
+        RETURNING puzzle_number, setter
     ''', (puzzle_id,))
-    
+    published = cursor.fetchone()
+
+    # Count active subscribers (for the response message)
+    cursor.execute('''
+        SELECT COUNT(*) as count FROM subscribers
+        WHERE unsubscribed_at IS NULL
+    ''')
+    sub_count = cursor.fetchone()['count']
+
     conn.commit()
     cursor.close()
     conn.close()
-    
-    return jsonify({'success': True, 'message': 'Puzzle published successfully!'})
+
+    # Send email notifications in the background
+    notify_msg = ''
+    if sub_count > 0:
+        puzzle_num = published['puzzle_number'] if published else str(puzzle_id)
+        setter_name = published['setter'] if published else 'Unknown'
+        if SMTP_USER and SMTP_PASSWORD:
+            notify_subscribers(puzzle_num, setter_name)
+            notify_msg = f' (notifying {sub_count} subscriber{"s" if sub_count != 1 else ""})'
+        else:
+            notify_msg = f' ({sub_count} subscriber{"s" if sub_count != 1 else ""} — SMTP not configured)'
+
+    return jsonify({
+        'success': True,
+        'message': f'Puzzle published successfully!{notify_msg}'
+    })
 
 
 @app.route('/admin/api/puzzle/<int:puzzle_id>/unpublish', methods=['POST'])
@@ -1080,6 +1263,59 @@ def get_api_usage():
 def admin_usage():
     """Admin API usage page"""
     return send_from_directory('static', 'admin-usage.html')
+
+
+@app.route('/admin/api/subscribers')
+@login_required
+def get_subscribers():
+    """Get all subscribers for the admin dashboard"""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    cursor.execute('''
+        SELECT id, email, subscribed_at, confirmed, unsubscribed_at
+        FROM subscribers
+        ORDER BY subscribed_at DESC
+    ''')
+    subscribers = cursor.fetchall()
+
+    # Counts
+    cursor.execute('''
+        SELECT
+            COUNT(*) as total,
+            COUNT(*) FILTER (WHERE unsubscribed_at IS NULL) as active,
+            COUNT(*) FILTER (WHERE unsubscribed_at IS NOT NULL) as unsubscribed
+        FROM subscribers
+    ''')
+    counts = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({
+        'subscribers': [dict(s) for s in subscribers],
+        'counts': dict(counts),
+    })
+
+
+@app.route('/admin/api/subscriber/<int:subscriber_id>', methods=['DELETE'])
+@login_required
+def delete_subscriber(subscriber_id):
+    """Delete a subscriber"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM subscribers WHERE id = %s', (subscriber_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/admin/subscribers')
+@login_required
+def admin_subscribers():
+    """Admin subscribers page"""
+    return send_from_directory('static', 'admin-subscribers.html')
 
 
 # ============================================================================

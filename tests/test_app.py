@@ -1,7 +1,7 @@
 """Tests for Flask application routes."""
 import json
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 
 # Fixtures (app, client, logged_in_client, mock_db) come from conftest.py
@@ -245,3 +245,141 @@ class TestAdminUsageAPI:
         assert len(data['imports']) == 1
         assert data['imports'][0]['puzzle_number'] == '29001'
         assert data['totals']['total_imports'] == 1
+
+
+# ============================================================================
+# Email subscription
+# ============================================================================
+
+class TestSubscribe:
+    def test_subscribe_success(self, client, mock_db):
+        resp = client.post('/api/subscribe', json={'email': 'test@example.com'})
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data['success'] is True
+        assert 'subscribing' in data['message'].lower() or 'notified' in data['message'].lower()
+
+    def test_subscribe_invalid_email(self, client):
+        resp = client.post('/api/subscribe', json={'email': 'not-an-email'})
+        assert resp.status_code == 400
+        data = json.loads(resp.data)
+        assert data['success'] is False
+
+    def test_subscribe_empty_email(self, client):
+        resp = client.post('/api/subscribe', json={'email': ''})
+        assert resp.status_code == 400
+
+    def test_subscribe_missing_email(self, client):
+        resp = client.post('/api/subscribe', json={})
+        assert resp.status_code == 400
+
+    def test_unsubscribe_success(self, client, mock_db):
+        resp = client.post('/api/unsubscribe', json={'email': 'test@example.com'})
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data['success'] is True
+
+    def test_unsubscribe_empty_email(self, client):
+        resp = client.post('/api/unsubscribe', json={'email': ''})
+        assert resp.status_code == 400
+
+
+class TestAdminSubscribers:
+    def test_subscribers_requires_login(self, client):
+        resp = client.get('/admin/api/subscribers')
+        assert resp.status_code == 401
+
+    def test_subscribers_page_accessible(self, logged_in_client):
+        resp = logged_in_client.get('/admin/subscribers')
+        assert resp.status_code == 200
+        assert b'Subscribers' in resp.data
+
+    def test_subscribers_api_returns_structure(self, logged_in_client, mock_db):
+        mock_db.fetchall.return_value = []
+        mock_db.fetchone.return_value = {
+            'total': 0, 'active': 0, 'unsubscribed': 0,
+        }
+        resp = logged_in_client.get('/admin/api/subscribers')
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert 'subscribers' in data
+        assert 'counts' in data
+        assert data['counts']['total'] == 0
+
+    def test_subscribers_api_with_data(self, logged_in_client, mock_db):
+        mock_db.fetchall.return_value = [
+            {'id': 1, 'email': 'a@b.com', 'subscribed_at': '2025-02-06',
+             'confirmed': False, 'unsubscribed_at': None},
+        ]
+        mock_db.fetchone.return_value = {
+            'total': 1, 'active': 1, 'unsubscribed': 0,
+        }
+        resp = logged_in_client.get('/admin/api/subscribers')
+        data = json.loads(resp.data)
+        assert len(data['subscribers']) == 1
+        assert data['subscribers'][0]['email'] == 'a@b.com'
+        assert data['counts']['active'] == 1
+
+    def test_delete_subscriber_requires_login(self, client):
+        resp = client.delete('/admin/api/subscriber/1')
+        assert resp.status_code == 401
+
+    def test_delete_subscriber(self, logged_in_client, mock_db):
+        resp = logged_in_client.delete('/admin/api/subscriber/1')
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data['success'] is True
+
+
+# ============================================================================
+# Email notification helpers
+# ============================================================================
+
+class TestEmailHelpers:
+    def test_build_puzzle_email_contains_puzzle_link(self):
+        from production_app import _build_puzzle_email
+        html = _build_puzzle_email('29001', 'Araucaria')
+        assert '/puzzle/29001' in html
+        assert 'Araucaria' in html
+
+    def test_build_puzzle_email_unknown_setter(self):
+        from production_app import _build_puzzle_email
+        html = _build_puzzle_email('29001', 'Unknown')
+        assert '/puzzle/29001' in html
+        assert 'Unknown' not in html
+
+    def test_send_email_skips_when_no_smtp(self):
+        from production_app import _send_email
+        with patch('production_app.SMTP_USER', ''), \
+             patch('production_app.SMTP_PASSWORD', ''):
+            result = _send_email('a@b.com', 'test', '<p>hi</p>')
+        assert result is False
+
+    def test_notify_subscribers_skips_when_no_smtp(self):
+        from production_app import notify_subscribers
+        with patch('production_app.SMTP_USER', ''), \
+             patch('production_app.SMTP_PASSWORD', ''):
+            # Should not raise, just log and return
+            notify_subscribers('29001', 'Araucaria')
+
+    def test_send_email_handles_smtp_failure(self):
+        from production_app import _send_email
+        with patch('production_app.SMTP_USER', 'user@test.com'), \
+             patch('production_app.SMTP_PASSWORD', 'pass'), \
+             patch('production_app.smtplib.SMTP_SSL', side_effect=Exception('Connection refused')):
+            result = _send_email('a@b.com', 'test', '<p>hi</p>')
+        assert result is False
+
+    def test_send_email_success(self):
+        from production_app import _send_email
+        mock_server = MagicMock()
+        mock_smtp_cls = MagicMock(return_value=mock_server)
+        mock_server.__enter__ = MagicMock(return_value=mock_server)
+        mock_server.__exit__ = MagicMock(return_value=False)
+        with patch('production_app.SMTP_USER', 'info@test.com'), \
+             patch('production_app.SMTP_PASSWORD', 'pass'), \
+             patch('production_app.smtplib.SMTP_SSL', mock_smtp_cls):
+            result = _send_email('a@b.com', 'New Puzzle', '<p>hi</p>')
+        assert result is True
+        mock_server.login.assert_called_once_with('info@test.com', 'pass')
+        mock_server.sendmail.assert_called_once()

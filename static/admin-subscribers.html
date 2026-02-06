@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscribers - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 { font-size: 1.5rem; font-weight: 700; color: #1e293b; }
+        .header a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .header a:hover { text-decoration: underline; }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .stat-card .label {
+            font-size: 0.8125rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .stat-card.active .number { color: #16a34a; }
+        .stat-card.unsub .number { color: #dc2626; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        th {
+            background: #f8fafc;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge.active { background: #dcfce7; color: #166534; }
+        .badge.unsub { background: #fee2e2; color: #991b1b; }
+
+        .delete-btn {
+            background: none;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+        .delete-btn:hover { border-color: #ef4444; color: #ef4444; }
+
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+
+        .loading { text-align: center; padding: 3rem; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Email Subscribers</h1>
+        <a href="/admin">&larr; Back to Dashboard</a>
+    </div>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number" id="totalCount">-</div>
+                <div class="label">Total Signups</div>
+            </div>
+            <div class="stat-card active">
+                <div class="number" id="activeCount">-</div>
+                <div class="label">Active Subscribers</div>
+            </div>
+            <div class="stat-card unsub">
+                <div class="number" id="unsubCount">-</div>
+                <div class="label">Unsubscribed</div>
+            </div>
+        </div>
+
+        <div id="tableContainer">
+            <div class="loading">Loading subscribers...</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadSubscribers() {
+            try {
+                const resp = await fetch('/admin/api/subscribers', { credentials: 'same-origin' });
+                const data = await resp.json();
+
+                document.getElementById('totalCount').textContent = data.counts.total;
+                document.getElementById('activeCount').textContent = data.counts.active;
+                document.getElementById('unsubCount').textContent = data.counts.unsubscribed;
+
+                const container = document.getElementById('tableContainer');
+
+                if (data.subscribers.length === 0) {
+                    container.innerHTML = '<div class="empty">No subscribers yet. The signup form is on the homepage.</div>';
+                    return;
+                }
+
+                let html = `<table>
+                    <thead><tr>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Subscribed</th>
+                        <th></th>
+                    </tr></thead><tbody>`;
+
+                data.subscribers.forEach(s => {
+                    const isActive = !s.unsubscribed_at;
+                    const date = new Date(s.subscribed_at).toLocaleDateString('en-GB', {
+                        day: 'numeric', month: 'short', year: 'numeric'
+                    });
+                    html += `<tr>
+                        <td>${escapeHtml(s.email)}</td>
+                        <td><span class="badge ${isActive ? 'active' : 'unsub'}">${isActive ? 'Active' : 'Unsubscribed'}</span></td>
+                        <td>${date}</td>
+                        <td><button class="delete-btn" onclick="deleteSub(${s.id}, this)">Remove</button></td>
+                    </tr>`;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (err) {
+                document.getElementById('tableContainer').innerHTML =
+                    '<div class="empty">Failed to load subscribers.</div>';
+            }
+        }
+
+        async function deleteSub(id, btn) {
+            if (!confirm('Remove this subscriber permanently?')) return;
+            btn.disabled = true;
+            try {
+                await fetch(`/admin/api/subscriber/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'same-origin'
+                });
+                loadSubscribers();
+            } catch (err) {
+                alert('Failed to delete subscriber.');
+                btn.disabled = false;
+            }
+        }
+
+        function escapeHtml(text) {
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+
+        loadSubscribers();
+    </script>
+</body>
+</html>
