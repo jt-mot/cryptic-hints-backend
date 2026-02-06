@@ -37,6 +37,21 @@ class TestPublicRoutes:
         html = resp.data.decode()
         assert '__GA_TRACKING_ID__' not in html
 
+    def test_guide_page_serves_html(self, client):
+        resp = client.get('/guide')
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert 'Cryptic Crossword' in html or 'cryptic' in html.lower()
+        assert '__GA_TRACKING_ID__' not in html
+        assert '__SITE_URL__' not in html
+
+    def test_guide_page_has_glossary(self, client):
+        resp = client.get('/guide')
+        html = resp.data.decode()
+        assert 'Anagram' in html
+        assert 'Hidden Word' in html
+        assert 'Glossary' in html
+
     def test_robots_txt(self, client):
         resp = client.get('/robots.txt')
         assert resp.status_code == 200
@@ -45,6 +60,7 @@ class TestPublicRoutes:
         assert 'User-agent: *' in text
         assert '/sitemap.xml' in text
         assert 'cryptic-hints.com' in text
+        assert 'Allow: /guide' in text
 
     def test_sitemap_xml_with_puzzles(self, client, mock_db):
         mock_db.fetchall.return_value = [

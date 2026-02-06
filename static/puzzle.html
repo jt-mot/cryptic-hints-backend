@@ -687,6 +687,105 @@
                 font-size: 13px;
             }
         }
+
+        /* Anagram Helper Widget */
+        .anagram-widget {
+            margin-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 16px;
+        }
+        .anagram-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: none;
+            border: none;
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            padding: 4px 0;
+            width: 100%;
+        }
+        .anagram-toggle:hover { color: #2563eb; }
+        .anagram-toggle .arrow {
+            transition: transform 0.2s;
+            font-size: 10px;
+        }
+        .anagram-toggle.open .arrow { transform: rotate(90deg); }
+        .anagram-body { display: none; margin-top: 12px; }
+        .anagram-body.open { display: block; }
+        .anagram-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .anagram-input:focus { border-color: #2563eb; }
+        .anagram-input::placeholder {
+            text-transform: none;
+            letter-spacing: 0;
+            font-family: -apple-system, sans-serif;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+        .anagram-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .anagram-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: #f8fafc;
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .anagram-btn:hover { background: #e2e8f0; }
+        .anagram-result {
+            margin-top: 10px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-align: center;
+            color: #1e293b;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .anagram-sorted {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #94a3b8;
+            text-align: center;
+        }
+        .anagram-guide-link {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .anagram-guide-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -751,6 +850,26 @@
             <div class="grid-title">GRID</div>
             <div class="grid-wrapper">
                 <div id="crosswordGrid"></div>
+            </div>
+
+            <!-- Anagram Helper -->
+            <div class="anagram-widget">
+                <button class="anagram-toggle" id="anagramToggle" onclick="toggleAnagram()">
+                    <span class="arrow">&#9654;</span> Anagram Helper
+                </button>
+                <div class="anagram-body" id="anagramBody">
+                    <input type="text" class="anagram-input" id="anagramInput"
+                           placeholder="Type letters to rearrange..."
+                           oninput="updateAnagramDisplay()">
+                    <div class="anagram-actions">
+                        <button class="anagram-btn" onclick="shuffleAnagram()">Shuffle</button>
+                        <button class="anagram-btn" onclick="sortAnagram()">A-Z Sort</button>
+                        <button class="anagram-btn" onclick="clearAnagram()">Clear</button>
+                    </div>
+                    <div class="anagram-result" id="anagramResult"></div>
+                    <div class="anagram-sorted" id="anagramSorted"></div>
+                    <a href="/guide#anagrams" target="_blank" class="anagram-guide-link">Anagram solving tips &rarr;</a>
+                </div>
             </div>
         </div>
         
@@ -1473,6 +1592,58 @@
             } catch (e) {
                 console.warn('Could not load progress:', e);
             }
+        }
+
+        // ============================================================
+        // Anagram Helper
+        // ============================================================
+
+        function toggleAnagram() {
+            const btn = document.getElementById('anagramToggle');
+            const body = document.getElementById('anagramBody');
+            btn.classList.toggle('open');
+            body.classList.toggle('open');
+            if (body.classList.contains('open')) {
+                document.getElementById('anagramInput').focus();
+            }
+        }
+
+        function updateAnagramDisplay() {
+            const raw = document.getElementById('anagramInput').value.replace(/[^a-zA-Z]/g, '').toUpperCase();
+            const result = document.getElementById('anagramResult');
+            const sorted = document.getElementById('anagramSorted');
+            if (!raw) {
+                result.textContent = '';
+                sorted.textContent = '';
+                return;
+            }
+            result.textContent = raw.split('').join(' ');
+            sorted.textContent = 'Sorted: ' + raw.split('').sort().join(' ') + '  (' + raw.length + ' letters)';
+        }
+
+        function shuffleAnagram() {
+            const input = document.getElementById('anagramInput');
+            const letters = input.value.replace(/[^a-zA-Z]/g, '').toUpperCase().split('');
+            // Fisher-Yates shuffle
+            for (let i = letters.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [letters[i], letters[j]] = [letters[j], letters[i]];
+            }
+            input.value = letters.join('');
+            updateAnagramDisplay();
+        }
+
+        function sortAnagram() {
+            const input = document.getElementById('anagramInput');
+            const letters = input.value.replace(/[^a-zA-Z]/g, '').toUpperCase().split('').sort();
+            input.value = letters.join('');
+            updateAnagramDisplay();
+        }
+
+        function clearAnagram() {
+            document.getElementById('anagramInput').value = '';
+            updateAnagramDisplay();
+            document.getElementById('anagramInput').focus();
         }
 
         loadPuzzle();
