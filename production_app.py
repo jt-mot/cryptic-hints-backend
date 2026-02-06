@@ -127,9 +127,20 @@ def init_db():
         )
     ''')
 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS subscribers (
+            id SERIAL PRIMARY KEY,
+            email TEXT NOT NULL UNIQUE,
+            subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            confirmed BOOLEAN DEFAULT FALSE,
+            unsubscribed_at TIMESTAMP
+        )
+    ''')
+
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_date ON puzzles(date)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_status ON puzzles(status)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_clue_puzzle ON clues(puzzle_id)')
+    cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriber_email ON subscribers(email)')
     
     # Add grid_data column if it doesn't exist (migration)
     cursor.execute('''
@@ -489,6 +500,66 @@ def check_answer(clue_id):
         'message': '🎉 Correct! Well done!' if correct else '❌ Not quite - try again or check the hints',
         'clue_text': clue['clue_text']
     })
+
+
+# ============================================================================
+# EMAIL SUBSCRIPTION
+# ============================================================================
+
+@app.route('/api/subscribe', methods=['POST'])
+def subscribe_email():
+    """Subscribe an email to puzzle notifications"""
+    import re
+    data = request.get_json()
+    email = (data.get('email') or '').strip().lower()
+
+    if not email or not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        return jsonify({'success': False, 'message': 'Please enter a valid email address'}), 400
+
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        # Re-subscribe if previously unsubscribed, otherwise insert
+        cursor.execute('''
+            INSERT INTO subscribers (email, confirmed)
+            VALUES (%s, FALSE)
+            ON CONFLICT (email)
+            DO UPDATE SET unsubscribed_at = NULL, subscribed_at = CURRENT_TIMESTAMP
+        ''', (email,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': 'Unable to subscribe. Please try again.'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+    return jsonify({'success': True, 'message': 'Thanks for subscribing! You\'ll be notified when new puzzles are published.'})
+
+
+@app.route('/api/unsubscribe', methods=['POST'])
+def unsubscribe_email():
+    """Unsubscribe an email from puzzle notifications"""
+    data = request.get_json()
+    email = (data.get('email') or '').strip().lower()
+
+    if not email:
+        return jsonify({'success': False, 'message': 'Email required'}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        UPDATE subscribers
+        SET unsubscribed_at = CURRENT_TIMESTAMP
+        WHERE email = %s AND unsubscribed_at IS NULL
+    ''', (email,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'message': 'You have been unsubscribed.'})
 
 
 # ============================================================================
@@ -1004,17 +1075,38 @@ def publish_puzzle(puzzle_id):
     
     # Publish
     cursor.execute('''
-        UPDATE puzzles 
+        UPDATE puzzles
         SET status = 'published',
             published_at = CURRENT_TIMESTAMP
         WHERE id = %s
+        RETURNING puzzle_number, setter
     ''', (puzzle_id,))
-    
+    published = cursor.fetchone()
+
+    # Count active subscribers (for the response message)
+    cursor.execute('''
+        SELECT COUNT(*) as count FROM subscribers
+        WHERE unsubscribed_at IS NULL
+    ''')
+    sub_count = cursor.fetchone()['count']
+
     conn.commit()
+
+    # TODO: Send email notifications to subscribers when email is configured.
+    # Active subscribers can be fetched with:
+    #   SELECT email FROM subscribers WHERE unsubscribed_at IS NULL
+    # For now we just note the count in the response.
+    notify_msg = ''
+    if sub_count > 0:
+        notify_msg = f' ({sub_count} subscribers to notify once email is configured)'
+
     cursor.close()
     conn.close()
-    
-    return jsonify({'success': True, 'message': 'Puzzle published successfully!'})
+
+    return jsonify({
+        'success': True,
+        'message': f'Puzzle published successfully!{notify_msg}'
+    })
 
 
 @app.route('/admin/api/puzzle/<int:puzzle_id>/unpublish', methods=['POST'])
@@ -1080,6 +1172,59 @@ def get_api_usage():
 def admin_usage():
     """Admin API usage page"""
     return send_from_directory('static', 'admin-usage.html')
+
+
+@app.route('/admin/api/subscribers')
+@login_required
+def get_subscribers():
+    """Get all subscribers for the admin dashboard"""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    cursor.execute('''
+        SELECT id, email, subscribed_at, confirmed, unsubscribed_at
+        FROM subscribers
+        ORDER BY subscribed_at DESC
+    ''')
+    subscribers = cursor.fetchall()
+
+    # Counts
+    cursor.execute('''
+        SELECT
+            COUNT(*) as total,
+            COUNT(*) FILTER (WHERE unsubscribed_at IS NULL) as active,
+            COUNT(*) FILTER (WHERE unsubscribed_at IS NOT NULL) as unsubscribed
+        FROM subscribers
+    ''')
+    counts = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({
+        'subscribers': [dict(s) for s in subscribers],
+        'counts': dict(counts),
+    })
+
+
+@app.route('/admin/api/subscriber/<int:subscriber_id>', methods=['DELETE'])
+@login_required
+def delete_subscriber(subscriber_id):
+    """Delete a subscriber"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM subscribers WHERE id = %s', (subscriber_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/admin/subscribers')
+@login_required
+def admin_subscribers():
+    """Admin subscribers page"""
+    return send_from_directory('static', 'admin-subscribers.html')
 
 
 # ============================================================================
