@@ -1081,7 +1081,7 @@
             });
             
             return `
-                <div class="clue-item" data-clue-id="${clueId}">
+                <div class="clue-item" data-clue-id="${clueId}" onclick="focusClue('${clueId}', event)">
                     <div class="clue-header">
                         <div>
                             <span class="clue-number">${clue.clue_number}</span>
@@ -1151,6 +1151,91 @@
                     }
                 }
                 saveProgress();
+                return;
+            }
+
+            // Arrow left: move to previous box in same clue
+            if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                const prev = document.querySelector(
+                    `.answer-box[data-clue-id="${clueId}"][data-index="${index - 1}"]`
+                );
+                if (prev) prev.focus();
+                return;
+            }
+
+            // Arrow right: move to next box in same clue
+            if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                const next = document.querySelector(
+                    `.answer-box[data-clue-id="${clueId}"][data-index="${index + 1}"]`
+                );
+                if (next) next.focus();
+                return;
+            }
+
+            // Tab / Shift+Tab: jump to next/previous clue's first box
+            if (event.key === 'Tab') {
+                const clueItems = Array.from(document.querySelectorAll('.clue-item'));
+                const currentClue = document.querySelector(`.clue-item[data-clue-id="${clueId}"]`);
+                const currentIdx = clueItems.indexOf(currentClue);
+
+                const direction = event.shiftKey ? -1 : 1;
+                let targetIdx = currentIdx + direction;
+
+                // Wrap around
+                if (targetIdx < 0) targetIdx = clueItems.length - 1;
+                if (targetIdx >= clueItems.length) targetIdx = 0;
+
+                const targetClue = clueItems[targetIdx];
+                if (targetClue) {
+                    event.preventDefault();
+                    const targetClueId = targetClue.dataset.clueId;
+                    const firstInput = targetClue.querySelector('.answer-box:not(.separator):not([disabled])');
+                    if (firstInput) {
+                        firstInput.focus();
+                        targetClue.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                        // Highlight in grid
+                        document.querySelectorAll('.clue-item.selected').forEach(el => el.classList.remove('selected'));
+                        targetClue.classList.add('selected');
+                        highlightClueCells(targetClueId);
+                    }
+                }
+                return;
+            }
+
+            // Arrow up/down: move to same-position box in previous/next clue
+            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                event.preventDefault();
+                const clueItems = Array.from(document.querySelectorAll('.clue-item'));
+                const currentClue = document.querySelector(`.clue-item[data-clue-id="${clueId}"]`);
+                const currentIdx = clueItems.indexOf(currentClue);
+
+                const direction = event.key === 'ArrowUp' ? -1 : 1;
+                let targetIdx = currentIdx + direction;
+                if (targetIdx < 0 || targetIdx >= clueItems.length) return;
+
+                const targetClue = clueItems[targetIdx];
+                if (targetClue) {
+                    const targetClueId = targetClue.dataset.clueId;
+                    // Try same index, fall back to first available box
+                    let targetInput = targetClue.querySelector(
+                        `.answer-box[data-index="${index}"]:not(.separator):not([disabled])`
+                    );
+                    if (!targetInput) {
+                        targetInput = targetClue.querySelector('.answer-box:not(.separator):not([disabled])');
+                    }
+                    if (targetInput) {
+                        targetInput.focus();
+                        targetClue.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+                        document.querySelectorAll('.clue-item.selected').forEach(el => el.classList.remove('selected'));
+                        targetClue.classList.add('selected');
+                        highlightClueCells(targetClueId);
+                    }
+                }
+                return;
             }
         }
 
@@ -1238,6 +1323,24 @@
                 hintsRevealed[clueId].push(level);
             }
             saveProgress();
+        }
+
+        function focusClue(clueId, event) {
+            // Don't steal focus from inputs, buttons, or hints the user clicked
+            if (event && (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON'
+                || event.target.classList.contains('hint-text'))) return;
+
+            const clueItem = document.querySelector(`.clue-item[data-clue-id="${clueId}"]`);
+            if (!clueItem) return;
+
+            // Focus first available input
+            const firstInput = clueItem.querySelector('.answer-box:not(.separator):not([disabled])');
+            if (firstInput) firstInput.focus();
+
+            // Highlight
+            document.querySelectorAll('.clue-item.selected').forEach(el => el.classList.remove('selected'));
+            clueItem.classList.add('selected');
+            highlightClueCells(clueId);
         }
 
         function setupEventListeners() {
