@@ -214,6 +214,7 @@ def sitemap_xml():
         """)
         puzzles = cursor.fetchall()
     except Exception:
+        app.logger.exception("Failed to query puzzles for sitemap")
         puzzles = []
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
