@@ -329,3 +329,57 @@ class TestAdminSubscribers:
         assert resp.status_code == 200
         data = json.loads(resp.data)
         assert data['success'] is True
+
+
+# ============================================================================
+# Email notification helpers
+# ============================================================================
+
+class TestEmailHelpers:
+    def test_build_puzzle_email_contains_puzzle_link(self):
+        from production_app import _build_puzzle_email
+        html = _build_puzzle_email('29001', 'Araucaria')
+        assert '/puzzle/29001' in html
+        assert 'Araucaria' in html
+
+    def test_build_puzzle_email_unknown_setter(self):
+        from production_app import _build_puzzle_email
+        html = _build_puzzle_email('29001', 'Unknown')
+        assert '/puzzle/29001' in html
+        assert 'Unknown' not in html
+
+    def test_send_email_skips_when_no_smtp(self):
+        from production_app import _send_email
+        with patch('production_app.SMTP_USER', ''), \
+             patch('production_app.SMTP_PASSWORD', ''):
+            result = _send_email('a@b.com', 'test', '<p>hi</p>')
+        assert result is False
+
+    def test_notify_subscribers_skips_when_no_smtp(self):
+        from production_app import notify_subscribers
+        with patch('production_app.SMTP_USER', ''), \
+             patch('production_app.SMTP_PASSWORD', ''):
+            # Should not raise, just log and return
+            notify_subscribers('29001', 'Araucaria')
+
+    def test_send_email_handles_smtp_failure(self):
+        from production_app import _send_email
+        with patch('production_app.SMTP_USER', 'user@test.com'), \
+             patch('production_app.SMTP_PASSWORD', 'pass'), \
+             patch('production_app.smtplib.SMTP_SSL', side_effect=Exception('Connection refused')):
+            result = _send_email('a@b.com', 'test', '<p>hi</p>')
+        assert result is False
+
+    def test_send_email_success(self):
+        from production_app import _send_email
+        mock_server = MagicMock()
+        mock_smtp_cls = MagicMock(return_value=mock_server)
+        mock_server.__enter__ = MagicMock(return_value=mock_server)
+        mock_server.__exit__ = MagicMock(return_value=False)
+        with patch('production_app.SMTP_USER', 'info@test.com'), \
+             patch('production_app.SMTP_PASSWORD', 'pass'), \
+             patch('production_app.smtplib.SMTP_SSL', mock_smtp_cls):
+            result = _send_email('a@b.com', 'New Puzzle', '<p>hi</p>')
+        assert result is True
+        mock_server.login.assert_called_once_with('info@test.com', 'pass')
+        mock_server.sendmail.assert_called_once()

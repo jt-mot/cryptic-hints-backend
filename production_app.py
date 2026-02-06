@@ -21,6 +21,10 @@ import json
 from datetime import datetime, date
 import os
 import secrets
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import threading
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
@@ -36,6 +40,91 @@ SITE_URL = os.environ.get('SITE_URL', 'https://www.cryptic-hints.com').rstrip('/
 GA_TRACKING_ID = os.environ.get('GA_TRACKING_ID', 'G-EN3G45Y8DB')
 ADMIN_USERNAME = 'admin'  # Change this
 ADMIN_PASSWORD_HASH = generate_password_hash('changeme123')  # CHANGE THIS PASSWORD!
+
+# SMTP email settings (GoDaddy)
+SMTP_HOST = os.environ.get('SMTP_HOST', 'smtpout.secureserver.net')
+SMTP_PORT = int(os.environ.get('SMTP_PORT', '465'))
+SMTP_USER = os.environ.get('SMTP_USER', '')  # e.g. info@cryptic-hints.com
+SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '')
+EMAIL_FROM = os.environ.get('EMAIL_FROM', '') or SMTP_USER
+
+
+def _send_email(to_email, subject, html_body):
+    """Send a single email via SMTP. Returns True on success."""
+    if not SMTP_USER or not SMTP_PASSWORD:
+        return False
+
+    msg = MIMEMultipart('alternative')
+    msg['From'] = EMAIL_FROM
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(html_body, 'html'))
+
+    try:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(EMAIL_FROM, to_email, msg.as_string())
+        return True
+    except Exception as e:
+        app.logger.error(f"Failed to send email to {to_email}: {e}")
+        return False
+
+
+def _build_puzzle_email(puzzle_number, setter):
+    """Build the HTML email body for a new puzzle notification."""
+    puzzle_url = f"{SITE_URL}/puzzle/{puzzle_number}"
+    unsubscribe_url = f"{SITE_URL}"
+    return f"""\
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+  <h2 style="color: #1e293b; margin-bottom: 4px;">New Puzzle Available!</h2>
+  <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+    Guardian Cryptic #{puzzle_number}{f' by {setter}' if setter and setter != 'Unknown' else ''} is now live on Cryptic Hints.
+  </p>
+  <a href="{puzzle_url}"
+     style="display: inline-block; padding: 12px 28px; background: #2563eb; color: #fff;
+            text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; margin: 16px 0;">
+    Solve Puzzle #{puzzle_number}
+  </a>
+  <p style="color: #94a3b8; font-size: 13px; margin-top: 32px;">
+    You received this because you subscribed to puzzle notifications at
+    <a href="{SITE_URL}" style="color: #94a3b8;">cryptic-hints.com</a>.<br>
+    To unsubscribe, visit the site and use the unsubscribe option.
+  </p>
+</div>"""
+
+
+def notify_subscribers(puzzle_number, setter):
+    """Send new-puzzle emails to all active subscribers. Runs in a background thread."""
+    if not SMTP_USER or not SMTP_PASSWORD:
+        app.logger.info("SMTP not configured — skipping subscriber notifications")
+        return
+
+    def _send_all():
+        try:
+            conn = get_db()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute('''
+                SELECT email FROM subscribers
+                WHERE unsubscribed_at IS NULL
+            ''')
+            subscribers = cursor.fetchall()
+            cursor.close()
+            conn.close()
+
+            subject = f"New Puzzle: Guardian Cryptic #{puzzle_number}"
+            body = _build_puzzle_email(puzzle_number, setter)
+
+            sent = 0
+            for sub in subscribers:
+                if _send_email(sub['email'], subject, body):
+                    sent += 1
+
+            app.logger.info(f"Notified {sent}/{len(subscribers)} subscribers about puzzle #{puzzle_number}")
+        except Exception as e:
+            app.logger.error(f"Subscriber notification failed: {e}")
+
+    thread = threading.Thread(target=_send_all, daemon=True)
+    thread.start()
 
 
 def get_db():
@@ -1091,17 +1180,19 @@ def publish_puzzle(puzzle_id):
     sub_count = cursor.fetchone()['count']
 
     conn.commit()
-
-    # TODO: Send email notifications to subscribers when email is configured.
-    # Active subscribers can be fetched with:
-    #   SELECT email FROM subscribers WHERE unsubscribed_at IS NULL
-    # For now we just note the count in the response.
-    notify_msg = ''
-    if sub_count > 0:
-        notify_msg = f' ({sub_count} subscribers to notify once email is configured)'
-
     cursor.close()
     conn.close()
+
+    # Send email notifications in the background
+    notify_msg = ''
+    if sub_count > 0:
+        puzzle_num = published['puzzle_number'] if published else str(puzzle_id)
+        setter_name = published['setter'] if published else 'Unknown'
+        if SMTP_USER and SMTP_PASSWORD:
+            notify_subscribers(puzzle_num, setter_name)
+            notify_msg = f' (notifying {sub_count} subscriber{"s" if sub_count != 1 else ""})'
+        else:
+            notify_msg = f' ({sub_count} subscriber{"s" if sub_count != 1 else ""} — SMTP not configured)'
 
     return jsonify({
         'success': True,
