@@ -112,6 +112,21 @@ def init_db():
         )
     ''')
     
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS api_usage (
+            id SERIAL PRIMARY KEY,
+            puzzle_id INTEGER,
+            puzzle_number TEXT,
+            api_calls INTEGER DEFAULT 0,
+            input_tokens INTEGER DEFAULT 0,
+            output_tokens INTEGER DEFAULT 0,
+            estimated_cost_usd NUMERIC(10, 6) DEFAULT 0,
+            model TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (puzzle_id) REFERENCES puzzles(id) ON DELETE SET NULL
+        )
+    ''')
+
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_date ON puzzles(date)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_status ON puzzles(status)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_clue_puzzle ON clues(puzzle_id)')
@@ -638,10 +653,29 @@ def scrape_and_import():
             # Store grid data if available
             if puzzle_data.get('grid'):
                 cursor.execute('''
-                    UPDATE puzzles 
-                    SET grid_data = %s 
+                    UPDATE puzzles
+                    SET grid_data = %s
                     WHERE id = %s
                 ''', (json.dumps(puzzle_data['grid']), puzzle_id))
+
+            # Store API usage stats
+            api_usage = puzzle_data.get('api_usage', {})
+            if api_usage.get('api_calls', 0) > 0:
+                cursor.execute('''
+                    INSERT INTO api_usage (
+                        puzzle_id, puzzle_number, api_calls,
+                        input_tokens, output_tokens,
+                        estimated_cost_usd, model
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ''', (
+                    puzzle_id,
+                    puzzle_data.get('puzzle_number', puzzle_number),
+                    api_usage.get('api_calls', 0),
+                    api_usage.get('input_tokens', 0),
+                    api_usage.get('output_tokens', 0),
+                    api_usage.get('estimated_cost_usd', 0),
+                    api_usage.get('model', ''),
+                ))
             
             # Insert clues with hints
             clue_count = 0
@@ -696,7 +730,11 @@ def scrape_and_import():
             message += " (No hints found - you'll need to write hints manually)"
         elif clues_with_hints < len(puzzle_data.get('clues', [])):
             message += f" ({clues_with_hints}/{len(puzzle_data['clues'])} clues have hints)"
-        
+
+        api_usage = puzzle_data.get('api_usage', {})
+        if api_usage.get('api_calls', 0) > 0:
+            message += f" | API cost: ${api_usage['estimated_cost_usd']:.4f}"
+
         return jsonify({
             'success': True,
             'puzzle_id': puzzle_id,
@@ -704,6 +742,7 @@ def scrape_and_import():
             'setter': puzzle_data.get('setter', 'Unknown'),
             'clue_count': len(puzzle_data.get('clues', [])),
             'hints_found': clues_with_hints,
+            'api_usage': api_usage,
             'message': message
         })
         
@@ -983,6 +1022,51 @@ def unpublish_puzzle(puzzle_id):
     conn.close()
     
     return jsonify({'success': True, 'message': 'Puzzle unpublished'})
+
+
+@app.route('/admin/api/usage')
+@login_required
+def get_api_usage():
+    """Get API usage stats for the admin dashboard"""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    # Per-import breakdown (most recent first)
+    cursor.execute('''
+        SELECT id, puzzle_number, api_calls, input_tokens, output_tokens,
+               (input_tokens + output_tokens) as total_tokens,
+               estimated_cost_usd, model, created_at
+        FROM api_usage
+        ORDER BY created_at DESC
+    ''')
+    imports = cursor.fetchall()
+
+    # Running totals
+    cursor.execute('''
+        SELECT COALESCE(SUM(api_calls), 0) as total_calls,
+               COALESCE(SUM(input_tokens), 0) as total_input_tokens,
+               COALESCE(SUM(output_tokens), 0) as total_output_tokens,
+               COALESCE(SUM(input_tokens + output_tokens), 0) as total_tokens,
+               COALESCE(SUM(estimated_cost_usd), 0) as total_cost_usd,
+               COUNT(*) as total_imports
+        FROM api_usage
+    ''')
+    totals = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({
+        'imports': [dict(r) for r in imports],
+        'totals': dict(totals),
+    })
+
+
+@app.route('/admin/usage')
+@login_required
+def admin_usage():
+    """Admin API usage page"""
+    return send_from_directory('static', 'admin-usage.html')
 
 
 # ============================================================================

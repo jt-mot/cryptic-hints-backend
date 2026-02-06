@@ -370,6 +370,9 @@ class PuzzleScraper:
         print(f"\n{'='*60}")
         print(f"Scraping Guardian Cryptic #{puzzle_number}")
         print(f"{'='*60}\n")
+
+        # Reset API usage counters for this import
+        self.hint_generator.reset_usage_stats()
         
         # Step 1: Guardian
         puzzle_data = self.guardian.fetch_puzzle(puzzle_number)
@@ -454,5 +457,13 @@ class PuzzleScraper:
         except Exception as e:
             print(f"⚠️  Grid building failed: {e}")
             puzzle_data['grid'] = None
-        
+
+        # Attach API usage stats
+        usage = self.hint_generator.get_usage_stats()
+        puzzle_data['api_usage'] = usage
+        if usage['api_calls'] > 0:
+            print(f"\n📊 API Usage: {usage['api_calls']} calls, "
+                  f"{usage['total_tokens']} tokens, "
+                  f"~${usage['estimated_cost_usd']:.4f}")
+
         return puzzle_data
