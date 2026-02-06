@@ -163,6 +163,46 @@ class TestAdminAuth:
 
 
 # ============================================================================
+# Admin API - Hint level validation (SQL injection prevention)
+# ============================================================================
+
+class TestHintLevelValidation:
+    def test_update_hint_rejects_invalid_level(self, logged_in_client):
+        resp = logged_in_client.post('/admin/api/hint/update',
+                                     json={'clue_id': 1, 'hint_level': 99, 'new_text': 'x'})
+        assert resp.status_code == 400
+
+    def test_update_hint_rejects_string_level(self, logged_in_client):
+        resp = logged_in_client.post('/admin/api/hint/update',
+                                     json={'clue_id': 1, 'hint_level': '1; DROP TABLE clues--', 'new_text': 'x'})
+        assert resp.status_code == 400
+
+    def test_approve_hint_rejects_invalid_level(self, logged_in_client):
+        resp = logged_in_client.post('/admin/api/hint/approve',
+                                     json={'clue_id': 1, 'hint_level': 0})
+        assert resp.status_code == 400
+
+    def test_flag_hint_rejects_invalid_level(self, logged_in_client):
+        resp = logged_in_client.post('/admin/api/hint/flag',
+                                     json={'clue_id': 1, 'hint_level': 5})
+        assert resp.status_code == 400
+
+    def test_approve_hint_accepts_valid_level(self, logged_in_client, mock_db):
+        resp = logged_in_client.post('/admin/api/hint/approve',
+                                     json={'clue_id': 1, 'hint_level': 2})
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data['success'] is True
+
+    def test_flag_hint_accepts_valid_level(self, logged_in_client, mock_db):
+        resp = logged_in_client.post('/admin/api/hint/flag',
+                                     json={'clue_id': 1, 'hint_level': 4})
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data['success'] is True
+
+
+# ============================================================================
 # Admin API - Usage tracking
 # ============================================================================
 
