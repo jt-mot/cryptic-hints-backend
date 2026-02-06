@@ -32,6 +32,8 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 CORS(app)
 
 DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://localhost/crosswords_dev')
+SITE_URL = os.environ.get('SITE_URL', 'https://www.cryptic-hints.com').rstrip('/')
+GA_TRACKING_ID = os.environ.get('GA_TRACKING_ID', 'G-EN3G45Y8DB')
 ADMIN_USERNAME = 'admin'  # Change this
 ADMIN_PASSWORD_HASH = generate_password_hash('changeme123')  # CHANGE THIS PASSWORD!
 
@@ -147,28 +149,38 @@ def login_required(f):
 # PUBLIC ROUTES (Frontend)
 # ============================================================================
 
+def _serve_html(filename):
+    """Read an HTML file from static/ and inject config values."""
+    filepath = os.path.join(app.static_folder, filename)
+    with open(filepath, 'r') as f:
+        html = f.read()
+    html = html.replace('__SITE_URL__', SITE_URL)
+    html = html.replace('__GA_TRACKING_ID__', GA_TRACKING_ID)
+    return Response(html, mimetype='text/html')
+
+
 @app.route('/')
 def homepage():
     """Serve the homepage"""
-    return send_from_directory('static', 'index.html')
+    return _serve_html('index.html')
 
 
 @app.route('/puzzle/<puzzle_number>')
 def puzzle_page(puzzle_number):
     """Serve the puzzle solving page"""
-    return send_from_directory('static', 'puzzle.html')
+    return _serve_html('puzzle.html')
 
 
 @app.route('/robots.txt')
 def robots_txt():
     """Serve robots.txt for search engine crawlers"""
-    content = """User-agent: *
+    content = f"""User-agent: *
 Allow: /
 Allow: /puzzle/
 Disallow: /admin/
 Disallow: /api/
 
-Sitemap: https://www.cryptic-hints.com/sitemap.xml
+Sitemap: {SITE_URL}/sitemap.xml
 """
     return Response(content, mimetype='text/plain')
 
@@ -194,7 +206,7 @@ def sitemap_xml():
 
     # Homepage
     xml += '  <url>\n'
-    xml += '    <loc>https://www.cryptic-hints.com/</loc>\n'
+    xml += f'    <loc>{SITE_URL}/</loc>\n'
     xml += '    <changefreq>daily</changefreq>\n'
     xml += '    <priority>1.0</priority>\n'
     xml += '  </url>\n'
@@ -212,7 +224,7 @@ def sitemap_xml():
             except Exception:
                 pass
         xml += '  <url>\n'
-        xml += f'    <loc>https://www.cryptic-hints.com/puzzle/{puzzle["puzzle_number"]}</loc>\n'
+        xml += f'    <loc>{SITE_URL}/puzzle/{puzzle["puzzle_number"]}</loc>\n'
         xml += lastmod
         xml += '    <changefreq>monthly</changefreq>\n'
         xml += '    <priority>0.8</priority>\n'
