@@ -150,6 +150,9 @@ def init_db():
     print("✓ PostgreSQL database initialized successfully!")
 
 
+VALID_HINT_LEVELS = {1, 2, 3, 4}
+
+
 def login_required(f):
     """Decorator to require login for admin routes"""
     def decorated_function(*args, **kwargs):
@@ -888,35 +891,38 @@ def update_hint():
     clue_id = data.get('clue_id')
     hint_level = data.get('hint_level')
     new_text = data.get('new_text')
-    
+
+    if hint_level not in VALID_HINT_LEVELS:
+        return jsonify({'error': 'Invalid hint level'}), 400
+
     conn = get_db()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
-    
+
     # Get old text for revision history
     cursor.execute(f'''
         SELECT hint_level_{hint_level} as old_text
         FROM clues WHERE id = %s
     ''', (clue_id,))
     old_text = cursor.fetchone()['old_text']
-    
+
     # Update hint
     cursor.execute(f'''
-        UPDATE clues 
+        UPDATE clues
         SET hint_level_{hint_level} = %s,
             hint_{hint_level}_flagged = FALSE
         WHERE id = %s
     ''', (new_text, clue_id))
-    
+
     # Save revision
     cursor.execute('''
         INSERT INTO hint_revisions (clue_id, hint_level, old_text, new_text, edited_by)
         VALUES (%s, %s, %s, %s, %s)
     ''', (clue_id, hint_level, old_text, new_text, session.get('username')))
-    
+
     conn.commit()
     cursor.close()
     conn.close()
-    
+
     return jsonify({'success': True})
 
 
@@ -927,12 +933,15 @@ def approve_hint():
     data = request.get_json()
     clue_id = data.get('clue_id')
     hint_level = data.get('hint_level')
-    
+
+    if hint_level not in VALID_HINT_LEVELS:
+        return jsonify({'error': 'Invalid hint level'}), 400
+
     conn = get_db()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
-    
+
     cursor.execute(f'''
-        UPDATE clues 
+        UPDATE clues
         SET hint_{hint_level}_approved = TRUE,
             hint_{hint_level}_flagged = FALSE
         WHERE id = %s
@@ -952,12 +961,15 @@ def flag_hint():
     data = request.get_json()
     clue_id = data.get('clue_id')
     hint_level = data.get('hint_level')
-    
+
+    if hint_level not in VALID_HINT_LEVELS:
+        return jsonify({'error': 'Invalid hint level'}), 400
+
     conn = get_db()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
-    
+
     cursor.execute(f'''
-        UPDATE clues 
+        UPDATE clues
         SET hint_{hint_level}_flagged = TRUE,
             hint_{hint_level}_approved = FALSE
         WHERE id = %s
