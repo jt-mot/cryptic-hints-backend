@@ -289,12 +289,19 @@ def puzzle_page(puzzle_number):
     return _serve_html('puzzle.html')
 
 
+@app.route('/guide')
+def guide_page():
+    """Serve the how-to-solve-cryptics guide"""
+    return _serve_html('guide.html')
+
+
 @app.route('/robots.txt')
 def robots_txt():
     """Serve robots.txt for search engine crawlers"""
     content = f"""User-agent: *
 Allow: /
 Allow: /puzzle/
+Allow: /guide
 Disallow: /admin/
 Disallow: /api/
 
@@ -328,6 +335,13 @@ def sitemap_xml():
     xml += f'    <loc>{SITE_URL}/</loc>\n'
     xml += '    <changefreq>daily</changefreq>\n'
     xml += '    <priority>1.0</priority>\n'
+    xml += '  </url>\n'
+
+    # Guide page
+    xml += '  <url>\n'
+    xml += f'    <loc>{SITE_URL}/guide</loc>\n'
+    xml += '    <changefreq>monthly</changefreq>\n'
+    xml += '    <priority>0.9</priority>\n'
     xml += '  </url>\n'
 
     # Individual puzzle pages

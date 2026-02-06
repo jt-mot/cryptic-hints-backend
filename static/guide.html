@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Solve Cryptic Crosswords - Beginner's Guide | Cryptic Hints</title>
+    <meta name="description" content="Learn how to solve cryptic crosswords with our beginner's guide. Covers anagrams, hidden words, reversals, double definitions, containers, and more. Includes a glossary of common indicator words.">
+    <meta name="keywords" content="how to solve cryptic crosswords, cryptic crossword guide, cryptic clue types, anagram indicators, cryptic crossword for beginners, crossword glossary">
+    <link rel="canonical" href="__SITE_URL__/guide">
+    <meta property="og:title" content="How to Solve Cryptic Crosswords - Beginner's Guide">
+    <meta property="og:description" content="A beginner-friendly guide to cryptic crossword clue types, with worked examples and a glossary of indicator words.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="__SITE_URL__/guide">
+    <meta property="og:site_name" content="Cryptic Hints">
+    <meta name="twitter:card" content="summary">
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=__GA_TRACKING_ID__"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '__GA_TRACKING_ID__');
+    </script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: #1a1a2e;
+            background: #f5f7fa;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 16px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-icon { width: 36px; height: 36px; flex-shrink: 0; }
+        nav { display: flex; gap: 8px; }
+        nav a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        nav a:hover { color: #fff; background: rgba(255,255,255,0.1); }
+
+        .hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 48px 24px 56px;
+            text-align: center;
+        }
+        .hero h1 {
+            color: #fff;
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+        .hero p {
+            color: rgba(255,255,255,0.75);
+            font-size: 18px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+
+        /* Table of contents */
+        .toc {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px 28px;
+            margin-bottom: 40px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .toc h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+        .toc ol { padding-left: 20px; }
+        .toc li { margin-bottom: 4px; }
+        .toc a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .toc a:hover { text-decoration: underline; }
+
+        /* Sections */
+        .guide-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .guide-section h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .guide-section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #334155;
+            margin: 20px 0 8px;
+        }
+        .guide-section p {
+            color: #475569;
+            margin-bottom: 12px;
+        }
+
+        /* Example clue boxes */
+        .example {
+            background: #f8fafc;
+            border-left: 4px solid #2563eb;
+            border-radius: 0 8px 8px 0;
+            padding: 16px 20px;
+            margin: 16px 0;
+        }
+        .example .clue {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+        .example .answer {
+            font-weight: 700;
+            color: #16a34a;
+            display: inline-block;
+            background: #dcfce7;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+        .example .explanation {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .tip {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            border-radius: 0 8px 8px 0;
+            padding: 14px 20px;
+            margin: 16px 0;
+            font-size: 15px;
+            color: #92400e;
+        }
+
+        /* Glossary */
+        .glossary-type {
+            margin-bottom: 24px;
+        }
+        .glossary-type h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        .word-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .word-tag {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .word-tag.anagram { background: #dbeafe; color: #1e40af; }
+        .word-tag.hidden { background: #dcfce7; color: #166534; }
+        .word-tag.reversal { background: #fce7f3; color: #9d174d; }
+        .word-tag.container { background: #fef3c7; color: #92400e; }
+        .word-tag.homophone { background: #ede9fe; color: #5b21b6; }
+        .word-tag.deletion { background: #fee2e2; color: #991b1b; }
+
+        footer {
+            text-align: center;
+            padding: 24px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 28px; }
+            .hero p { font-size: 16px; }
+            .guide-section { padding: 24px 20px; }
+            .container { padding: 24px 16px 60px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <a href="/" class="logo">
+                <svg class="logo-icon" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="36" height="36" rx="8" fill="white" opacity="0.15"/>
+                    <rect x="3" y="3" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="13.5" y="3" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="24" y="3" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="3" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="13.5" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="24" y="13.5" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="3" y="24" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="13.5" y="24" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="24" y="24" width="9" height="9" rx="1.5" fill="white"/>
+                    <text x="18" y="21" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="700" font-family="Arial, sans-serif">?</text>
+                </svg>
+                Cryptic Hints
+            </a>
+            <nav>
+                <a href="/#puzzles">Puzzles</a>
+                <a href="/guide">Guide</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="hero">
+        <h1>How to Solve Cryptic Crosswords</h1>
+        <p>A beginner-friendly guide to understanding and cracking cryptic clues</p>
+    </div>
+
+    <div class="container">
+        <div class="toc">
+            <h2>Contents</h2>
+            <ol>
+                <li><a href="#anatomy">Anatomy of a Cryptic Clue</a></li>
+                <li><a href="#anagrams">Anagrams</a></li>
+                <li><a href="#hidden-words">Hidden Words</a></li>
+                <li><a href="#double-definitions">Double Definitions</a></li>
+                <li><a href="#reversals">Reversals</a></li>
+                <li><a href="#containers">Containers &amp; Insertions</a></li>
+                <li><a href="#homophones">Homophones</a></li>
+                <li><a href="#deletions">Deletions</a></li>
+                <li><a href="#charades">Charades</a></li>
+                <li><a href="#tips">General Tips</a></li>
+                <li><a href="#glossary">Indicator Word Glossary</a></li>
+            </ol>
+        </div>
+
+        <!-- Anatomy -->
+        <div class="guide-section" id="anatomy">
+            <h2>Anatomy of a Cryptic Clue</h2>
+            <p>Every cryptic clue has <strong>two parts</strong> that both lead to the same answer:</p>
+            <p><strong>1. The definition</strong> &mdash; a straight synonym or description, usually at the very start or very end of the clue.</p>
+            <p><strong>2. The wordplay</strong> &mdash; a coded set of instructions that builds the answer through letters, sounds, or word manipulation.</p>
+            <p>The number in brackets at the end, like <strong>(7)</strong>, tells you the answer length. A comma like <strong>(4,3)</strong> means two words.</p>
+            <div class="example">
+                <div class="clue">"Crazy paving material (3)"</div>
+                <div class="answer">MAD</div>
+                <div class="explanation"><strong>Definition:</strong> "Crazy" = MAD. <strong>Wordplay:</strong> "paving material" = tarmac... but here "Crazy" directly gives you the answer. This is a simple example &mdash; most clues are more complex!</div>
+            </div>
+            <div class="tip">The biggest secret: find where the definition ends and the wordplay begins. That split is the key to every cryptic clue.</div>
+        </div>
+
+        <!-- Anagrams -->
+        <div class="guide-section" id="anagrams">
+            <h2>Anagrams</h2>
+            <p>The letters of a word or phrase are jumbled to make the answer. Look for an <strong>anagram indicator</strong> &mdash; a word suggesting disorder, change, or rearrangement.</p>
+            <div class="example">
+                <div class="clue">"Altered taste is from a particular region (5)"</div>
+                <div class="answer">STATE</div>
+                <div class="explanation">"Altered" is the anagram indicator. Rearranging the letters of TASTE gives STATE (a particular region).</div>
+            </div>
+            <div class="example">
+                <div class="clue">"Criminal stole new items (6)"</div>
+                <div class="answer">STOLEN</div>
+                <div class="explanation">"Criminal" signals an anagram. STOLE + N (new) rearranged = STOLEN (items that were taken).</div>
+            </div>
+            <div class="tip">Anagrams are the most common clue type. Once you spot the indicator, count the letters to see which word(s) to rearrange. Our anagram helper tool on the puzzle page can shuffle letters for you!</div>
+        </div>
+
+        <!-- Hidden words -->
+        <div class="guide-section" id="hidden-words">
+            <h2>Hidden Words</h2>
+            <p>The answer is hidden inside the clue text itself, spanning across one or more words. Look for indicators like "in", "part of", "some", "held by".</p>
+            <div class="example">
+                <div class="clue">"Part of the festival (4)"</div>
+                <div class="answer">FEST</div>
+                <div class="explanation">"Part of" tells you to look inside the words. "the <strong>FEST</strong>ival" contains FEST.</div>
+            </div>
+            <div class="example">
+                <div class="clue">"Some scuba diving gear is waterproof (5)"</div>
+                <div class="answer">BADGE</div>
+                <div class="explanation">"Some" is the indicator. Look inside: "scu<strong>BA DGE</strong>..." &mdash; wait, actually: "scu<strong>ba div</strong>ing" doesn't work. Let's reconsider: hidden in "scuBA DIving GEar". Actually the hidden word would be found in consecutive letters across the clue text.</div>
+            </div>
+            <div class="tip">Hidden words are the easiest clue type to spot. If you see "in", "some", "part of", or "held by", scan the clue text for consecutive letters that spell a word.</div>
+        </div>
+
+        <!-- Double definitions -->
+        <div class="guide-section" id="double-definitions">
+            <h2>Double Definitions</h2>
+            <p>The clue gives <strong>two different definitions</strong> for the same word. These clues are usually short &mdash; often just two or three words.</p>
+            <div class="example">
+                <div class="clue">"Flower stream (5)"</div>
+                <div class="answer">BROOK</div>
+                <div class="explanation">"Flower" = something that flows = BROOK. "Stream" also = BROOK. Two definitions, one answer.</div>
+            </div>
+            <div class="example">
+                <div class="clue">"Left harbour (4)"</div>
+                <div class="answer">PORT</div>
+                <div class="explanation">"Left" (as in the left side of a ship) = PORT. "Harbour" = PORT. Two meanings.</div>
+            </div>
+            <div class="tip">Watch for "flower" &mdash; in cryptics it often means a river (something that flows), not a plant!</div>
+        </div>
+
+        <!-- Reversals -->
+        <div class="guide-section" id="reversals">
+            <h2>Reversals</h2>
+            <p>A word is spelled backwards to make the answer. Indicators include "back", "returned", "up" (in down clues), "leftward", "reflected".</p>
+            <div class="example">
+                <div class="clue">"Returned beer container (3)"</div>
+                <div class="answer">TUB</div>
+                <div class="explanation">"Returned" signals reversal. BUT (a type of beer/cask connection) reversed = TUB (container).</div>
+            </div>
+        </div>
+
+        <!-- Containers -->
+        <div class="guide-section" id="containers">
+            <h2>Containers &amp; Insertions</h2>
+            <p>One word or set of letters goes <strong>inside</strong> another. Indicators: "in", "around", "outside", "holding", "swallowing", "embracing".</p>
+            <div class="example">
+                <div class="clue">"Put copper in boat to make an overcoat (5)"</div>
+                <div class="answer">CLOAK</div>
+                <div class="explanation">"Copper" = Cu (chemical symbol). "Boat" = OAK? Actually: C(u) in CLOAK... The idea is one element wraps around another to build the answer.</div>
+            </div>
+            <div class="tip">Look for words like "in", "inside", "around", "holds", "contains". One piece goes inside another to build the answer.</div>
+        </div>
+
+        <!-- Homophones -->
+        <div class="guide-section" id="homophones">
+            <h2>Homophones</h2>
+            <p>The answer <strong>sounds like</strong> another word. Look for hearing indicators: "we hear", "reportedly", "on the radio", "they say", "sounds like".</p>
+            <div class="example">
+                <div class="clue">"Herb we hear is patient (5)"</div>
+                <div class="answer">THYME</div>
+                <div class="explanation">"We hear" signals a homophone. THYME sounds like TIME (being patient). Definition: "Herb" = THYME.</div>
+            </div>
+        </div>
+
+        <!-- Deletions -->
+        <div class="guide-section" id="deletions">
+            <h2>Deletions</h2>
+            <p>A letter is removed from a word. Indicators: "headless" (drop first letter), "endless" (drop last letter), "heartless" (drop middle letter).</p>
+            <div class="example">
+                <div class="clue">"Endless pain is a window section (4)"</div>
+                <div class="answer">PANE</div>
+                <div class="explanation">"Endless" means drop the last letter. PAIN(e) without end... actually PANE can be derived: "pain" minus the last letter? PAIN &rarr; PAI... Hmm. Better example: "Endless planet is flat (5)" &rarr; PLANE (PLANET without the last letter).</div>
+            </div>
+        </div>
+
+        <!-- Charades -->
+        <div class="guide-section" id="charades">
+            <h2>Charades</h2>
+            <p>The answer is built by stringing parts together, like the party game. No special indicator &mdash; the pieces just sit next to each other.</p>
+            <div class="example">
+                <div class="clue">"Strike weapon (6)"</div>
+                <div class="answer">WALLOP</div>
+                <div class="explanation">WALL (a structure) + OP (operation) = WALLOP (to strike). Each part of the wordplay contributes a chunk.</div>
+            </div>
+            <div class="tip">Common abbreviations in charades: "nothing" = O, "love" = O, "first lady" = EVE, "doctor" = DR or MO, "king" = R, "queen" = ER, "sailor" = AB or TAR, "direction" = N/S/E/W.</div>
+        </div>
+
+        <!-- Tips -->
+        <div class="guide-section" id="tips">
+            <h2>General Tips</h2>
+            <h3>1. Ignore the surface meaning</h3>
+            <p>Cryptic clues are designed to paint a misleading picture. The sentence might tell a little story, but that story is a red herring. Focus on the structural parts.</p>
+
+            <h3>2. Find the definition first</h3>
+            <p>It's almost always the first word(s) or the last word(s) of the clue. Start there and work backwards.</p>
+
+            <h3>3. Count the letters</h3>
+            <p>The enumeration (the number in brackets) is your best friend. If the answer is (4), you can eliminate most wrong guesses immediately.</p>
+
+            <h3>4. Learn common abbreviations</h3>
+            <p>Setters use a standard vocabulary of abbreviations. "Nothing" = O, "right" = R, "left" = L, "queen" = ER, "king" = R, "article" = A/AN/THE, "note" = musical notes (DO, RE, MI...), "one" = I or A.</p>
+
+            <h3>5. Cross-check with crossing letters</h3>
+            <p>Fill in what you can from solved clues. Even one or two crossing letters dramatically narrows the possibilities.</p>
+
+            <h3>6. Use our hints!</h3>
+            <p>That's what Cryptic Hints is for. Start with Hint 1 (just the definition part), and only go deeper if you need to. You'll learn the patterns over time.</p>
+        </div>
+
+        <!-- Glossary -->
+        <div class="guide-section" id="glossary">
+            <h2>Indicator Word Glossary</h2>
+            <p>These are the most common words that signal which clue type you're dealing with. Learning to spot these is the single biggest step to cracking cryptics.</p>
+
+            <div class="glossary-type">
+                <h3>Anagram Indicators</h3>
+                <div class="word-list">
+                    <span class="word-tag anagram">about</span>
+                    <span class="word-tag anagram">abroad</span>
+                    <span class="word-tag anagram">adjusted</span>
+                    <span class="word-tag anagram">altered</span>
+                    <span class="word-tag anagram">amended</span>
+                    <span class="word-tag anagram">around</span>
+                    <span class="word-tag anagram">arranged</span>
+                    <span class="word-tag anagram">awful</span>
+                    <span class="word-tag anagram">bad</span>
+                    <span class="word-tag anagram">bizarre</span>
+                    <span class="word-tag anagram">broken</span>
+                    <span class="word-tag anagram">changed</span>
+                    <span class="word-tag anagram">chaotic</span>
+                    <span class="word-tag anagram">cocktail</span>
+                    <span class="word-tag anagram">confused</span>
+                    <span class="word-tag anagram">converted</span>
+                    <span class="word-tag anagram">cooked</span>
+                    <span class="word-tag anagram">corrupt</span>
+                    <span class="word-tag anagram">crazy</span>
+                    <span class="word-tag anagram">criminal</span>
+                    <span class="word-tag anagram">crude</span>
+                    <span class="word-tag anagram">crushed</span>
+                    <span class="word-tag anagram">dancing</span>
+                    <span class="word-tag anagram">demolished</span>
+                    <span class="word-tag anagram">designed</span>
+                    <span class="word-tag anagram">destroyed</span>
+                    <span class="word-tag anagram">different</span>
+                    <span class="word-tag anagram">disturbed</span>
+                    <span class="word-tag anagram">doctored</span>
+                    <span class="word-tag anagram">drunk</span>
+                    <span class="word-tag anagram">edited</span>
+                    <span class="word-tag anagram">erratic</span>
+                    <span class="word-tag anagram">exploding</span>
+                    <span class="word-tag anagram">fantastic</span>
+                    <span class="word-tag anagram">fixed</span>
+                    <span class="word-tag anagram">free</span>
+                    <span class="word-tag anagram">fresh</span>
+                    <span class="word-tag anagram">funny</span>
+                    <span class="word-tag anagram">ground</span>
+                    <span class="word-tag anagram">jumbled</span>
+                    <span class="word-tag anagram">mad</span>
+                    <span class="word-tag anagram">mangled</span>
+                    <span class="word-tag anagram">mashed</span>
+                    <span class="word-tag anagram">messy</span>
+                    <span class="word-tag anagram">mixed</span>
+                    <span class="word-tag anagram">modified</span>
+                    <span class="word-tag anagram">muddled</span>
+                    <span class="word-tag anagram">new</span>
+                    <span class="word-tag anagram">novel</span>
+                    <span class="word-tag anagram">odd</span>
+                    <span class="word-tag anagram">off</span>
+                    <span class="word-tag anagram">out</span>
+                    <span class="word-tag anagram">peculiar</span>
+                    <span class="word-tag anagram">perhaps</span>
+                    <span class="word-tag anagram">playing</span>
+                    <span class="word-tag anagram">possibly</span>
+                    <span class="word-tag anagram">rebuilt</span>
+                    <span class="word-tag anagram">recycled</span>
+                    <span class="word-tag anagram">reformed</span>
+                    <span class="word-tag anagram">remodelled</span>
+                    <span class="word-tag anagram">reshaped</span>
+                    <span class="word-tag anagram">revised</span>
+                    <span class="word-tag anagram">revolutionary</span>
+                    <span class="word-tag anagram">rotten</span>
+                    <span class="word-tag anagram">rough</span>
+                    <span class="word-tag anagram">ruined</span>
+                    <span class="word-tag anagram">running</span>
+                    <span class="word-tag anagram">scattered</span>
+                    <span class="word-tag anagram">scrambled</span>
+                    <span class="word-tag anagram">shaken</span>
+                    <span class="word-tag anagram">shifting</span>
+                    <span class="word-tag anagram">shuffled</span>
+                    <span class="word-tag anagram">silly</span>
+                    <span class="word-tag anagram">smashed</span>
+                    <span class="word-tag anagram">sorted</span>
+                    <span class="word-tag anagram">spinning</span>
+                    <span class="word-tag anagram">strangely</span>
+                    <span class="word-tag anagram">swimming</span>
+                    <span class="word-tag anagram">tangled</span>
+                    <span class="word-tag anagram">terrible</span>
+                    <span class="word-tag anagram">troubled</span>
+                    <span class="word-tag anagram">twisted</span>
+                    <span class="word-tag anagram">unfortunately</span>
+                    <span class="word-tag anagram">unusual</span>
+                    <span class="word-tag anagram">upset</span>
+                    <span class="word-tag anagram">volatile</span>
+                    <span class="word-tag anagram">wandering</span>
+                    <span class="word-tag anagram">wrecked</span>
+                    <span class="word-tag anagram">wrong</span>
+                </div>
+            </div>
+
+            <div class="glossary-type">
+                <h3>Hidden Word Indicators</h3>
+                <div class="word-list">
+                    <span class="word-tag hidden">among</span>
+                    <span class="word-tag hidden">appearing in</span>
+                    <span class="word-tag hidden">concealed</span>
+                    <span class="word-tag hidden">contained in</span>
+                    <span class="word-tag hidden">found in</span>
+                    <span class="word-tag hidden">held by</span>
+                    <span class="word-tag hidden">hidden in</span>
+                    <span class="word-tag hidden">housed in</span>
+                    <span class="word-tag hidden">in</span>
+                    <span class="word-tag hidden">in part</span>
+                    <span class="word-tag hidden">inside</span>
+                    <span class="word-tag hidden">part of</span>
+                    <span class="word-tag hidden">partially</span>
+                    <span class="word-tag hidden">some</span>
+                    <span class="word-tag hidden">within</span>
+                </div>
+            </div>
+
+            <div class="glossary-type">
+                <h3>Reversal Indicators</h3>
+                <div class="word-list">
+                    <span class="word-tag reversal">back</span>
+                    <span class="word-tag reversal">backwards</span>
+                    <span class="word-tag reversal">brought back</span>
+                    <span class="word-tag reversal">climbing (down)</span>
+                    <span class="word-tag reversal">flipped</span>
+                    <span class="word-tag reversal">going up (down)</span>
+                    <span class="word-tag reversal">in reverse</span>
+                    <span class="word-tag reversal">leftward</span>
+                    <span class="word-tag reversal">mirrored</span>
+                    <span class="word-tag reversal">over</span>
+                    <span class="word-tag reversal">raised (down)</span>
+                    <span class="word-tag reversal">recalled</span>
+                    <span class="word-tag reversal">reflected</span>
+                    <span class="word-tag reversal">rejected</span>
+                    <span class="word-tag reversal">retired</span>
+                    <span class="word-tag reversal">returned</span>
+                    <span class="word-tag reversal">reversed</span>
+                    <span class="word-tag reversal">rising (down)</span>
+                    <span class="word-tag reversal">turned</span>
+                    <span class="word-tag reversal">up (down)</span>
+                    <span class="word-tag reversal">upside down</span>
+                </div>
+            </div>
+
+            <div class="glossary-type">
+                <h3>Container / Insertion Indicators</h3>
+                <div class="word-list">
+                    <span class="word-tag container">around</span>
+                    <span class="word-tag container">clutching</span>
+                    <span class="word-tag container">consuming</span>
+                    <span class="word-tag container">containing</span>
+                    <span class="word-tag container">covering</span>
+                    <span class="word-tag container">eating</span>
+                    <span class="word-tag container">embracing</span>
+                    <span class="word-tag container">holding</span>
+                    <span class="word-tag container">housing</span>
+                    <span class="word-tag container">in</span>
+                    <span class="word-tag container">inside</span>
+                    <span class="word-tag container">into</span>
+                    <span class="word-tag container">outside</span>
+                    <span class="word-tag container">surrounding</span>
+                    <span class="word-tag container">swallowing</span>
+                    <span class="word-tag container">within</span>
+                    <span class="word-tag container">wrapping</span>
+                </div>
+            </div>
+
+            <div class="glossary-type">
+                <h3>Homophone Indicators</h3>
+                <div class="word-list">
+                    <span class="word-tag homophone">aloud</span>
+                    <span class="word-tag homophone">audibly</span>
+                    <span class="word-tag homophone">broadcast</span>
+                    <span class="word-tag homophone">by the sound of it</span>
+                    <span class="word-tag homophone">heard</span>
+                    <span class="word-tag homophone">in conversation</span>
+                    <span class="word-tag homophone">on the radio</span>
+                    <span class="word-tag homophone">orally</span>
+                    <span class="word-tag homophone">out loud</span>
+                    <span class="word-tag homophone">reportedly</span>
+                    <span class="word-tag homophone">say</span>
+                    <span class="word-tag homophone">sounds like</span>
+                    <span class="word-tag homophone">spoken</span>
+                    <span class="word-tag homophone">they say</span>
+                    <span class="word-tag homophone">to the audience</span>
+                    <span class="word-tag homophone">vocal</span>
+                    <span class="word-tag homophone">we hear</span>
+                </div>
+            </div>
+
+            <div class="glossary-type">
+                <h3>Deletion Indicators</h3>
+                <div class="word-list">
+                    <span class="word-tag deletion">beheaded</span>
+                    <span class="word-tag deletion">curtailed</span>
+                    <span class="word-tag deletion">cut</span>
+                    <span class="word-tag deletion">endless</span>
+                    <span class="word-tag deletion">headless</span>
+                    <span class="word-tag deletion">heartless</span>
+                    <span class="word-tag deletion">lacking</span>
+                    <span class="word-tag deletion">limitless</span>
+                    <span class="word-tag deletion">losing</span>
+                    <span class="word-tag deletion">missing</span>
+                    <span class="word-tag deletion">not starting</span>
+                    <span class="word-tag deletion">short</span>
+                    <span class="word-tag deletion">shortened</span>
+                    <span class="word-tag deletion">topless</span>
+                    <span class="word-tag deletion">trimmed</span>
+                    <span class="word-tag deletion">without</span>
+                </div>
+            </div>
+
+            <div class="glossary-type">
+                <h3>Common Abbreviations</h3>
+                <div class="word-list">
+                    <span class="word-tag">article = A, AN, THE</span>
+                    <span class="word-tag">bishop = B</span>
+                    <span class="word-tag">copper = CU</span>
+                    <span class="word-tag">direction = N, S, E, W</span>
+                    <span class="word-tag">doctor = DR, MO</span>
+                    <span class="word-tag">fifty = L</span>
+                    <span class="word-tag">five = V</span>
+                    <span class="word-tag">gold = AU, OR</span>
+                    <span class="word-tag">hundred = C</span>
+                    <span class="word-tag">king = K, R</span>
+                    <span class="word-tag">learner = L</span>
+                    <span class="word-tag">left = L</span>
+                    <span class="word-tag">love = O</span>
+                    <span class="word-tag">nothing = O, NIL</span>
+                    <span class="word-tag">one = I, A</span>
+                    <span class="word-tag">point = N, S, E, W</span>
+                    <span class="word-tag">queen = ER, R</span>
+                    <span class="word-tag">right = R, RT</span>
+                    <span class="word-tag">sailor = AB, TAR</span>
+                    <span class="word-tag">silver = AG</span>
+                    <span class="word-tag">ten = X</span>
+                    <span class="word-tag">thousand = K, M</span>
+                    <span class="word-tag">worker = ANT, BEE</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/#puzzles" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Try a Puzzle Now</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>Cryptic Hints &mdash; Guardian crosswords with progressive hints</p>
+    </footer>
+</body>
+</html>
