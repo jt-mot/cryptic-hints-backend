@@ -281,13 +281,16 @@ def login_required(f):
 # PUBLIC ROUTES (Frontend)
 # ============================================================================
 
-def _serve_html(filename):
+def _serve_html(filename, extra=None):
     """Read an HTML file from static/ and inject config values."""
     filepath = os.path.join(app.static_folder, filename)
     with open(filepath, 'r') as f:
         html = f.read()
     html = html.replace('__SITE_URL__', SITE_URL)
     html = html.replace('__GA_TRACKING_ID__', GA_TRACKING_ID)
+    if extra:
+        for key, value in extra.items():
+            html = html.replace(key, value)
     return Response(html, mimetype='text/html')
 
 
@@ -300,7 +303,7 @@ def homepage():
 @app.route('/puzzle/<puzzle_number>')
 def puzzle_page(puzzle_number):
     """Serve the puzzle solving page"""
-    return _serve_html('puzzle.html')
+    return _serve_html('puzzle.html', extra={'__PUZZLE_NUMBER__': str(puzzle_number)})
 
 
 @app.route('/guide')
