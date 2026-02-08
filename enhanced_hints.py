@@ -259,6 +259,8 @@ class EnhancedHintGenerator:
 
             prompt = f"""You are helping create progressive hints for a cryptic crossword clue. Your goal is to help solvers learn how cryptic clues work by guiding them step-by-step toward the answer.
 
+IMPORTANT: Work out the full parsing internally BEFORE writing your response. Each hint must be clean, polished, and final. Never include self-corrections, backtracking, or thinking-aloud phrases like "wait", "actually", "no", "hmm", "let me reconsider", or "that's wrong". If the expert explanation contains errors, silently correct them.
+
 CONTEXT:
 - Definition (the "straight" part that means the answer): {definition_text}
 - Clue text: {clue_text if clue_text else "not provided"}
@@ -285,7 +287,7 @@ Example: "'wild' is the anagram indicator - rearrange the letters of 'PIRATES'"
 Example: "'reportedly' signals a homophone - think of a word for 'holy man' that sounds like..."
 
 HINT 4 - FULL ANSWER:
-Give the complete answer and full explanation of how it works.
+Give the complete answer and a concise, correct explanation of how the wordplay works. State the answer, then walk through the parsing cleanly in one pass.
 Example: "Answer: TRAPPIST | 'Reportedly' indicates homophone - sounds like 'trapeze artist' = TRAPPIST (type of monk)"
 
 Respond with ONLY a JSON object in this exact format:
