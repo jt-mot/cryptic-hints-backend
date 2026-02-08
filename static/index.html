@@ -920,15 +920,15 @@
                     </svg>
                 </div>
                 <h1>Master cryptic crosswords with <span>progressive hints</span></h1>
-                <p>Cryptic crosswords are brilliant, maddening, and deeply satisfying &mdash; but sometimes you just need a little push. We give you four levels of hints so you can solve it yourself, or give in gracefully.</p>
+                <p>Hints for today's Guardian cryptic, ready the same morning it's published. Four levels of help so you can solve it yourself &mdash; or give in gracefully.</p>
                 <div class="cta-buttons">
                     <a href="#puzzles" class="cta-button primary" id="todaysPuzzleBtn">
-                        Start Solving
+                        <span id="todaysBtnText">Today's Puzzle</span>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
                         </svg>
                     </a>
-                    <a href="#how-it-works" class="cta-button secondary">Learn How It Works</a>
+                    <a href="#how-it-works" class="cta-button secondary">How It Works</a>
                 </div>
             </div>
         </section>
@@ -1103,14 +1103,19 @@
                 const puzzles = await response.json();
 
                 if (puzzles && puzzles.length > 0) {
-                    // Get the most recent puzzle
-                    const puzzleUrl = `/puzzle/${puzzles[0].puzzle_number}`;
+                    const latest = puzzles[0];
+                    const puzzleUrl = `/puzzle/${latest.puzzle_number}`;
                     document.getElementById('todaysPuzzleBtn').href = puzzleUrl;
                     document.getElementById('tryPuzzleBtn').href = puzzleUrl;
+
+                    // Show puzzle info in the hero button
+                    const btnText = document.getElementById('todaysBtnText');
+                    const setter = latest.setter && latest.setter !== 'Unknown' ? ` by ${latest.setter}` : '';
+                    const typeLabel = latest.puzzle_type === 'quiptic' ? 'Quiptic' : 'Cryptic';
+                    btnText.textContent = `${typeLabel} #${latest.puzzle_number}${setter}`;
                 }
             } catch (error) {
                 console.error('Error loading today\'s puzzle:', error);
-                // Keep the button but it won't link anywhere specific
             }
         }
 
