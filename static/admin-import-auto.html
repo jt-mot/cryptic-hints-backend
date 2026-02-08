@@ -205,16 +205,25 @@
 
         <form id="importForm">
             <div class="form-group">
-                <label for="puzzleNumber">Guardian Puzzle Number *</label>
-                <input 
-                    type="text" 
-                    id="puzzleNumber" 
+                <label for="puzzleType">Puzzle Type *</label>
+                <select id="puzzleType" name="puzzleType" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; background: white;">
+                    <option value="cryptic">Guardian Cryptic</option>
+                    <option value="quiptic">Guardian Quiptic</option>
+                </select>
+                <div class="hint">Select the type of puzzle to import</div>
+            </div>
+
+            <div class="form-group">
+                <label for="puzzleNumber">Puzzle Number *</label>
+                <input
+                    type="text"
+                    id="puzzleNumber"
                     name="puzzleNumber"
                     placeholder="e.g., 29916"
                     required
                     pattern="[0-9]+"
                 >
-                <div class="hint">Enter the 5-digit Guardian cryptic number</div>
+                <div class="hint" id="numberHint">Enter the Guardian cryptic puzzle number</div>
             </div>
 
             <div class="button-group">
@@ -234,12 +243,25 @@
         const form = document.getElementById('importForm');
         const statusDiv = document.getElementById('status');
         const importBtn = document.getElementById('importBtn');
+        const puzzleTypeSelect = document.getElementById('puzzleType');
+        const numberHint = document.getElementById('numberHint');
+
+        // Update hint text based on puzzle type
+        puzzleTypeSelect.addEventListener('change', () => {
+            const type = puzzleTypeSelect.value;
+            if (type === 'quiptic') {
+                numberHint.textContent = 'Enter the Guardian quiptic puzzle number (e.g., 1366)';
+            } else {
+                numberHint.textContent = 'Enter the Guardian cryptic puzzle number (e.g., 29916)';
+            }
+        });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const puzzleNumber = document.getElementById('puzzleNumber').value.trim();
-            
+            const puzzleType = puzzleTypeSelect.value;
+
             if (!puzzleNumber) {
                 showStatus('error', 'Please enter a puzzle number');
                 return;
@@ -247,11 +269,13 @@
 
             // Disable button
             importBtn.disabled = true;
-            
+
+            const typeLabel = puzzleType === 'quiptic' ? 'Quiptic' : 'Cryptic';
+
             // Show loading
             showStatus('loading', `
                 <div class="spinner"></div>
-                Fetching puzzle ${puzzleNumber} from fifteensquared.net...
+                Fetching ${typeLabel} ${puzzleNumber} from Guardian & fifteensquared.net...
             `);
 
             try {
@@ -262,7 +286,8 @@
                     },
                     credentials: 'same-origin',
                     body: JSON.stringify({
-                        puzzle_number: puzzleNumber
+                        puzzle_number: puzzleNumber,
+                        puzzle_type: puzzleType
                     })
                 });
 

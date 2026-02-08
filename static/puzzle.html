@@ -975,7 +975,12 @@
                     return;
                 }
                 
-                document.getElementById('puzzleInfo').innerHTML = 
+                // Update page title and info based on puzzle type
+                const puzzleType = puzzleData.puzzle_type || 'cryptic';
+                const typeLabel = puzzleType === 'quiptic' ? 'Quiptic' : 'Cryptic';
+                document.title = `Guardian ${typeLabel} #${puzzleData.puzzle_number} - Cryptic Hints`;
+                document.querySelector('.header-center h1').textContent = `Guardian ${typeLabel} Crossword`;
+                document.getElementById('puzzleInfo').innerHTML =
                     `#${puzzleData.puzzle_number} by ${puzzleData.setter} | ${puzzleData.date}`;
                 
                 // Show grid if available

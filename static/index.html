@@ -1139,10 +1139,11 @@
                             </div>`;
                     }
 
+                    const typeLabel = puzzle.puzzle_type === 'quiptic' ? 'Quiptic' : 'Cryptic';
                     return `
                     <a href="/puzzle/${puzzle.puzzle_number}" class="puzzle-card">
                         <div class="puzzle-date">${formatDate(puzzle.date)}</div>
-                        <div class="puzzle-number">Cryptic #${puzzle.puzzle_number}</div>
+                        <div class="puzzle-number">${typeLabel} #${puzzle.puzzle_number}</div>
                         <div class="puzzle-setter">by ${puzzle.setter}</div>
                         <div class="puzzle-stats">
                             <div class="puzzle-stat">
