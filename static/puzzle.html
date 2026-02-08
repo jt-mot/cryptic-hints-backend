@@ -1481,18 +1481,24 @@
 
         function revealHint(clueId, level) {
             const hint = document.getElementById(`hint-${clueId}-${level}`);
-            hint.classList.add('visible');
-
-            // Mark button as revealed
             const buttons = document.querySelectorAll(`button[onclick*="${clueId}"]`);
-            if (buttons[level - 1]) {
-                buttons[level - 1].classList.add('revealed');
-            }
+            const button = buttons[level - 1];
 
-            // Track revealed hints
-            if (!hintsRevealed[clueId]) hintsRevealed[clueId] = [];
-            if (!hintsRevealed[clueId].includes(level)) {
-                hintsRevealed[clueId].push(level);
+            if (hint.classList.contains('visible')) {
+                // Collapse
+                hint.classList.remove('visible');
+                if (button) button.classList.remove('revealed');
+                if (hintsRevealed[clueId]) {
+                    hintsRevealed[clueId] = hintsRevealed[clueId].filter(l => l !== level);
+                }
+            } else {
+                // Reveal
+                hint.classList.add('visible');
+                if (button) button.classList.add('revealed');
+                if (!hintsRevealed[clueId]) hintsRevealed[clueId] = [];
+                if (!hintsRevealed[clueId].includes(level)) {
+                    hintsRevealed[clueId].push(level);
+                }
             }
             saveProgress();
         }
