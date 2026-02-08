@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Usage - Cryptic Crossword Hints</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .back-btn {
+            padding: 0.5rem 1rem;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            color: #475569;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .totals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .total-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .total-card .label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .total-card .value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .total-card .value.cost {
+            color: #2563eb;
+        }
+
+        .total-card .sub {
+            font-size: 0.8125rem;
+            color: #94a3b8;
+            margin-top: 0.25rem;
+        }
+
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }
+
+        table {
+            width: 100%;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-collapse: collapse;
+            overflow: hidden;
+        }
+
+        thead {
+            background: #f8fafc;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            color: #334155;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        .cost-cell {
+            font-weight: 600;
+            color: #2563eb;
+        }
+
+        .token-cell {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .model-badge {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            background: #ede9fe;
+            color: #6d28d9;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .date-cell {
+            color: #94a3b8;
+            font-size: 0.8125rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+
+        .empty-state h3 {
+            font-size: 1.125rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .totals-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>API Usage</h1>
+            <a href="/admin" class="back-btn">Back to Dashboard</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="totals-grid" id="totalsGrid">
+            <div class="loading">Loading...</div>
+        </div>
+
+        <h2 class="section-title">Import History</h2>
+        <div id="importsTable">
+            <div class="loading">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadUsage() {
+            try {
+                const response = await fetch('/admin/api/usage');
+                const data = await response.json();
+                renderTotals(data.totals);
+                renderImports(data.imports);
+            } catch (error) {
+                console.error('Error loading usage:', error);
+                document.getElementById('totalsGrid').innerHTML =
+                    '<div class="empty-state"><h3>Error loading data</h3><p>Please try refreshing.</p></div>';
+            }
+        }
+
+        function renderTotals(totals) {
+            const avgCost = totals.total_imports > 0
+                ? (parseFloat(totals.total_cost_usd) / totals.total_imports).toFixed(4)
+                : '0.0000';
+
+            document.getElementById('totalsGrid').innerHTML = `
+                <div class="total-card">
+                    <div class="label">Total Spend</div>
+                    <div class="value cost">$${parseFloat(totals.total_cost_usd).toFixed(4)}</div>
+                    <div class="sub">${totals.total_imports} imports</div>
+                </div>
+                <div class="total-card">
+                    <div class="label">Avg Cost / Import</div>
+                    <div class="value cost">$${avgCost}</div>
+                    <div class="sub">${totals.total_calls} total API calls</div>
+                </div>
+                <div class="total-card">
+                    <div class="label">Input Tokens</div>
+                    <div class="value">${Number(totals.total_input_tokens).toLocaleString()}</div>
+                    <div class="sub">@ $3 / MTok</div>
+                </div>
+                <div class="total-card">
+                    <div class="label">Output Tokens</div>
+                    <div class="value">${Number(totals.total_output_tokens).toLocaleString()}</div>
+                    <div class="sub">@ $15 / MTok</div>
+                </div>
+            `;
+        }
+
+        function renderImports(imports) {
+            if (!imports || imports.length === 0) {
+                document.getElementById('importsTable').innerHTML = `
+                    <div class="empty-state">
+                        <h3>No API usage recorded yet</h3>
+                        <p>Usage will appear here after you import a puzzle.</p>
+                    </div>`;
+                return;
+            }
+
+            let rows = imports.map(imp => {
+                const date = new Date(imp.created_at);
+                const dateStr = date.toLocaleDateString('en-GB', {
+                    day: 'numeric', month: 'short', year: 'numeric'
+                });
+                const timeStr = date.toLocaleTimeString('en-GB', {
+                    hour: '2-digit', minute: '2-digit'
+                });
+                const modelShort = (imp.model || '').replace('claude-', '').replace('-20250514', '');
+
+                return `<tr>
+                    <td><strong>#${imp.puzzle_number}</strong></td>
+                    <td class="token-cell">${imp.api_calls}</td>
+                    <td class="token-cell">${Number(imp.input_tokens).toLocaleString()}</td>
+                    <td class="token-cell">${Number(imp.output_tokens).toLocaleString()}</td>
+                    <td class="token-cell">${Number(imp.total_tokens).toLocaleString()}</td>
+                    <td class="cost-cell">$${parseFloat(imp.estimated_cost_usd).toFixed(4)}</td>
+                    <td><span class="model-badge">${modelShort}</span></td>
+                    <td class="date-cell">${dateStr} ${timeStr}</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('importsTable').innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Puzzle</th>
+                            <th>API Calls</th>
+                            <th>Input Tok</th>
+                            <th>Output Tok</th>
+                            <th>Total Tok</th>
+                            <th>Cost</th>
+                            <th>Model</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>`;
+        }
+
+        loadUsage();
+    </script>
+</body>
+</html>

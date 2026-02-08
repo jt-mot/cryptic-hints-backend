@@ -177,10 +177,19 @@ class AuthorStyleDetector:
 class EnhancedHintGenerator:
     """Generate progressive hints with author-aware parsing and Claude AI"""
 
+    # Claude Sonnet pricing (per token)
+    COST_PER_INPUT_TOKEN = 3.0 / 1_000_000   # $3 per million input tokens
+    COST_PER_OUTPUT_TOKEN = 15.0 / 1_000_000  # $15 per million output tokens
+
     def __init__(self, use_claude: bool = True):
         self.style_detector = AuthorStyleDetector()
         self.use_claude = use_claude
         self.api_key = os.environ.get('ANTHROPIC_API_KEY')
+        # Token usage tracking
+        self.total_api_calls = 0
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
+        self.model_used = None
 
     def generate_hints(self, hint_paragraphs: List[str], author: str = 'generic',
                        definitions: List[str] = None, clue_text: str = None,
@@ -299,6 +308,16 @@ Respond with ONLY a JSON object in this exact format:
 
             if response.status_code == 200:
                 data = response.json()
+
+                # Track token usage from API response
+                usage = data.get('usage', {})
+                input_tokens = usage.get('input_tokens', 0)
+                output_tokens = usage.get('output_tokens', 0)
+                self.total_api_calls += 1
+                self.total_input_tokens += input_tokens
+                self.total_output_tokens += output_tokens
+                self.model_used = data.get('model', 'claude-sonnet-4-20250514')
+
                 if data.get('content') and len(data['content']) > 0:
                     text = data['content'][0].get('text', '')
 
@@ -328,6 +347,26 @@ Respond with ONLY a JSON object in this exact format:
             print(f"      Claude API error: {e} - falling back to regex")
 
         return None
+
+    def get_usage_stats(self) -> Dict:
+        """Return accumulated API usage stats and estimated cost."""
+        cost = (self.total_input_tokens * self.COST_PER_INPUT_TOKEN +
+                self.total_output_tokens * self.COST_PER_OUTPUT_TOKEN)
+        return {
+            'api_calls': self.total_api_calls,
+            'input_tokens': self.total_input_tokens,
+            'output_tokens': self.total_output_tokens,
+            'total_tokens': self.total_input_tokens + self.total_output_tokens,
+            'estimated_cost_usd': round(cost, 6),
+            'model': self.model_used,
+        }
+
+    def reset_usage_stats(self):
+        """Reset usage counters (call before each import)."""
+        self.total_api_calls = 0
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
+        self.model_used = None
 
     def _generate_hints_with_regex(self, full_text: str, hint_paragraphs: List[str],
                                     definitions: List[str], author: str) -> List[str]:

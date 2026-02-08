@@ -269,9 +269,14 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    let costLine = '';
+                    if (data.api_usage && data.api_usage.api_calls > 0) {
+                        const u = data.api_usage;
+                        costLine = `<br><span style="color:#6d28d9">📊 API: ${u.api_calls} calls, ${(u.input_tokens + u.output_tokens).toLocaleString()} tokens, $${u.estimated_cost_usd.toFixed(4)}</span>`;
+                    }
                     showStatus('success', `
                         ✓ Successfully imported puzzle ${puzzleNumber}!<br>
-                        <strong>${data.clue_count} clues</strong> imported from <strong>${data.setter}</strong><br>
+                        <strong>${data.clue_count} clues</strong> imported from <strong>${data.setter}</strong>${costLine}<br>
                         <button class="btn-primary" style="margin-top: 1rem;" onclick="window.location.href='/admin/review'">
                             Review Hints →
                         </button>
