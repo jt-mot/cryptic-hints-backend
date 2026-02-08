@@ -518,6 +518,160 @@
                 max-width: 280px;
                 justify-content: center;
             }
+
+            .demo-clue {
+                padding: 30px 20px;
+            }
+
+            .demo-clue-text {
+                font-size: 18px;
+            }
+
+            .demo-hint-buttons {
+                flex-wrap: wrap;
+            }
+
+            .demo-hint-btn {
+                flex: 1 1 45%;
+            }
+        }
+
+        /* Demo Clue Section */
+        .demo-section {
+            background: #fff;
+            padding: 60px 20px;
+        }
+
+        .demo-section h2 {
+            text-align: center;
+            font-size: 28px;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+
+        .demo-section .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .demo-clue {
+            max-width: 700px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            padding: 40px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .demo-clue-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .demo-clue-text {
+            font-size: 22px;
+            color: #1a1a2e;
+            font-style: italic;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .demo-clue-text .enumeration {
+            font-style: normal;
+            color: #64748b;
+            font-size: 18px;
+        }
+
+        .demo-hint-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .demo-hint-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            background: #fff;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #64748b;
+        }
+
+        .demo-hint-btn:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .demo-hint-btn.revealed {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: #fff;
+        }
+
+        .demo-hint-btn.hint-1.revealed { background: #22c55e; border-color: #22c55e; }
+        .demo-hint-btn.hint-2.revealed { background: #eab308; border-color: #eab308; }
+        .demo-hint-btn.hint-3.revealed { background: #f97316; border-color: #f97316; }
+        .demo-hint-btn.hint-4.revealed { background: #ef4444; border-color: #ef4444; }
+
+        .demo-hints {
+            min-height: 80px;
+        }
+
+        .demo-hint {
+            display: none;
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .demo-hint.visible {
+            display: block;
+        }
+
+        .demo-hint.hint-1 { background: #dcfce7; color: #166534; border-left: 4px solid #22c55e; }
+        .demo-hint.hint-2 { background: #fef9c3; color: #854d0e; border-left: 4px solid #eab308; }
+        .demo-hint.hint-3 { background: #ffedd5; color: #9a3412; border-left: 4px solid #f97316; }
+        .demo-hint.hint-4 { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .demo-cta {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .demo-cta a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .demo-cta a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
         }
     </style>
 </head>
@@ -651,6 +805,50 @@
             </div>
         </section>
 
+        <!-- Demo Clue Section -->
+        <section class="demo-section" id="try-it">
+            <h2>Try It Now</h2>
+            <p class="subtitle">Click the hint buttons to see how progressive hints work</p>
+
+            <div class="demo-clue">
+                <div class="demo-clue-label">Example Clue</div>
+                <div class="demo-clue-text">
+                    "Wicked thing concealed by the villain" <span class="enumeration">(4)</span>
+                </div>
+
+                <div class="demo-hint-buttons">
+                    <button class="demo-hint-btn hint-1" onclick="revealDemoHint(1)">Hint 1</button>
+                    <button class="demo-hint-btn hint-2" onclick="revealDemoHint(2)">Hint 2</button>
+                    <button class="demo-hint-btn hint-3" onclick="revealDemoHint(3)">Hint 3</button>
+                    <button class="demo-hint-btn hint-4" onclick="revealDemoHint(4)">Hint 4</button>
+                </div>
+
+                <div class="demo-hints">
+                    <div class="demo-hint hint-1" id="demoHint1">
+                        <strong>Definition:</strong> "wicked thing"
+                    </div>
+                    <div class="demo-hint hint-2" id="demoHint2">
+                        <strong>Hidden word clue</strong> — the answer is literally concealed within the words of the clue. Look for indicators like "concealed by", "hidden in", "some of", or "part of".
+                    </div>
+                    <div class="demo-hint hint-3" id="demoHint3">
+                        <strong>How to solve:</strong> "Concealed by" tells you to look inside the surrounding words. Examine "the villain" carefully — the answer is hidden in the letters.
+                    </div>
+                    <div class="demo-hint hint-4" id="demoHint4">
+                        <strong>Answer: EVIL</strong> — Hidden in "th<strong>E VIL</strong>lain" gives you EVIL, which means "wicked thing".
+                    </div>
+                </div>
+            </div>
+
+            <div class="demo-cta">
+                <a href="#" id="tryPuzzleBtn">
+                    Try a Full Puzzle
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+        </section>
+
         <!-- Recent Puzzles -->
         <section class="puzzles-section" id="puzzles">
             <div class="section-header">
@@ -712,6 +910,17 @@
     </script>
 
     <script>
+        // Demo hint reveal function
+        function revealDemoHint(level) {
+            // Show the hint
+            const hint = document.getElementById(`demoHint${level}`);
+            hint.classList.add('visible');
+
+            // Mark button as revealed
+            const btn = document.querySelector(`.demo-hint-btn.hint-${level}`);
+            btn.classList.add('revealed');
+        }
+
         // Fetch today's/latest puzzle
         async function loadTodaysPuzzle() {
             try {
@@ -720,7 +929,9 @@
 
                 if (puzzles && puzzles.length > 0) {
                     // Get the most recent puzzle
-                    document.getElementById('todaysPuzzleBtn').href = `/puzzle/${puzzles[0].puzzle_number}`;
+                    const puzzleUrl = `/puzzle/${puzzles[0].puzzle_number}`;
+                    document.getElementById('todaysPuzzleBtn').href = puzzleUrl;
+                    document.getElementById('tryPuzzleBtn').href = puzzleUrl;
                 }
             } catch (error) {
                 console.error('Error loading today\'s puzzle:', error);
