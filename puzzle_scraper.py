@@ -20,20 +20,35 @@ from grid_builder import GridBuilder
 
 class GuardianScraper:
     """Scrapes puzzle data from Guardian website"""
-    
+
+    # Supported puzzle types and their URL paths
+    PUZZLE_TYPES = {
+        'cryptic': 'cryptic',
+        'quiptic': 'quiptic',
+    }
+
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
-    
-    def fetch_puzzle(self, puzzle_number: str) -> Optional[Dict]:
-        """Fetch puzzle from Guardian with retry logic"""
-        url = f"https://www.theguardian.com/crosswords/cryptic/{puzzle_number}"
+
+    def fetch_puzzle(self, puzzle_number: str, puzzle_type: str = 'cryptic') -> Optional[Dict]:
+        """Fetch puzzle from Guardian with retry logic
+
+        Args:
+            puzzle_number: The puzzle number to fetch
+            puzzle_type: 'cryptic' or 'quiptic'
+        """
+        if puzzle_type not in self.PUZZLE_TYPES:
+            return {'error': f'Unknown puzzle type: {puzzle_type}'}
+
+        url_path = self.PUZZLE_TYPES[puzzle_type]
+        url = f"https://www.theguardian.com/crosswords/{url_path}/{puzzle_number}"
         
         for attempt in range(3):
             try:
-                print(f"Fetching Guardian puzzle {puzzle_number}... (attempt {attempt + 1}/3)")
+                print(f"Fetching Guardian {puzzle_type} {puzzle_number}... (attempt {attempt + 1}/3)")
                 response = self.session.get(url, timeout=30)
                 response.raise_for_status()
                 
@@ -50,8 +65,12 @@ class GuardianScraper:
                 props = json.loads(props_json)
                 puzzle_data = props.get('data', {})
                 
+                # Format publication name based on puzzle type
+                publication_name = 'Guardian Quiptic' if puzzle_type == 'quiptic' else 'Guardian'
+
                 result = {
-                    'publication': 'Guardian',
+                    'publication': publication_name,
+                    'puzzle_type': puzzle_type,
                     'puzzle_number': str(puzzle_data.get('number', puzzle_number)),
                     'setter': puzzle_data.get('creator', {}).get('name', 'Unknown'),
                     'date': self._parse_date(puzzle_data.get('date')),
@@ -141,16 +160,25 @@ class GuardianScraper:
 
 class FifteensquaredScraper:
     """Scrapes hint analysis from fifteensquared.net with robust error handling"""
-    
+
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
-    
-    def find_puzzle_post(self, puzzle_number: str) -> Optional[str]:
-        """Search for puzzle post with retries"""
-        search_url = f"https://fifteensquared.net/?s=guardian+{puzzle_number}"
+
+    def find_puzzle_post(self, puzzle_number: str, puzzle_type: str = 'cryptic') -> Optional[str]:
+        """Search for puzzle post with retries
+
+        Args:
+            puzzle_number: The puzzle number to search for
+            puzzle_type: 'cryptic' or 'quiptic'
+        """
+        # Quiptics have a different search pattern on fifteensquared
+        if puzzle_type == 'quiptic':
+            search_url = f"https://fifteensquared.net/?s=quiptic+{puzzle_number}"
+        else:
+            search_url = f"https://fifteensquared.net/?s=guardian+{puzzle_number}"
         
         for attempt in range(3):
             try:
@@ -175,9 +203,11 @@ class FifteensquaredScraper:
                 
                 # Method 2: Look in all links
                 links = soup.find_all('a', href=True)
+                # Match pattern based on puzzle type
+                url_pattern = f'quiptic-{puzzle_number}' if puzzle_type == 'quiptic' else f'guardian-{puzzle_number}'
                 for link in links:
                     href = link.get('href', '')
-                    if f'guardian-{puzzle_number}' in href.lower() and 'fifteensquared.net' in href:
+                    if url_pattern in href.lower() and 'fifteensquared.net' in href:
                         print(f"✓ Found post: {href}")
                         return href
                 
@@ -357,7 +387,7 @@ class FifteensquaredScraper:
 
 class PuzzleScraper:
     """Main scraper combining all sources"""
-    
+
     def __init__(self):
         self.guardian = GuardianScraper()
         self.fifteensquared = FifteensquaredScraper()
@@ -365,23 +395,30 @@ class PuzzleScraper:
         self.style_detector = AuthorStyleDetector()
         self.current_url = ''
         self.detected_author = 'generic'
-    
-    def scrape_puzzle(self, puzzle_number: str) -> Dict:
+
+    def scrape_puzzle(self, puzzle_number: str, puzzle_type: str = 'cryptic') -> Dict:
+        """Scrape a puzzle from Guardian and generate hints
+
+        Args:
+            puzzle_number: The puzzle number to scrape
+            puzzle_type: 'cryptic' or 'quiptic'
+        """
+        type_label = 'Quiptic' if puzzle_type == 'quiptic' else 'Cryptic'
         print(f"\n{'='*60}")
-        print(f"Scraping Guardian Cryptic #{puzzle_number}")
+        print(f"Scraping Guardian {type_label} #{puzzle_number}")
         print(f"{'='*60}\n")
 
         # Reset API usage counters for this import
         self.hint_generator.reset_usage_stats()
-        
+
         # Step 1: Guardian
-        puzzle_data = self.guardian.fetch_puzzle(puzzle_number)
+        puzzle_data = self.guardian.fetch_puzzle(puzzle_number, puzzle_type)
         if 'error' in puzzle_data:
             return puzzle_data
-        
+
         # Step 2: Fifteensquared
         print("\nSearching for hints on fifteensquared.net...")
-        post_url = self.fifteensquared.find_puzzle_post(puzzle_number)
+        post_url = self.fifteensquared.find_puzzle_post(puzzle_number, puzzle_type)
         
         hints_map = {}
         if post_url:

@@ -142,6 +142,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS puzzles (
             id SERIAL PRIMARY KEY,
             publication TEXT NOT NULL,
+            puzzle_type TEXT DEFAULT 'cryptic',
             puzzle_number TEXT,
             setter TEXT,
             date DATE NOT NULL,
@@ -233,13 +234,26 @@ def init_db():
     
     # Add grid_data column if it doesn't exist (migration)
     cursor.execute('''
-        DO $$ 
+        DO $$
         BEGIN
             IF NOT EXISTS (
-                SELECT 1 FROM information_schema.columns 
+                SELECT 1 FROM information_schema.columns
                 WHERE table_name='puzzles' AND column_name='grid_data'
             ) THEN
                 ALTER TABLE puzzles ADD COLUMN grid_data JSONB;
+            END IF;
+        END $$;
+    ''')
+
+    # Add puzzle_type column if it doesn't exist (migration)
+    cursor.execute('''
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name='puzzles' AND column_name='puzzle_type'
+            ) THEN
+                ALTER TABLE puzzles ADD COLUMN puzzle_type TEXT DEFAULT 'cryptic';
             END IF;
         END $$;
     ''')
@@ -422,12 +436,12 @@ def get_published_puzzles():
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     cursor.execute('''
-        SELECT p.id, p.publication, p.puzzle_number, p.setter, p.date,
+        SELECT p.id, p.publication, p.puzzle_type, p.puzzle_number, p.setter, p.date,
                COUNT(c.id) as clue_count
         FROM puzzles p
         LEFT JOIN clues c ON c.puzzle_id = p.id
         WHERE p.status = 'published'
-        GROUP BY p.id, p.publication, p.puzzle_number, p.setter, p.date
+        GROUP BY p.id, p.publication, p.puzzle_type, p.puzzle_number, p.setter, p.date
         ORDER BY p.date DESC
     ''')
     puzzles = cursor.fetchall()
@@ -446,8 +460,8 @@ def get_puzzle_by_number(puzzle_number):
     
     # Get puzzle
     cursor.execute('''
-        SELECT id, publication, puzzle_number, setter, date, status, grid_data
-        FROM puzzles 
+        SELECT id, publication, puzzle_type, puzzle_number, setter, date, status, grid_data
+        FROM puzzles
         WHERE puzzle_number = %s
         AND status = 'published'
         LIMIT 1
@@ -495,6 +509,7 @@ def get_puzzle_by_number(puzzle_number):
     return jsonify({
         'id': puzzle['id'],
         'publication': puzzle['publication'],
+        'puzzle_type': puzzle.get('puzzle_type', 'cryptic'),
         'puzzle_number': puzzle['puzzle_number'],
         'setter': puzzle['setter'],
         'date': str(puzzle['date']),
@@ -794,19 +809,23 @@ def scrape_and_import():
     """Scrape puzzle from Guardian and fifteensquared, then import"""
     data = request.json
     puzzle_number = data.get('puzzle_number')
-    
+    puzzle_type = data.get('puzzle_type', 'cryptic')  # 'cryptic' or 'quiptic'
+
     if not puzzle_number:
         return jsonify({'success': False, 'message': 'Puzzle number required'})
-    
+
+    if puzzle_type not in ('cryptic', 'quiptic'):
+        return jsonify({'success': False, 'message': 'Invalid puzzle type'})
+
     try:
         # Import the scraper
         from puzzle_scraper import PuzzleScraper
-        
+
         # Scrape the puzzle
         scraper = PuzzleScraper()
-        
+
         try:
-            puzzle_data = scraper.scrape_puzzle(puzzle_number)
+            puzzle_data = scraper.scrape_puzzle(puzzle_number, puzzle_type)
         except Exception as scrape_error:
             print(f"Scraping error: {scrape_error}")
             import traceback
@@ -834,11 +853,12 @@ def scrape_and_import():
         try:
             # Insert puzzle
             cursor.execute('''
-                INSERT INTO puzzles (publication, puzzle_number, setter, date, status)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO puzzles (publication, puzzle_type, puzzle_number, setter, date, status)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
             ''', (
                 puzzle_data.get('publication', 'Guardian'),
+                puzzle_data.get('puzzle_type', puzzle_type),
                 puzzle_data.get('puzzle_number', puzzle_number),
                 puzzle_data.get('setter', 'Unknown'),
                 puzzle_data.get('date', datetime.now().strftime('%Y-%m-%d')),
