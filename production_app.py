@@ -73,7 +73,6 @@ def _send_email(to_email, subject, html_body):
 def _build_puzzle_email(puzzle_number, setter):
     """Build the HTML email body for a new puzzle notification."""
     puzzle_url = f"{SITE_URL}/puzzle/{puzzle_number}"
-    unsubscribe_url = f"{SITE_URL}"
     return f"""\
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
   <h2 style="color: #1e293b; margin-bottom: 4px;">New Puzzle Available!</h2>
@@ -93,7 +92,7 @@ def _build_puzzle_email(puzzle_number, setter):
 </div>"""
 
 
-def notify_subscribers(puzzle_number, setter):
+def notify_subscribers(puzzle_number, setter, puzzle_type='cryptic'):
     """Send new-puzzle emails to all active subscribers. Runs in a background thread."""
     if not SMTP_USER or not SMTP_PASSWORD:
         app.logger.info("SMTP not configured — skipping subscriber notifications")
@@ -111,7 +110,8 @@ def notify_subscribers(puzzle_number, setter):
             cursor.close()
             conn.close()
 
-            subject = f"New Puzzle: Guardian Cryptic #{puzzle_number}"
+            type_label = 'Quiptic' if puzzle_type == 'quiptic' else 'Cryptic'
+            subject = f"New Puzzle: Guardian {type_label} #{puzzle_number}"
             body = _build_puzzle_email(puzzle_number, setter)
 
             sent = 0
@@ -1221,7 +1221,7 @@ def publish_puzzle(puzzle_id):
         SET status = 'published',
             published_at = CURRENT_TIMESTAMP
         WHERE id = %s
-        RETURNING puzzle_number, setter
+        RETURNING puzzle_number, setter, puzzle_type
     ''', (puzzle_id,))
     published = cursor.fetchone()
 
@@ -1241,8 +1241,9 @@ def publish_puzzle(puzzle_id):
     if sub_count > 0:
         puzzle_num = published['puzzle_number'] if published else str(puzzle_id)
         setter_name = published['setter'] if published else 'Unknown'
+        p_type = published.get('puzzle_type', 'cryptic') if published else 'cryptic'
         if SMTP_USER and SMTP_PASSWORD:
-            notify_subscribers(puzzle_num, setter_name)
+            notify_subscribers(puzzle_num, setter_name, p_type)
             notify_msg = f' (notifying {sub_count} subscriber{"s" if sub_count != 1 else ""})'
         else:
             notify_msg = f' ({sub_count} subscriber{"s" if sub_count != 1 else ""} — SMTP not configured)'
@@ -1442,7 +1443,7 @@ try:
     db_test.execute("SELECT 1 FROM puzzles LIMIT 1")
     db_test.close()
     print("✓ Database tables exist")
-except:
+except Exception:
     print("Database tables don't exist, initializing...")
     init_db()
     print("✓ Database initialized successfully!")
@@ -1450,9 +1451,10 @@ except:
 
 if __name__ == '__main__':
     # Initialize database on first run
-    if not os.path.exists(DATABASE):
-        print("Creating database...")
+    try:
         init_db()
+    except Exception:
+        pass
     
     print("\n" + "="*70)
     print("🧩 CRYPTIC CROSSWORD HINT SYSTEM - PRODUCTION")
