@@ -500,6 +500,43 @@
             border: 1px solid #fecaca;
         }
 
+        /* Loading State */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-state p {
+            color: #64748b;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .loading-state .loading-title {
+            color: #1a1a2e;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
         /* Mobile View Toggle */
         .mobile-toggle {
             display: none;
@@ -875,14 +912,24 @@
         
         <!-- Clues Main Area -->
         <div class="clues-main">
-            <div class="direction-section">
-                <h2 class="direction-title">Across</h2>
-                <div id="cluesAcross"></div>
+            <!-- Loading State -->
+            <div class="loading-state" id="loadingState">
+                <div class="loading-spinner"></div>
+                <p class="loading-title">Loading puzzle...</p>
+                <p>This should only take a moment</p>
             </div>
-            
-            <div class="direction-section">
-                <h2 class="direction-title">Down</h2>
-                <div id="cluesDown"></div>
+
+            <!-- Clues Content (hidden until loaded) -->
+            <div id="cluesContent" style="display: none;">
+                <div class="direction-section">
+                    <h2 class="direction-title">Across</h2>
+                    <div id="cluesAcross"></div>
+                </div>
+
+                <div class="direction-section">
+                    <h2 class="direction-title">Down</h2>
+                    <div id="cluesDown"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -940,15 +987,12 @@
                     console.warn('No grid data available');
                 }
                 
-                // Show loading message
-                document.getElementById('cluesAcross').innerHTML = '<p>Loading hints...</p>';
-                document.getElementById('cluesDown').innerHTML = '<p>Loading hints...</p>';
-                
-                // Fetch hints for each clue
-                await fetchHints();
-
                 console.log('Rendering clues...');
                 renderClues();
+
+                // Hide loading, show content
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('cluesContent').style.display = 'block';
 
                 // Restore saved progress from localStorage
                 loadProgress();
@@ -959,28 +1003,6 @@
                 console.error('Error:', error);
                 alert('Error loading puzzle: ' + error.message);
             }
-        }
-
-        async function fetchHints() {
-            console.log('Fetching hints for clues...');
-            for (let clue of puzzleData.clues) {
-                try {
-                    console.log(`Fetching hints for clue ${clue.id}`);
-                    const response = await fetch(`/api/clue/${clue.id}/hints`);
-                    if (!response.ok) {
-                        console.error(`Failed to fetch hints for clue ${clue.id}: ${response.status}`);
-                        clue.hints = ['', '', '', ''];
-                        continue;
-                    }
-                    const data = await response.json();
-                    clue.hints = data.hints || ['', '', '', ''];
-                    console.log(`Got hints for clue ${clue.id}:`, clue.hints);
-                } catch (error) {
-                    console.error(`Error fetching hints for clue ${clue.id}:`, error);
-                    clue.hints = ['', '', '', ''];
-                }
-            }
-            console.log('Finished fetching hints');
         }
 
         function buildCellToCluesMapping() {

@@ -459,20 +459,39 @@ def get_puzzle_by_number(puzzle_number):
         conn.close()
         return jsonify({'error': 'Puzzle not found'}), 404
     
-    # Get clues
+    # Get clues with hints included
     cursor.execute('''
-        SELECT id, clue_number, direction, clue_text, enumeration, answer
+        SELECT id, clue_number, direction, clue_text, enumeration, answer,
+               hint_level_1, hint_level_2, hint_level_3, hint_level_4
         FROM clues
         WHERE puzzle_id = %s
-        ORDER BY 
+        ORDER BY
             CASE WHEN direction = 'across' THEN 0 ELSE 1 END,
             CAST(clue_number AS INTEGER)
     ''', (puzzle['id'],))
     clues = cursor.fetchall()
-    
+
+    # Format clues with hints array
+    formatted_clues = []
+    for clue in clues:
+        formatted_clues.append({
+            'id': clue['id'],
+            'clue_number': clue['clue_number'],
+            'direction': clue['direction'],
+            'clue_text': clue['clue_text'],
+            'enumeration': clue['enumeration'],
+            'answer': clue['answer'],
+            'hints': [
+                clue['hint_level_1'] or '',
+                clue['hint_level_2'] or '',
+                clue['hint_level_3'] or '',
+                clue['hint_level_4'] or ''
+            ]
+        })
+
     cursor.close()
     conn.close()
-    
+
     return jsonify({
         'id': puzzle['id'],
         'publication': puzzle['publication'],
@@ -480,7 +499,7 @@ def get_puzzle_by_number(puzzle_number):
         'setter': puzzle['setter'],
         'date': str(puzzle['date']),
         'grid': puzzle.get('grid_data'),
-        'clues': [dict(clue) for clue in clues]
+        'clues': formatted_clues
     })
 
 
