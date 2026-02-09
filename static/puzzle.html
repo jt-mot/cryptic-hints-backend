@@ -24,6 +24,50 @@
         gtag('config', '__GA_TRACKING_ID__');
     </script>
     <style>
+        :root {
+            --bg: #f5f7fa;
+            --text: #1a1a2e;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --text-faint: #94a3b8;
+            --card-bg: white;
+            --card-border: #e2e8f0;
+            --card-shadow: rgba(0,0,0,0.06);
+            --input-border: #cbd5e1;
+            --input-focus-bg: #eff6ff;
+            --selected-bg: #f0f7ff;
+            --highlight-bg: #dbeafe;
+            --hint-bg: #f8fafc;
+            --hint-border: #cbd5e1;
+            --grid-border: #1a1a2e;
+            --cell-bg: #fff;
+            --cell-hover: #f1f5f9;
+            --spinner-border: #e2e8f0;
+            --mobile-toggle-bg: #fff;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --text: #e2e8f0;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --text-faint: #64748b;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --card-shadow: rgba(0,0,0,0.3);
+            --input-border: #475569;
+            --input-focus-bg: #1e3a5f;
+            --selected-bg: #1e3a5f;
+            --highlight-bg: #1e3a5f;
+            --hint-bg: #1e293b;
+            --hint-border: #475569;
+            --grid-border: #475569;
+            --cell-bg: #0f172a;
+            --cell-hover: #1e293b;
+            --spinner-border: #334155;
+            --mobile-toggle-bg: #1e293b;
+        }
+
         * {
             box-sizing: border-box;
         }
@@ -32,8 +76,8 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 0;
-            background: #f5f7fa;
-            color: #1a1a2e;
+            background: var(--bg);
+            color: var(--text);
         }
 
         .header {
@@ -56,10 +100,6 @@
         .header-center {
             text-align: center;
             flex: 1;
-        }
-
-        .header-spacer {
-            width: 80px;
         }
 
         .home-link {
@@ -131,8 +171,8 @@
         /* Grid Sidebar - Fixed */
         .grid-sidebar {
             width: 380px;
-            background: #fff;
-            box-shadow: 4px 0 12px rgba(0,0,0,0.08);
+            background: var(--card-bg);
+            box-shadow: 4px 0 12px var(--card-shadow);
             position: sticky;
             top: 100px;
             height: calc(100vh - 100px);
@@ -143,7 +183,7 @@
         .grid-title {
             font-size: 11px;
             font-weight: 700;
-            color: #94a3b8;
+            color: var(--text-faint);
             margin-bottom: 15px;
             text-align: center;
             text-transform: uppercase;
@@ -158,8 +198,8 @@
         .crossword-grid {
             display: inline-grid;
             gap: 0;
-            border: 3px solid #1a1a2e;
-            background: #1a1a2e;
+            border: 3px solid var(--grid-border);
+            background: var(--grid-border);
             margin: 0 auto;
             border-radius: 4px;
             overflow: hidden;
@@ -168,7 +208,7 @@
         .cell {
             width: 24px;
             height: 24px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--input-border);
             position: relative;
             display: flex;
             align-items: center;
@@ -176,17 +216,18 @@
             font-weight: 600;
             font-size: 12px;
             font-family: 'Arial', sans-serif;
-            background: #fff;
+            background: var(--cell-bg);
+            color: var(--text);
             transition: background 0.15s ease;
         }
 
         .cell.white:hover {
-            background: #f1f5f9;
+            background: var(--cell-hover);
         }
 
         .cell.black {
-            background: #1a1a2e;
-            border-color: #1a1a2e;
+            background: var(--grid-border);
+            border-color: var(--grid-border);
         }
 
         .cell.filled {
@@ -195,7 +236,7 @@
         }
 
         .cell.highlighted {
-            background: #dbeafe !important;
+            background: var(--highlight-bg) !important;
         }
 
         .cell-number {
@@ -204,7 +245,7 @@
             left: 2px;
             font-size: 7px;
             font-weight: 600;
-            color: #64748b;
+            color: var(--text-muted);
         }
 
         .cell-letter {
@@ -227,7 +268,7 @@
             font-size: 18px;
             font-weight: 700;
             margin-bottom: 24px;
-            color: #1a1a2e;
+            color: var(--text);
             padding-bottom: 12px;
             border-bottom: 3px solid #3b82f6;
             display: inline-block;
@@ -238,11 +279,11 @@
         .clue-item {
             margin-bottom: 24px;
             padding: 24px;
-            background: white;
+            background: var(--card-bg);
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            box-shadow: 0 2px 8px var(--card-shadow);
             transition: all 0.2s ease;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--card-border);
         }
 
         .clue-item:hover {
@@ -252,7 +293,7 @@
 
         .clue-item.selected {
             box-shadow: 0 0 0 3px #3b82f6, 0 4px 16px rgba(59,130,246,0.2);
-            background: #f0f7ff;
+            background: var(--selected-bg);
             border-color: #3b82f6;
         }
 
@@ -274,12 +315,12 @@
 
         .clue-text {
             font-size: 17px;
-            color: #334155;
+            color: var(--text-secondary);
             line-height: 1.7;
         }
 
         .enumeration {
-            color: #94a3b8;
+            color: var(--text-faint);
             font-size: 14px;
             margin-left: 8px;
             font-weight: 500;
@@ -289,13 +330,13 @@
         .answer-section {
             margin-top: 16px;
             padding-top: 16px;
-            border-top: 1px solid #e2e8f0;
+            border-top: 1px solid var(--card-border);
         }
 
         .answer-label {
             font-size: 12px;
             font-weight: 600;
-            color: #64748b;
+            color: var(--text-muted);
             margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -311,7 +352,9 @@
         .answer-box {
             width: 36px;
             height: 36px;
-            border: 2px solid #cbd5e1;
+            border: 2px solid var(--input-border);
+            background: var(--cell-bg);
+            color: var(--text);
             border-radius: 6px;
             text-align: center;
             font-size: 18px;
@@ -324,7 +367,7 @@
 
         .answer-box:focus {
             border-color: #3b82f6;
-            background: #eff6ff;
+            background: var(--input-focus-bg);
             box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
         }
 
@@ -375,13 +418,13 @@
         .hints-section {
             margin-top: 16px;
             padding-top: 16px;
-            border-top: 1px solid #e2e8f0;
+            border-top: 1px solid var(--card-border);
         }
 
         .hints-label {
             font-size: 12px;
             font-weight: 600;
-            color: #64748b;
+            color: var(--text-muted);
             margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -454,13 +497,13 @@
             margin-top: 8px;
             margin-bottom: 12px;
             padding: 14px 16px;
-            background: #f8fafc;
-            border-left: 4px solid #cbd5e1;
+            background: var(--hint-bg);
+            border-left: 4px solid var(--hint-border);
             border-radius: 6px;
             font-size: 15px;
             line-height: 1.7;
             display: none;
-            color: #334155;
+            color: var(--text-secondary);
         }
 
         .hint-text.visible {
@@ -518,7 +561,7 @@
         .loading-spinner {
             width: 48px;
             height: 48px;
-            border: 4px solid #e2e8f0;
+            border: 4px solid var(--spinner-border);
             border-top-color: #3b82f6;
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -530,13 +573,13 @@
         }
 
         .loading-state p {
-            color: #64748b;
+            color: var(--text-muted);
             font-size: 16px;
             margin: 0;
         }
 
         .loading-state .loading-title {
-            color: #1a1a2e;
+            color: var(--text);
             font-size: 18px;
             font-weight: 600;
             margin-bottom: 8px;
@@ -548,21 +591,21 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            background: #fff;
+            background: var(--mobile-toggle-bg);
             padding: 12px 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px var(--card-shadow);
             gap: 8px;
         }
 
         .mobile-toggle button {
             flex: 1;
             padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            background: #fff;
+            border: 2px solid var(--card-border);
+            background: var(--card-bg);
             border-radius: 8px;
             font-size: 14px;
             font-weight: 600;
-            color: #64748b;
+            color: var(--text-muted);
             cursor: pointer;
             transition: all 0.2s ease;
             display: flex;
@@ -828,6 +871,27 @@
             text-decoration: none;
         }
         .anagram-guide-link:hover { text-decoration: underline; }
+
+        .theme-toggle {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.8);
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            transition: all 0.2s;
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
     </style>
     <script type="application/ld+json">
     {
@@ -852,7 +916,15 @@
     </script>
 </head>
 <body>
-    <div class="header">
+    <script>
+        (function() {
+            var saved = localStorage.getItem('theme');
+            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <div class="header" style="position:relative">
         <div class="header-content">
             <a href="/" class="home-link" title="Back to Home">
                 <svg width="28" height="28" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
@@ -884,7 +956,9 @@
                 </div>
                 <div class="progress-text" id="progressText">0 / 0 solved</div>
             </div>
-            <div class="header-spacer"></div>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
+                <span class="theme-icon"></span>
+            </button>
         </div>
     </div>
 
@@ -961,6 +1035,23 @@
     </div>
 
     <script>
+        // Theme toggle
+        function toggleTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const newTheme = isDark ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.querySelectorAll('.theme-icon').forEach(el => {
+                el.textContent = isDark ? '\u2600\uFE0F' : '\uD83C\uDF19';
+            });
+        }
+        updateThemeIcon();
+
         const puzzleNumber = window.location.pathname.split('/').pop();
         let puzzleData = null;
         let userAnswers = {}; // {clueId: 'ANSWER'}
