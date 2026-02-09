@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Manager - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 1.5rem; font-weight: 700; color: #1e293b; }
+        .header a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .header a:hover { text-decoration: underline; }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+        }
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-success {
+            background: #16a34a;
+            color: white;
+        }
+        .btn-success:hover { background: #15803d; }
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        .btn-warning:hover { background: #d97706; }
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #334155;
+        }
+        .btn-secondary:hover { background: #cbd5e1; }
+
+        .post-list-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .post-info h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 2px;
+        }
+        .post-info .slug {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        .post-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .badge-draft { background: #fef3c7; color: #92400e; }
+        .badge-published { background: #dcfce7; color: #166534; }
+
+        /* Editor modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 720px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+        .modal h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: #0f172a;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+        }
+        .form-group textarea {
+            min-height: 300px;
+            resize: vertical;
+            font-family: 'Menlo', 'Consolas', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        .form-group .hint {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+        .error-msg {
+            color: #dc2626;
+            font-size: 0.85rem;
+            margin-bottom: 0.75rem;
+            display: none;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Blog Manager</h1>
+        <a href="/admin">&larr; Back to Dashboard</a>
+    </div>
+
+    <div class="container">
+        <div class="toolbar">
+            <div id="postCount" style="color:#64748b; font-size:0.9rem;"></div>
+            <button class="btn btn-primary" onclick="openEditor()">+ New Post</button>
+        </div>
+        <div id="postsList">
+            <div class="empty-state">Loading...</div>
+        </div>
+    </div>
+
+    <!-- Editor Modal -->
+    <div class="modal-overlay" id="editorModal">
+        <div class="modal">
+            <h2 id="editorTitle">New Post</h2>
+            <div class="error-msg" id="editorError"></div>
+            <input type="hidden" id="editPostId">
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="editTitle" placeholder="Your article title">
+            </div>
+            <div class="form-group">
+                <label>Slug</label>
+                <input type="text" id="editSlug" placeholder="auto-generated-from-title">
+                <div class="hint">URL-friendly identifier. Leave blank to auto-generate from title. Only editable on new posts.</div>
+            </div>
+            <div class="form-group">
+                <label>Meta Description (for SEO)</label>
+                <input type="text" id="editMeta" placeholder="Brief summary for search engines (150-160 characters)" maxlength="200">
+            </div>
+            <div class="form-group">
+                <label>Body</label>
+                <textarea id="editBody" placeholder="Write your article here. Supports simple Markdown: **bold**, *italic*, ## headings, - lists, [links](url), > blockquotes"></textarea>
+                <div class="hint">Supports simple Markdown: **bold**, *italic*, ## Headings, - bullet lists, [link text](url), > blockquotes</div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeEditor()">Cancel</button>
+                <button class="btn btn-primary" id="saveBtn" onclick="savePost()">Save Draft</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let posts = [];
+
+        async function loadPosts() {
+            try {
+                const resp = await fetch('/admin/api/blog/posts');
+                posts = await resp.json();
+                renderList();
+            } catch (e) {
+                document.getElementById('postsList').innerHTML =
+                    '<div class="empty-state">Error loading posts.</div>';
+            }
+        }
+
+        function renderList() {
+            const el = document.getElementById('postsList');
+            document.getElementById('postCount').textContent = posts.length + ' post' + (posts.length !== 1 ? 's' : '');
+
+            if (!posts.length) {
+                el.innerHTML = '<div class="empty-state">No blog posts yet. Click "+ New Post" to create one.</div>';
+                return;
+            }
+
+            el.innerHTML = posts.map(function(p) {
+                const badge = p.status === 'published'
+                    ? '<span class="badge badge-published">Published</span>'
+                    : '<span class="badge badge-draft">Draft</span>';
+
+                const pubBtn = p.status === 'published'
+                    ? '<button class="btn btn-warning" onclick="unpublishPost(' + p.id + ')">Unpublish</button>'
+                    : '<button class="btn btn-success" onclick="publishPost(' + p.id + ')">Publish</button>';
+
+                return '<div class="post-list-item">' +
+                    '<div class="post-info">' +
+                        '<h3>' + escapeHtml(p.title) + ' ' + badge + '</h3>' +
+                        '<div class="slug">/blog/' + escapeHtml(p.slug) + '</div>' +
+                    '</div>' +
+                    '<div class="post-actions">' +
+                        '<button class="btn btn-secondary" onclick="editPost(' + p.id + ')">Edit</button>' +
+                        pubBtn +
+                        '<button class="btn btn-danger" onclick="deletePost(' + p.id + ')">Delete</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        function openEditor(post) {
+            document.getElementById('editorError').style.display = 'none';
+            if (post) {
+                document.getElementById('editorTitle').textContent = 'Edit Post';
+                document.getElementById('editPostId').value = post.id;
+                document.getElementById('editTitle').value = post.title;
+                document.getElementById('editSlug').value = post.slug;
+                document.getElementById('editSlug').disabled = true;
+                document.getElementById('editMeta').value = post.meta_description || '';
+                document.getElementById('editBody').value = post.body;
+                document.getElementById('saveBtn').textContent = 'Save Changes';
+            } else {
+                document.getElementById('editorTitle').textContent = 'New Post';
+                document.getElementById('editPostId').value = '';
+                document.getElementById('editTitle').value = '';
+                document.getElementById('editSlug').value = '';
+                document.getElementById('editSlug').disabled = false;
+                document.getElementById('editMeta').value = '';
+                document.getElementById('editBody').value = '';
+                document.getElementById('saveBtn').textContent = 'Save Draft';
+            }
+            document.getElementById('editorModal').classList.add('open');
+        }
+
+        function closeEditor() {
+            document.getElementById('editorModal').classList.remove('open');
+        }
+
+        function editPost(id) {
+            const post = posts.find(function(p) { return p.id === id; });
+            if (post) openEditor(post);
+        }
+
+        async function savePost() {
+            const errorEl = document.getElementById('editorError');
+            errorEl.style.display = 'none';
+
+            const postId = document.getElementById('editPostId').value;
+            const payload = {
+                title: document.getElementById('editTitle').value,
+                slug: document.getElementById('editSlug').value,
+                meta_description: document.getElementById('editMeta').value,
+                body: document.getElementById('editBody').value,
+            };
+
+            try {
+                let resp;
+                if (postId) {
+                    resp = await fetch('/admin/api/blog/posts/' + postId, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload),
+                    });
+                } else {
+                    resp = await fetch('/admin/api/blog/posts', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload),
+                    });
+                }
+
+                const data = await resp.json();
+                if (!resp.ok) {
+                    errorEl.textContent = data.error || 'Failed to save.';
+                    errorEl.style.display = 'block';
+                    return;
+                }
+
+                closeEditor();
+                loadPosts();
+            } catch (e) {
+                errorEl.textContent = 'Network error.';
+                errorEl.style.display = 'block';
+            }
+        }
+
+        async function publishPost(id) {
+            await fetch('/admin/api/blog/posts/' + id + '/publish', { method: 'POST' });
+            loadPosts();
+        }
+
+        async function unpublishPost(id) {
+            await fetch('/admin/api/blog/posts/' + id + '/unpublish', { method: 'POST' });
+            loadPosts();
+        }
+
+        async function deletePost(id) {
+            if (!confirm('Delete this post permanently?')) return;
+            await fetch('/admin/api/blog/posts/' + id, { method: 'DELETE' });
+            loadPosts();
+        }
+
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        loadPosts();
+    </script>
+</body>
+</html>
