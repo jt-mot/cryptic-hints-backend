@@ -227,10 +227,21 @@ def init_db():
         )
     ''')
 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS comments (
+            id SERIAL PRIMARY KEY,
+            puzzle_number TEXT NOT NULL,
+            author TEXT NOT NULL,
+            body TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_date ON puzzles(date)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_status ON puzzles(status)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_clue_puzzle ON clues(puzzle_id)')
     cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriber_email ON subscribers(email)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_comments_puzzle ON comments(puzzle_number)')
     
     # Add grid_data column if it doesn't exist (migration)
     cursor.execute('''
@@ -700,6 +711,77 @@ def unsubscribe_email():
     conn.close()
 
     return jsonify({'success': True, 'message': 'You have been unsubscribed.'})
+
+
+# ============================================================================
+# COMMENTS
+# ============================================================================
+
+@app.route('/api/puzzle/<puzzle_number>/comments')
+def get_comments(puzzle_number):
+    """Get comments for a puzzle, newest first."""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    cursor.execute('''
+        SELECT id, author, body, created_at
+        FROM comments
+        WHERE puzzle_number = %s
+        ORDER BY created_at DESC
+    ''', (puzzle_number,))
+    comments = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify([{
+        'id': c['id'],
+        'author': c['author'],
+        'body': c['body'],
+        'created_at': c['created_at'].isoformat() if c['created_at'] else None,
+    } for c in comments])
+
+
+@app.route('/api/puzzle/<puzzle_number>/comments', methods=['POST'])
+def post_comment(puzzle_number):
+    """Add a comment to a puzzle."""
+    data = request.get_json() or {}
+    author = (data.get('author') or '').strip()
+    body = (data.get('body') or '').strip()
+
+    if not author or not body:
+        return jsonify({'error': 'Author and comment are required'}), 400
+
+    if len(author) > 50:
+        return jsonify({'error': 'Name is too long (max 50 characters)'}), 400
+
+    if len(body) > 2000:
+        return jsonify({'error': 'Comment is too long (max 2000 characters)'}), 400
+
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        cursor.execute('''
+            INSERT INTO comments (puzzle_number, author, body)
+            VALUES (%s, %s, %s)
+            RETURNING id, author, body, created_at
+        ''', (puzzle_number, author, body))
+        comment = cursor.fetchone()
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        return jsonify({'error': 'Unable to save comment'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+    return jsonify({
+        'id': comment['id'],
+        'author': comment['author'],
+        'body': comment['body'],
+        'created_at': comment['created_at'].isoformat() if comment['created_at'] else None,
+    }), 201
 
 
 # ============================================================================

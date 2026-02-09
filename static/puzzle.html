@@ -892,6 +892,107 @@
             background: rgba(255,255,255,0.2);
             color: #fff;
         }
+
+        /* Comments */
+        .comments-section {
+            max-width: 800px;
+            margin: 32px auto;
+            padding: 0 16px;
+        }
+        .comments-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+        .comment-form {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .comment-form input,
+        .comment-form textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+            background: var(--card-bg);
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+        .comment-form textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .comment-form input:focus,
+        .comment-form textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+        }
+        .comment-form button {
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .comment-form button:hover {
+            background: #1d4ed8;
+        }
+        .comment-form button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .comment-form-error {
+            color: #dc2626;
+            font-size: 13px;
+            margin-bottom: 8px;
+            display: none;
+        }
+        .comment-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+        }
+        .comment-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .comment-author {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 14px;
+        }
+        .comment-time {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        .comment-body {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .comments-empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 20px;
+            font-size: 14px;
+        }
     </style>
     <script type="application/ld+json">
     {
@@ -1034,6 +1135,18 @@
         </div>
     </div>
 
+    <!-- Comments Section -->
+    <div class="comments-section" id="commentsSection" style="display:none;">
+        <h2 class="comments-title">Comments</h2>
+        <div class="comment-form">
+            <input type="text" id="commentAuthor" placeholder="Your name" maxlength="50">
+            <textarea id="commentBody" placeholder="Share your thoughts on this puzzle..." maxlength="2000"></textarea>
+            <div class="comment-form-error" id="commentError"></div>
+            <button id="commentSubmit" onclick="submitComment()">Post Comment</button>
+        </div>
+        <div id="commentsList"></div>
+    </div>
+
     <script>
         // Theme toggle
         function toggleTheme() {
@@ -1121,6 +1234,9 @@
 
                 // Initialize progress bar
                 updateProgress();
+
+                // Load comments
+                loadComments();
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error loading puzzle: ' + error.message);
@@ -1794,6 +1910,101 @@
             document.getElementById('anagramInput').value = '';
             updateAnagramDisplay();
             document.getElementById('anagramInput').focus();
+        }
+
+        // ---- Comments ----
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function timeAgo(isoString) {
+            const seconds = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return minutes + 'm ago';
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return hours + 'h ago';
+            const days = Math.floor(hours / 24);
+            if (days < 30) return days + 'd ago';
+            return new Date(isoString).toLocaleDateString();
+        }
+
+        function renderComment(c) {
+            return `<div class="comment-card">
+                <div class="comment-meta">
+                    <span class="comment-author">${escapeHtml(c.author)}</span>
+                    <span class="comment-time">${timeAgo(c.created_at)}</span>
+                </div>
+                <div class="comment-body">${escapeHtml(c.body)}</div>
+            </div>`;
+        }
+
+        async function loadComments() {
+            try {
+                const resp = await fetch(`/api/puzzle/${puzzleNumber}/comments`);
+                const comments = await resp.json();
+                const list = document.getElementById('commentsList');
+                if (comments.length === 0) {
+                    list.innerHTML = '<div class="comments-empty">No comments yet. Be the first!</div>';
+                } else {
+                    list.innerHTML = comments.map(renderComment).join('');
+                }
+                document.getElementById('commentsSection').style.display = '';
+                // Restore saved author name
+                const saved = localStorage.getItem('commentAuthor');
+                if (saved) document.getElementById('commentAuthor').value = saved;
+            } catch (e) {
+                console.error('Error loading comments:', e);
+            }
+        }
+
+        async function submitComment() {
+            const authorInput = document.getElementById('commentAuthor');
+            const bodyInput = document.getElementById('commentBody');
+            const errorEl = document.getElementById('commentError');
+            const btn = document.getElementById('commentSubmit');
+            const author = authorInput.value.trim();
+            const body = bodyInput.value.trim();
+
+            errorEl.style.display = 'none';
+            if (!author || !body) {
+                errorEl.textContent = 'Please enter your name and a comment.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Posting...';
+
+            try {
+                const resp = await fetch(`/api/puzzle/${puzzleNumber}/comments`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ author, body })
+                });
+                const data = await resp.json();
+                if (!resp.ok) {
+                    errorEl.textContent = data.error || 'Failed to post comment.';
+                    errorEl.style.display = 'block';
+                    return;
+                }
+                // Save author for next time
+                localStorage.setItem('commentAuthor', author);
+                bodyInput.value = '';
+                // Prepend new comment
+                const list = document.getElementById('commentsList');
+                const empty = list.querySelector('.comments-empty');
+                if (empty) empty.remove();
+                list.insertAdjacentHTML('afterbegin', renderComment(data));
+            } catch (e) {
+                errorEl.textContent = 'Network error. Please try again.';
+                errorEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Post Comment';
+            }
         }
 
         loadPuzzle();
