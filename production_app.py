@@ -16,6 +16,7 @@ from flask import Flask, jsonify, request, send_from_directory, session, redirec
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
+import psycopg2.errors
 from psycopg2.extras import RealDictCursor
 import json
 from datetime import datetime, date
@@ -237,11 +238,25 @@ def init_db():
         )
     ''')
 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS blog_posts (
+            id SERIAL PRIMARY KEY,
+            slug TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            meta_description TEXT,
+            body TEXT NOT NULL,
+            status TEXT DEFAULT 'draft',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            published_at TIMESTAMP
+        )
+    ''')
+
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_date ON puzzles(date)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_status ON puzzles(status)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_clue_puzzle ON clues(puzzle_id)')
     cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriber_email ON subscribers(email)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_comments_puzzle ON comments(puzzle_number)')
+    cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_blog_slug ON blog_posts(slug)')
     
     # Add grid_data column if it doesn't exist (migration)
     cursor.execute('''
@@ -323,6 +338,66 @@ def guide_page():
     return _serve_html('guide.html')
 
 
+@app.route('/blog')
+def blog_listing():
+    """Serve the blog listing page"""
+    return _serve_html('blog.html')
+
+
+@app.route('/blog/<slug>')
+def blog_post_page(slug):
+    """Serve an individual blog post page"""
+    return _serve_html('blog-post.html', extra={'__BLOG_SLUG__': slug})
+
+
+@app.route('/api/blog/posts')
+def get_blog_posts():
+    """Get all published blog posts, newest first."""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute('''
+        SELECT id, slug, title, meta_description, published_at
+        FROM blog_posts
+        WHERE status = 'published'
+        ORDER BY published_at DESC
+    ''')
+    posts = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return jsonify([{
+        'id': p['id'],
+        'slug': p['slug'],
+        'title': p['title'],
+        'meta_description': p['meta_description'],
+        'published_at': p['published_at'].isoformat() if p['published_at'] else None,
+    } for p in posts])
+
+
+@app.route('/api/blog/posts/<slug>')
+def get_blog_post(slug):
+    """Get a single published blog post by slug."""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute('''
+        SELECT id, slug, title, meta_description, body, published_at
+        FROM blog_posts
+        WHERE slug = %s AND status = 'published'
+    ''', (slug,))
+    post = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+    return jsonify({
+        'id': post['id'],
+        'slug': post['slug'],
+        'title': post['title'],
+        'meta_description': post['meta_description'],
+        'body': post['body'],
+        'published_at': post['published_at'].isoformat() if post['published_at'] else None,
+    })
+
+
 @app.route('/robots.txt')
 def robots_txt():
     """Serve robots.txt for search engine crawlers"""
@@ -330,6 +405,7 @@ def robots_txt():
 Allow: /
 Allow: /puzzle/
 Allow: /guide
+Allow: /blog
 Disallow: /admin/
 Disallow: /api/
 
@@ -341,6 +417,8 @@ Sitemap: {SITE_URL}/sitemap.xml
 @app.route('/sitemap.xml')
 def sitemap_xml():
     """Generate dynamic sitemap with all published puzzles"""
+    puzzles = []
+    blog_posts = []
     try:
         conn = get_db()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -351,9 +429,15 @@ def sitemap_xml():
             ORDER BY published_at DESC
         """)
         puzzles = cursor.fetchall()
+        cursor.execute("""
+            SELECT slug, published_at
+            FROM blog_posts
+            WHERE status = 'published'
+            ORDER BY published_at DESC
+        """)
+        blog_posts = cursor.fetchall()
     except Exception:
-        app.logger.exception("Failed to query puzzles for sitemap")
-        puzzles = []
+        app.logger.exception("Failed to query data for sitemap")
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -370,6 +454,13 @@ def sitemap_xml():
     xml += f'    <loc>{SITE_URL}/guide</loc>\n'
     xml += '    <changefreq>monthly</changefreq>\n'
     xml += '    <priority>0.9</priority>\n'
+    xml += '  </url>\n'
+
+    # Blog listing
+    xml += '  <url>\n'
+    xml += f'    <loc>{SITE_URL}/blog</loc>\n'
+    xml += '    <changefreq>weekly</changefreq>\n'
+    xml += '    <priority>0.8</priority>\n'
     xml += '  </url>\n'
 
     # Individual puzzle pages
@@ -389,6 +480,25 @@ def sitemap_xml():
         xml += lastmod
         xml += '    <changefreq>monthly</changefreq>\n'
         xml += '    <priority>0.8</priority>\n'
+        xml += '  </url>\n'
+
+    # Blog posts
+    for post in blog_posts:
+        lastmod = ''
+        pub_date = post.get('published_at')
+        if pub_date:
+            try:
+                if hasattr(pub_date, 'strftime'):
+                    lastmod = f'    <lastmod>{pub_date.strftime("%Y-%m-%d")}</lastmod>\n'
+                else:
+                    lastmod = f'    <lastmod>{str(pub_date)[:10]}</lastmod>\n'
+            except Exception:
+                pass
+        xml += '  <url>\n'
+        xml += f'    <loc>{SITE_URL}/blog/{post["slug"]}</loc>\n'
+        xml += lastmod
+        xml += '    <changefreq>monthly</changefreq>\n'
+        xml += '    <priority>0.7</priority>\n'
         xml += '  </url>\n'
 
     xml += '</urlset>'
@@ -1455,6 +1565,177 @@ def delete_subscriber(subscriber_id):
 def admin_subscribers():
     """Admin subscribers page"""
     return send_from_directory('static', 'admin-subscribers.html')
+
+
+# ============================================================================
+# BLOG ADMIN
+# ============================================================================
+
+@app.route('/admin/blog')
+@login_required
+def admin_blog():
+    """Admin blog management page"""
+    return send_from_directory('static', 'admin-blog.html')
+
+
+@app.route('/admin/api/blog/posts')
+@login_required
+def admin_get_blog_posts():
+    """Get all blog posts (including drafts) for admin."""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute('''
+        SELECT id, slug, title, meta_description, body, status, created_at, published_at
+        FROM blog_posts
+        ORDER BY created_at DESC
+    ''')
+    posts = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return jsonify([{
+        'id': p['id'],
+        'slug': p['slug'],
+        'title': p['title'],
+        'meta_description': p['meta_description'],
+        'body': p['body'],
+        'status': p['status'],
+        'created_at': p['created_at'].isoformat() if p['created_at'] else None,
+        'published_at': p['published_at'].isoformat() if p['published_at'] else None,
+    } for p in posts])
+
+
+@app.route('/admin/api/blog/posts', methods=['POST'])
+@login_required
+def admin_create_blog_post():
+    """Create a new blog post."""
+    import re
+    data = request.get_json() or {}
+    title = (data.get('title') or '').strip()
+    slug = (data.get('slug') or '').strip()
+    meta_description = (data.get('meta_description') or '').strip()
+    body = (data.get('body') or '').strip()
+
+    if not title or not body:
+        return jsonify({'error': 'Title and body are required'}), 400
+
+    if not slug:
+        slug = re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')
+
+    if not re.match(r'^[a-z0-9][a-z0-9-]*[a-z0-9]$', slug) and len(slug) > 1:
+        return jsonify({'error': 'Slug must contain only lowercase letters, numbers, and hyphens'}), 400
+
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cursor.execute('''
+            INSERT INTO blog_posts (slug, title, meta_description, body)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id, slug, title, meta_description, body, status, created_at, published_at
+        ''', (slug, title, meta_description, body))
+        post = cursor.fetchone()
+        conn.commit()
+    except psycopg2.errors.UniqueViolation:
+        conn.rollback()
+        return jsonify({'error': 'A post with that slug already exists'}), 409
+    except Exception:
+        conn.rollback()
+        return jsonify({'error': 'Failed to create post'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+    return jsonify({
+        'id': post['id'],
+        'slug': post['slug'],
+        'title': post['title'],
+        'meta_description': post['meta_description'],
+        'body': post['body'],
+        'status': post['status'],
+        'created_at': post['created_at'].isoformat() if post['created_at'] else None,
+        'published_at': post['published_at'].isoformat() if post['published_at'] else None,
+    }), 201
+
+
+@app.route('/admin/api/blog/posts/<int:post_id>', methods=['PUT'])
+@login_required
+def admin_update_blog_post(post_id):
+    """Update an existing blog post."""
+    data = request.get_json() or {}
+    title = (data.get('title') or '').strip()
+    meta_description = (data.get('meta_description') or '').strip()
+    body = (data.get('body') or '').strip()
+
+    if not title or not body:
+        return jsonify({'error': 'Title and body are required'}), 400
+
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute('''
+        UPDATE blog_posts
+        SET title = %s, meta_description = %s, body = %s
+        WHERE id = %s
+        RETURNING id, slug, title, status
+    ''', (title, meta_description, body, post_id))
+    post = cursor.fetchone()
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+    return jsonify({'success': True, 'post': dict(post)})
+
+
+@app.route('/admin/api/blog/posts/<int:post_id>/publish', methods=['POST'])
+@login_required
+def admin_publish_blog_post(post_id):
+    """Publish a blog post."""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute('''
+        UPDATE blog_posts
+        SET status = 'published', published_at = CURRENT_TIMESTAMP
+        WHERE id = %s
+        RETURNING id, slug, title, status, published_at
+    ''', (post_id,))
+    post = cursor.fetchone()
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+    return jsonify({'success': True, 'post': dict(post)})
+
+
+@app.route('/admin/api/blog/posts/<int:post_id>/unpublish', methods=['POST'])
+@login_required
+def admin_unpublish_blog_post(post_id):
+    """Unpublish a blog post (back to draft)."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE blog_posts
+        SET status = 'draft', published_at = NULL
+        WHERE id = %s
+    ''', (post_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/admin/api/blog/posts/<int:post_id>', methods=['DELETE'])
+@login_required
+def admin_delete_blog_post(post_id):
+    """Delete a blog post."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM blog_posts WHERE id = %s', (post_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({'success': True})
 
 
 # ============================================================================

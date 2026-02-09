@@ -63,15 +63,19 @@ class TestPublicRoutes:
         assert 'Allow: /guide' in text
 
     def test_sitemap_xml_with_puzzles(self, client, mock_db):
-        mock_db.fetchall.return_value = [
-            {'puzzle_number': '29001', 'published_at': None},
-            {'puzzle_number': '29002', 'published_at': None},
+        mock_db.fetchall.side_effect = [
+            [  # puzzles
+                {'puzzle_number': '29001', 'published_at': None},
+                {'puzzle_number': '29002', 'published_at': None},
+            ],
+            [],  # blog posts
         ]
         resp = client.get('/sitemap.xml')
         assert resp.status_code == 200
         assert b'<urlset' in resp.data
         assert b'/puzzle/29001' in resp.data
         assert b'/puzzle/29002' in resp.data
+        assert b'/blog' in resp.data
 
     def test_sitemap_xml_db_error_returns_empty(self, client):
         """Sitemap should not 500 on DB error (issue #1 fix)."""
@@ -465,3 +469,133 @@ class TestComments:
         resp = client.post('/api/puzzle/29001/comments',
                            json={'author': 'Alice', 'body': 'x' * 2001})
         assert resp.status_code == 400
+
+
+# ============================================================================
+# Blog - Public
+# ============================================================================
+
+class TestBlogPublic:
+    def test_blog_listing_page(self, client):
+        resp = client.get('/blog')
+        assert resp.status_code == 200
+        assert b'Blog' in resp.data
+
+    def test_blog_post_page(self, client):
+        resp = client.get('/blog/my-first-post')
+        assert resp.status_code == 200
+        # Slug should be injected
+        html = resp.data.decode()
+        assert '__BLOG_SLUG__' not in html
+        assert 'my-first-post' in html
+
+    def test_get_blog_posts_empty(self, client, mock_db):
+        mock_db.fetchall.return_value = []
+        resp = client.get('/api/blog/posts')
+        assert resp.status_code == 200
+        assert json.loads(resp.data) == []
+
+    def test_get_blog_posts_with_data(self, client, mock_db):
+        from datetime import datetime
+        ts = datetime(2025, 6, 1, 10, 0, 0)
+        mock_db.fetchall.return_value = [
+            {'id': 1, 'slug': 'test-post', 'title': 'Test Post',
+             'meta_description': 'A test', 'published_at': ts},
+        ]
+        resp = client.get('/api/blog/posts')
+        data = json.loads(resp.data)
+        assert len(data) == 1
+        assert data[0]['slug'] == 'test-post'
+        assert data[0]['title'] == 'Test Post'
+
+    def test_get_blog_post_by_slug(self, client, mock_db):
+        from datetime import datetime
+        ts = datetime(2025, 6, 1, 10, 0, 0)
+        mock_db.fetchone.return_value = {
+            'id': 1, 'slug': 'test-post', 'title': 'Test Post',
+            'meta_description': 'A test', 'body': 'Hello world', 'published_at': ts,
+        }
+        resp = client.get('/api/blog/posts/test-post')
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data['body'] == 'Hello world'
+
+    def test_get_blog_post_not_found(self, client, mock_db):
+        mock_db.fetchone.return_value = None
+        resp = client.get('/api/blog/posts/no-such-post')
+        assert resp.status_code == 404
+
+
+# ============================================================================
+# Blog - Admin
+# ============================================================================
+
+class TestBlogAdmin:
+    def test_admin_blog_requires_login(self, client):
+        resp = client.get('/admin/blog')
+        assert resp.status_code == 401
+
+    def test_admin_blog_page_accessible(self, logged_in_client):
+        resp = logged_in_client.get('/admin/blog')
+        assert resp.status_code == 200
+        assert b'Blog Manager' in resp.data
+
+    def test_admin_get_blog_posts_requires_login(self, client):
+        resp = client.get('/admin/api/blog/posts')
+        assert resp.status_code == 401
+
+    def test_admin_create_blog_post(self, logged_in_client, mock_db):
+        from datetime import datetime
+        ts = datetime(2025, 6, 1, 10, 0, 0)
+        mock_db.fetchone.return_value = {
+            'id': 1, 'slug': 'my-post', 'title': 'My Post',
+            'meta_description': 'Desc', 'body': 'Body text',
+            'status': 'draft', 'created_at': ts, 'published_at': None,
+        }
+        resp = logged_in_client.post('/admin/api/blog/posts',
+                                     json={'title': 'My Post', 'body': 'Body text'})
+        assert resp.status_code == 201
+        data = json.loads(resp.data)
+        assert data['title'] == 'My Post'
+
+    def test_admin_create_blog_post_missing_fields(self, logged_in_client):
+        resp = logged_in_client.post('/admin/api/blog/posts',
+                                     json={'title': '', 'body': ''})
+        assert resp.status_code == 400
+
+    def test_admin_update_blog_post(self, logged_in_client, mock_db):
+        mock_db.fetchone.return_value = {
+            'id': 1, 'slug': 'my-post', 'title': 'Updated', 'status': 'draft',
+        }
+        resp = logged_in_client.put('/admin/api/blog/posts/1',
+                                    json={'title': 'Updated', 'body': 'New body'})
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data['success'] is True
+
+    def test_admin_update_blog_post_not_found(self, logged_in_client, mock_db):
+        mock_db.fetchone.return_value = None
+        resp = logged_in_client.put('/admin/api/blog/posts/999',
+                                    json={'title': 'X', 'body': 'Y'})
+        assert resp.status_code == 404
+
+    def test_admin_publish_blog_post(self, logged_in_client, mock_db):
+        from datetime import datetime
+        mock_db.fetchone.return_value = {
+            'id': 1, 'slug': 'my-post', 'title': 'My Post',
+            'status': 'published', 'published_at': datetime(2025, 6, 1),
+        }
+        resp = logged_in_client.post('/admin/api/blog/posts/1/publish')
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data['success'] is True
+
+    def test_admin_unpublish_blog_post(self, logged_in_client, mock_db):
+        resp = logged_in_client.post('/admin/api/blog/posts/1/unpublish')
+        assert resp.status_code == 200
+
+    def test_admin_delete_blog_post(self, logged_in_client, mock_db):
+        resp = logged_in_client.delete('/admin/api/blog/posts/1')
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data['success'] is True
