@@ -399,3 +399,69 @@ class TestEmailHelpers:
         assert result is True
         mock_server.login.assert_called_once_with('info@test.com', 'pass')
         mock_server.sendmail.assert_called_once()
+
+
+# ============================================================================
+# Comments
+# ============================================================================
+
+class TestComments:
+    def test_get_comments_empty(self, client, mock_db):
+        mock_db.fetchall.return_value = []
+        resp = client.get('/api/puzzle/29001/comments')
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data == []
+
+    def test_get_comments_returns_list(self, client, mock_db):
+        from datetime import datetime
+        ts = datetime(2025, 3, 1, 12, 0, 0)
+        mock_db.fetchall.return_value = [
+            {'id': 1, 'author': 'Alice', 'body': 'Great puzzle!', 'created_at': ts},
+            {'id': 2, 'author': 'Bob', 'body': 'Tricky one.', 'created_at': ts},
+        ]
+        resp = client.get('/api/puzzle/29001/comments')
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert len(data) == 2
+        assert data[0]['author'] == 'Alice'
+        assert data[1]['body'] == 'Tricky one.'
+
+    def test_post_comment_success(self, client, mock_db):
+        from datetime import datetime
+        ts = datetime(2025, 3, 1, 12, 0, 0)
+        mock_db.fetchone.return_value = {
+            'id': 1, 'author': 'Alice', 'body': 'Nice!', 'created_at': ts,
+        }
+        resp = client.post('/api/puzzle/29001/comments',
+                           json={'author': 'Alice', 'body': 'Nice!'})
+        assert resp.status_code == 201
+        data = json.loads(resp.data)
+        assert data['author'] == 'Alice'
+        assert data['body'] == 'Nice!'
+        assert data['id'] == 1
+
+    def test_post_comment_missing_author(self, client):
+        resp = client.post('/api/puzzle/29001/comments',
+                           json={'author': '', 'body': 'Hello'})
+        assert resp.status_code == 400
+
+    def test_post_comment_missing_body(self, client):
+        resp = client.post('/api/puzzle/29001/comments',
+                           json={'author': 'Alice', 'body': ''})
+        assert resp.status_code == 400
+
+    def test_post_comment_no_json(self, client):
+        resp = client.post('/api/puzzle/29001/comments',
+                           data='not json', content_type='text/plain')
+        assert resp.status_code in (400, 415)
+
+    def test_post_comment_author_too_long(self, client):
+        resp = client.post('/api/puzzle/29001/comments',
+                           json={'author': 'A' * 51, 'body': 'Hello'})
+        assert resp.status_code == 400
+
+    def test_post_comment_body_too_long(self, client):
+        resp = client.post('/api/puzzle/29001/comments',
+                           json={'author': 'Alice', 'body': 'x' * 2001})
+        assert resp.status_code == 400
