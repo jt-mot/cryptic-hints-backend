@@ -18,23 +18,40 @@
         gtag('js', new Date());
         gtag('config', '__GA_TRACKING_ID__');
     </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --color-cream: #faf8f4;
+            --color-cream-dark: #f3f0e8;
+            --color-navy: #1a365d;
+            --color-navy-light: #2c4a7c;
+            --color-amber: #b8860b;
+            --color-amber-light: #d4a84b;
+            --color-teal: #2d6a6a;
+            --color-teal-light: #3d8b8b;
+            --color-charcoal: #374151;
+            --color-slate: #64748b;
+            --color-border: #e5e0d5;
+        }
+
         * {
             box-sizing: border-box;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             margin: 0;
             padding: 0;
-            background: #f5f7fa;
-            color: #1a1a2e;
+            background: var(--color-cream);
+            color: var(--color-charcoal);
         }
 
         .header {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: var(--color-navy);
             padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 8px rgba(26, 54, 93, 0.15);
             position: sticky;
             top: 0;
             z-index: 200;
@@ -81,9 +98,10 @@
         }
 
         h1 {
+            font-family: 'Libre Baskerville', Georgia, serif;
             margin: 0 0 8px 0;
             color: #fff;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 700;
             letter-spacing: -0.5px;
         }
@@ -104,7 +122,7 @@
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #4ade80, #22c55e);
+            background: linear-gradient(90deg, var(--color-amber), var(--color-amber-light));
             width: 0%;
             transition: width 0.5s ease;
             border-radius: 3px;
@@ -246,13 +264,13 @@
         }
 
         .clue-item.selected {
-            box-shadow: 0 0 0 3px #3b82f6, 0 4px 16px rgba(59,130,246,0.2);
-            background: #f0f7ff;
-            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px var(--color-teal), 0 4px 16px rgba(45, 106, 106, 0.2);
+            background: #f0fdfa;
+            border-color: var(--color-teal);
         }
 
         .clue-item.completed {
-            border-left: 4px solid #22c55e;
+            border-left: 4px solid var(--color-amber);
         }
 
         .clue-header {
@@ -263,7 +281,7 @@
             display: inline-block;
             min-width: 40px;
             font-weight: 800;
-            color: #3b82f6;
+            color: var(--color-teal);
             font-size: 18px;
         }
 
@@ -318,15 +336,15 @@
         }
 
         .answer-box:focus {
-            border-color: #3b82f6;
-            background: #eff6ff;
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+            border-color: var(--color-teal);
+            background: #f0fdfa;
+            box-shadow: 0 0 0 3px rgba(45, 106, 106, 0.2);
         }
 
         .answer-box.correct {
-            background: #dcfce7;
-            border-color: #22c55e;
-            color: #166534;
+            background: #fffbeb;
+            border-color: var(--color-amber);
+            color: #78350f;
         }
 
         .answer-box.prefilled {
@@ -343,7 +361,7 @@
 
         .check-button {
             padding: 10px 24px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            background: var(--color-navy);
             color: white;
             border: none;
             border-radius: 8px;
@@ -351,32 +369,32 @@
             font-size: 14px;
             font-weight: 600;
             transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+            box-shadow: 0 2px 8px rgba(26, 54, 93, 0.3);
         }
 
         .check-button:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            background: var(--color-navy-light);
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37,99,235,0.4);
+            box-shadow: 0 4px 12px rgba(26, 54, 93, 0.4);
         }
 
         .check-button.correct {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            background: var(--color-amber);
             cursor: default;
-            box-shadow: 0 2px 8px rgba(34,197,94,0.3);
+            box-shadow: 0 2px 8px rgba(184, 134, 11, 0.3);
         }
 
-        /* Hints - Progressive colors from easy (green) to revealing (red) */
+        /* Hints - Progressive colors from teal to amber */
         .hints-section {
             margin-top: 16px;
             padding-top: 16px;
-            border-top: 1px solid #e2e8f0;
+            border-top: 1px solid var(--color-border);
         }
 
         .hints-label {
             font-size: 12px;
             font-weight: 600;
-            color: #64748b;
+            color: var(--color-slate);
             margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -397,52 +415,52 @@
             transition: all 0.2s ease;
         }
 
-        /* Hint 1 - Green (least revealing) */
+        /* Hint 1 - Teal (least revealing) */
         .hint-button.hint-1 {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            background: var(--color-teal);
         }
         .hint-button.hint-1:hover {
-            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            background: var(--color-teal-light);
         }
         .hint-button.hint-1.revealed {
-            background: #86efac;
-            color: #166534;
+            background: #ccfbf1;
+            color: #134e4a;
         }
 
-        /* Hint 2 - Yellow/Amber */
+        /* Hint 2 - Cyan */
         .hint-button.hint-2 {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            background: #0891b2;
         }
         .hint-button.hint-2:hover {
-            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            background: #0e7490;
         }
         .hint-button.hint-2.revealed {
-            background: #fde68a;
-            color: #92400e;
+            background: #cffafe;
+            color: #164e63;
         }
 
-        /* Hint 3 - Orange */
+        /* Hint 3 - Purple */
         .hint-button.hint-3 {
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            background: #7c3aed;
         }
         .hint-button.hint-3:hover {
-            background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+            background: #6d28d9;
         }
         .hint-button.hint-3.revealed {
-            background: #fed7aa;
-            color: #9a3412;
+            background: #ede9fe;
+            color: #4c1d95;
         }
 
-        /* Hint 4 - Red (most revealing) */
+        /* Hint 4 - Amber (most revealing) */
         .hint-button.hint-4 {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            background: var(--color-amber);
         }
         .hint-button.hint-4:hover {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            background: var(--color-amber-light);
         }
         .hint-button.hint-4.revealed {
-            background: #fecaca;
-            color: #991b1b;
+            background: #fef3c7;
+            color: #78350f;
         }
 
         .hint-text {
@@ -829,26 +847,20 @@
     <div class="header">
         <div class="header-content">
             <a href="/" class="home-link" title="Back to Home">
-                <svg width="28" height="28" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="36" height="36" rx="6" fill="url(#logoGradPuzzle)"/>
-                    <defs>
-                        <linearGradient id="logoGradPuzzle" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#22c55e"/>
-                            <stop offset="100%" stop-color="#16a34a"/>
-                        </linearGradient>
-                    </defs>
-                    <rect x="3" y="3" width="9" height="9" rx="1.5" fill="white"/>
-                    <rect x="13.5" y="3" width="9" height="9" rx="1.5" fill="white"/>
-                    <rect x="24" y="3" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
-                    <rect x="3" y="13.5" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
-                    <rect x="13.5" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
-                    <rect x="24" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
-                    <rect x="3" y="24" width="9" height="9" rx="1.5" fill="white"/>
-                    <rect x="13.5" y="24" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
-                    <rect x="24" y="24" width="9" height="9" rx="1.5" fill="white"/>
-                    <text x="18" y="21" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="700" font-family="Arial, sans-serif">?</text>
+                <svg width="28" height="28" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="38" height="38" rx="6" fill="#b8860b"/>
+                    <rect x="3" y="3" width="9.5" height="9.5" rx="1.5" fill="white"/>
+                    <rect x="14.25" y="3" width="9.5" height="9.5" rx="1.5" fill="white"/>
+                    <rect x="25.5" y="3" width="9.5" height="9.5" rx="1.5" fill="#1a365d"/>
+                    <rect x="3" y="14.25" width="9.5" height="9.5" rx="1.5" fill="#1a365d"/>
+                    <rect x="14.25" y="14.25" width="9.5" height="9.5" rx="1.5" fill="white"/>
+                    <rect x="25.5" y="14.25" width="9.5" height="9.5" rx="1.5" fill="white"/>
+                    <rect x="3" y="25.5" width="9.5" height="9.5" rx="1.5" fill="white"/>
+                    <rect x="14.25" y="25.5" width="9.5" height="9.5" rx="1.5" fill="#1a365d"/>
+                    <rect x="25.5" y="25.5" width="9.5" height="9.5" rx="1.5" fill="white"/>
+                    <text x="19" y="22" text-anchor="middle" fill="#b8860b" font-size="9" font-weight="700" font-family="Georgia, serif">?</text>
                 </svg>
-                <span>Cryptic Hints</span>
+                <span style="font-family: 'Libre Baskerville', Georgia, serif;">Cryptic Hints</span>
             </a>
             <div class="header-center">
                 <h1>Guardian Cryptic Crossword</h1>
