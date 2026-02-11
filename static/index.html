@@ -1099,6 +1099,9 @@
                 // Get saved progress from localStorage
                 const savedProgress = JSON.parse(localStorage.getItem('crypticHintsProgress') || '{}');
 
+                // Update CTA button with latest puzzle
+                updateCtaButton(puzzles);
+
                 document.getElementById('puzzlesGrid').innerHTML = puzzles.map(puzzle => {
                     // Check saved progress for this puzzle
                     const puzzleProgress = savedProgress[puzzle.puzzle_number] || {};
@@ -1193,11 +1196,31 @@
             }
         });
 
-        // Smooth scroll for CTA
-        document.getElementById('ctaStart').addEventListener('click', function(e) {
+        // Update CTA button with latest puzzle
+        function updateCtaButton(puzzles) {
+            if (puzzles && puzzles.length > 0) {
+                const latest = puzzles[0];
+                const typeLabel = latest.puzzle_type === 'quiptic' ? 'Quiptic' : 'Cryptic';
+                const ctaBtn = document.getElementById('ctaStart');
+                ctaBtn.href = `/puzzle/${latest.puzzle_number}`;
+                ctaBtn.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
+                    </svg>
+                    ${typeLabel} #${latest.puzzle_number}
+                `;
+                // Remove the scroll behavior since we now link directly
+                ctaBtn.removeEventListener('click', ctaScrollHandler);
+            }
+        }
+
+        // Scroll handler for CTA (used as fallback)
+        function ctaScrollHandler(e) {
             e.preventDefault();
             document.getElementById('puzzles').scrollIntoView({ behavior: 'smooth' });
-        });
+        }
+        document.getElementById('ctaStart').addEventListener('click', ctaScrollHandler);
 
         // Load puzzles on page load
         loadPuzzles();
