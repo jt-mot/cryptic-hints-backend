@@ -22,12 +22,44 @@
         gtag('config', '__GA_TRACKING_ID__');
     </script>
     <style>
+        :root {
+            --bg: #f5f7fa;
+            --text: #1a1a2e;
+            --text-heading: #1e293b;
+            --text-secondary: #334155;
+            --text-body: #475569;
+            --text-muted: #64748b;
+            --text-faint: #94a3b8;
+            --card-bg: #fff;
+            --card-shadow: rgba(0,0,0,0.06);
+            --card-border: #e2e8f0;
+            --example-bg: #f8fafc;
+            --tag-bg: #f1f5f9;
+            --tag-text: #475569;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --text: #e2e8f0;
+            --text-heading: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-body: #94a3b8;
+            --text-muted: #94a3b8;
+            --text-faint: #64748b;
+            --card-bg: #1e293b;
+            --card-shadow: rgba(0,0,0,0.3);
+            --card-border: #334155;
+            --example-bg: #1e293b;
+            --tag-bg: #334155;
+            --tag-text: #cbd5e1;
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.7;
-            color: #1a1a2e;
-            background: #f5f7fa;
+            color: var(--text);
+            background: var(--bg);
         }
 
         header {
@@ -64,6 +96,21 @@
             transition: all 0.2s;
         }
         nav a:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .theme-toggle {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.8);
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            transition: all 0.2s;
+        }
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
 
         .hero {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
@@ -91,16 +138,16 @@
 
         /* Table of contents */
         .toc {
-            background: #fff;
+            background: var(--card-bg);
             border-radius: 12px;
             padding: 24px 28px;
             margin-bottom: 40px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            box-shadow: 0 1px 4px var(--card-shadow);
         }
         .toc h2 {
             font-size: 16px;
             font-weight: 700;
-            color: #64748b;
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-bottom: 12px;
@@ -116,34 +163,34 @@
 
         /* Sections */
         .guide-section {
-            background: #fff;
+            background: var(--card-bg);
             border-radius: 12px;
             padding: 32px;
             margin-bottom: 24px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            box-shadow: 0 1px 4px var(--card-shadow);
         }
         .guide-section h2 {
             font-size: 24px;
             font-weight: 700;
-            color: #1e293b;
+            color: var(--text-heading);
             margin-bottom: 16px;
             padding-bottom: 8px;
-            border-bottom: 2px solid #e2e8f0;
+            border-bottom: 2px solid var(--card-border);
         }
         .guide-section h3 {
             font-size: 18px;
             font-weight: 600;
-            color: #334155;
+            color: var(--text-secondary);
             margin: 20px 0 8px;
         }
         .guide-section p {
-            color: #475569;
+            color: var(--text-body);
             margin-bottom: 12px;
         }
 
         /* Example clue boxes */
         .example {
-            background: #f8fafc;
+            background: var(--example-bg);
             border-left: 4px solid #2563eb;
             border-radius: 0 8px 8px 0;
             padding: 16px 20px;
@@ -151,7 +198,7 @@
         }
         .example .clue {
             font-weight: 600;
-            color: #1e293b;
+            color: var(--text-heading);
             font-size: 16px;
             margin-bottom: 6px;
         }
@@ -166,7 +213,7 @@
             margin-bottom: 6px;
         }
         .example .explanation {
-            color: #64748b;
+            color: var(--text-muted);
             font-size: 14px;
             line-height: 1.6;
         }
@@ -188,7 +235,7 @@
         .glossary-type h3 {
             font-size: 16px;
             font-weight: 700;
-            color: #1e293b;
+            color: var(--text-heading);
             margin-bottom: 8px;
         }
         .word-list {
@@ -197,8 +244,8 @@
             gap: 6px;
         }
         .word-tag {
-            background: #f1f5f9;
-            color: #475569;
+            background: var(--tag-bg);
+            color: var(--tag-text);
             padding: 4px 10px;
             border-radius: 6px;
             font-size: 13px;
@@ -214,7 +261,7 @@
         footer {
             text-align: center;
             padding: 24px;
-            color: #94a3b8;
+            color: var(--text-faint);
             font-size: 14px;
         }
 
@@ -225,8 +272,31 @@
             .container { padding: 24px 16px 60px; }
         }
     </style>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "How to Solve Cryptic Crosswords - Beginner's Guide",
+        "description": "Learn how to solve cryptic crosswords. Covers anagrams, hidden words, reversals, double definitions, containers, and more.",
+        "url": "__SITE_URL__/guide",
+        "publisher": {
+            "@type": "Organization",
+            "name": "Cryptic Hints",
+            "url": "__SITE_URL__/"
+        },
+        "mainEntityOfPage": "__SITE_URL__/guide"
+    }
+    </script>
 </head>
 <body>
+    <script>
+        (function() {
+            var saved = localStorage.getItem('theme');
+            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <header>
         <div class="header-content">
             <a href="/" class="logo">
@@ -248,6 +318,10 @@
             <nav>
                 <a href="/#puzzles">Puzzles</a>
                 <a href="/guide">Guide</a>
+                <a href="/blog">Blog</a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
+                    <span class="theme-icon"></span>
+                </button>
             </nav>
         </div>
     </header>
@@ -674,5 +748,22 @@
     <footer>
         <p>Cryptic Hints &mdash; Guardian crosswords with progressive hints</p>
     </footer>
+    <script>
+        function toggleTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const newTheme = isDark ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.querySelectorAll('.theme-icon').forEach(function(el) {
+                el.textContent = isDark ? '\u2600\uFE0F' : '\uD83C\uDF19';
+            });
+        }
+        updateThemeIcon();
+    </script>
 </body>
 </html>

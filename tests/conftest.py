@@ -44,8 +44,8 @@ def logged_in_client(client):
 @pytest.fixture(autouse=True)
 def mock_db():
     """Provide a fresh mock cursor for each test."""
-    _mock_cursor.reset_mock()
-    _mock_conn.reset_mock()
+    _mock_cursor.reset_mock(side_effect=True, return_value=True)
+    _mock_conn.reset_mock(side_effect=True, return_value=True)
     _mock_conn.cursor.return_value = _mock_cursor
     _mock_conn.execute.return_value = None
 

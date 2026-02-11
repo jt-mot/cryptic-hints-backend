@@ -16,6 +16,7 @@ from flask import Flask, jsonify, request, send_from_directory, session, redirec
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
+import psycopg2.errors
 from psycopg2.extras import RealDictCursor
 import json
 from datetime import datetime, date
@@ -73,7 +74,6 @@ def _send_email(to_email, subject, html_body):
 def _build_puzzle_email(puzzle_number, setter):
     """Build the HTML email body for a new puzzle notification."""
     puzzle_url = f"{SITE_URL}/puzzle/{puzzle_number}"
-    unsubscribe_url = f"{SITE_URL}"
     return f"""\
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
   <h2 style="color: #1e293b; margin-bottom: 4px;">New Puzzle Available!</h2>
@@ -93,7 +93,7 @@ def _build_puzzle_email(puzzle_number, setter):
 </div>"""
 
 
-def notify_subscribers(puzzle_number, setter):
+def notify_subscribers(puzzle_number, setter, puzzle_type='cryptic'):
     """Send new-puzzle emails to all active subscribers. Runs in a background thread."""
     if not SMTP_USER or not SMTP_PASSWORD:
         app.logger.info("SMTP not configured — skipping subscriber notifications")
@@ -111,7 +111,8 @@ def notify_subscribers(puzzle_number, setter):
             cursor.close()
             conn.close()
 
-            subject = f"New Puzzle: Guardian Cryptic #{puzzle_number}"
+            type_label = 'Quiptic' if puzzle_type == 'quiptic' else 'Cryptic'
+            subject = f"New Puzzle: Guardian {type_label} #{puzzle_number}"
             body = _build_puzzle_email(puzzle_number, setter)
 
             sent = 0
@@ -227,10 +228,35 @@ def init_db():
         )
     ''')
 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS comments (
+            id SERIAL PRIMARY KEY,
+            puzzle_number TEXT NOT NULL,
+            author TEXT NOT NULL,
+            body TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS blog_posts (
+            id SERIAL PRIMARY KEY,
+            slug TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            meta_description TEXT,
+            body TEXT NOT NULL,
+            status TEXT DEFAULT 'draft',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            published_at TIMESTAMP
+        )
+    ''')
+
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_date ON puzzles(date)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_status ON puzzles(status)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_clue_puzzle ON clues(puzzle_id)')
     cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriber_email ON subscribers(email)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_comments_puzzle ON comments(puzzle_number)')
+    cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_blog_slug ON blog_posts(slug)')
     
     # Add grid_data column if it doesn't exist (migration)
     cursor.execute('''
@@ -281,13 +307,16 @@ def login_required(f):
 # PUBLIC ROUTES (Frontend)
 # ============================================================================
 
-def _serve_html(filename):
+def _serve_html(filename, extra=None):
     """Read an HTML file from static/ and inject config values."""
     filepath = os.path.join(app.static_folder, filename)
     with open(filepath, 'r') as f:
         html = f.read()
     html = html.replace('__SITE_URL__', SITE_URL)
     html = html.replace('__GA_TRACKING_ID__', GA_TRACKING_ID)
+    if extra:
+        for key, value in extra.items():
+            html = html.replace(key, value)
     return Response(html, mimetype='text/html')
 
 
@@ -300,13 +329,73 @@ def homepage():
 @app.route('/puzzle/<puzzle_number>')
 def puzzle_page(puzzle_number):
     """Serve the puzzle solving page"""
-    return _serve_html('puzzle.html')
+    return _serve_html('puzzle.html', extra={'__PUZZLE_NUMBER__': str(puzzle_number)})
 
 
 @app.route('/guide')
 def guide_page():
     """Serve the how-to-solve-cryptics guide"""
     return _serve_html('guide.html')
+
+
+@app.route('/blog')
+def blog_listing():
+    """Serve the blog listing page"""
+    return _serve_html('blog.html')
+
+
+@app.route('/blog/<slug>')
+def blog_post_page(slug):
+    """Serve an individual blog post page"""
+    return _serve_html('blog-post.html', extra={'__BLOG_SLUG__': slug})
+
+
+@app.route('/api/blog/posts')
+def get_blog_posts():
+    """Get all published blog posts, newest first."""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute('''
+        SELECT id, slug, title, meta_description, published_at
+        FROM blog_posts
+        WHERE status = 'published'
+        ORDER BY published_at DESC
+    ''')
+    posts = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return jsonify([{
+        'id': p['id'],
+        'slug': p['slug'],
+        'title': p['title'],
+        'meta_description': p['meta_description'],
+        'published_at': p['published_at'].isoformat() if p['published_at'] else None,
+    } for p in posts])
+
+
+@app.route('/api/blog/posts/<slug>')
+def get_blog_post(slug):
+    """Get a single published blog post by slug."""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute('''
+        SELECT id, slug, title, meta_description, body, published_at
+        FROM blog_posts
+        WHERE slug = %s AND status = 'published'
+    ''', (slug,))
+    post = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+    return jsonify({
+        'id': post['id'],
+        'slug': post['slug'],
+        'title': post['title'],
+        'meta_description': post['meta_description'],
+        'body': post['body'],
+        'published_at': post['published_at'].isoformat() if post['published_at'] else None,
+    })
 
 
 @app.route('/robots.txt')
@@ -316,6 +405,7 @@ def robots_txt():
 Allow: /
 Allow: /puzzle/
 Allow: /guide
+Allow: /blog
 Disallow: /admin/
 Disallow: /api/
 
@@ -327,6 +417,8 @@ Sitemap: {SITE_URL}/sitemap.xml
 @app.route('/sitemap.xml')
 def sitemap_xml():
     """Generate dynamic sitemap with all published puzzles"""
+    puzzles = []
+    blog_posts = []
     try:
         conn = get_db()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -337,9 +429,15 @@ def sitemap_xml():
             ORDER BY published_at DESC
         """)
         puzzles = cursor.fetchall()
+        cursor.execute("""
+            SELECT slug, published_at
+            FROM blog_posts
+            WHERE status = 'published'
+            ORDER BY published_at DESC
+        """)
+        blog_posts = cursor.fetchall()
     except Exception:
-        app.logger.exception("Failed to query puzzles for sitemap")
-        puzzles = []
+        app.logger.exception("Failed to query data for sitemap")
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -356,6 +454,13 @@ def sitemap_xml():
     xml += f'    <loc>{SITE_URL}/guide</loc>\n'
     xml += '    <changefreq>monthly</changefreq>\n'
     xml += '    <priority>0.9</priority>\n'
+    xml += '  </url>\n'
+
+    # Blog listing
+    xml += '  <url>\n'
+    xml += f'    <loc>{SITE_URL}/blog</loc>\n'
+    xml += '    <changefreq>weekly</changefreq>\n'
+    xml += '    <priority>0.8</priority>\n'
     xml += '  </url>\n'
 
     # Individual puzzle pages
@@ -375,6 +480,25 @@ def sitemap_xml():
         xml += lastmod
         xml += '    <changefreq>monthly</changefreq>\n'
         xml += '    <priority>0.8</priority>\n'
+        xml += '  </url>\n'
+
+    # Blog posts
+    for post in blog_posts:
+        lastmod = ''
+        pub_date = post.get('published_at')
+        if pub_date:
+            try:
+                if hasattr(pub_date, 'strftime'):
+                    lastmod = f'    <lastmod>{pub_date.strftime("%Y-%m-%d")}</lastmod>\n'
+                else:
+                    lastmod = f'    <lastmod>{str(pub_date)[:10]}</lastmod>\n'
+            except Exception:
+                pass
+        xml += '  <url>\n'
+        xml += f'    <loc>{SITE_URL}/blog/{post["slug"]}</loc>\n'
+        xml += lastmod
+        xml += '    <changefreq>monthly</changefreq>\n'
+        xml += '    <priority>0.7</priority>\n'
         xml += '  </url>\n'
 
     xml += '</urlset>'
@@ -697,6 +821,77 @@ def unsubscribe_email():
     conn.close()
 
     return jsonify({'success': True, 'message': 'You have been unsubscribed.'})
+
+
+# ============================================================================
+# COMMENTS
+# ============================================================================
+
+@app.route('/api/puzzle/<puzzle_number>/comments')
+def get_comments(puzzle_number):
+    """Get comments for a puzzle, newest first."""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    cursor.execute('''
+        SELECT id, author, body, created_at
+        FROM comments
+        WHERE puzzle_number = %s
+        ORDER BY created_at DESC
+    ''', (puzzle_number,))
+    comments = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify([{
+        'id': c['id'],
+        'author': c['author'],
+        'body': c['body'],
+        'created_at': c['created_at'].isoformat() if c['created_at'] else None,
+    } for c in comments])
+
+
+@app.route('/api/puzzle/<puzzle_number>/comments', methods=['POST'])
+def post_comment(puzzle_number):
+    """Add a comment to a puzzle."""
+    data = request.get_json() or {}
+    author = (data.get('author') or '').strip()
+    body = (data.get('body') or '').strip()
+
+    if not author or not body:
+        return jsonify({'error': 'Author and comment are required'}), 400
+
+    if len(author) > 50:
+        return jsonify({'error': 'Name is too long (max 50 characters)'}), 400
+
+    if len(body) > 2000:
+        return jsonify({'error': 'Comment is too long (max 2000 characters)'}), 400
+
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        cursor.execute('''
+            INSERT INTO comments (puzzle_number, author, body)
+            VALUES (%s, %s, %s)
+            RETURNING id, author, body, created_at
+        ''', (puzzle_number, author, body))
+        comment = cursor.fetchone()
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        return jsonify({'error': 'Unable to save comment'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+    return jsonify({
+        'id': comment['id'],
+        'author': comment['author'],
+        'body': comment['body'],
+        'created_at': comment['created_at'].isoformat() if comment['created_at'] else None,
+    }), 201
 
 
 # ============================================================================
@@ -1221,7 +1416,7 @@ def publish_puzzle(puzzle_id):
         SET status = 'published',
             published_at = CURRENT_TIMESTAMP
         WHERE id = %s
-        RETURNING puzzle_number, setter
+        RETURNING puzzle_number, setter, puzzle_type
     ''', (puzzle_id,))
     published = cursor.fetchone()
 
@@ -1241,8 +1436,9 @@ def publish_puzzle(puzzle_id):
     if sub_count > 0:
         puzzle_num = published['puzzle_number'] if published else str(puzzle_id)
         setter_name = published['setter'] if published else 'Unknown'
+        p_type = published.get('puzzle_type', 'cryptic') if published else 'cryptic'
         if SMTP_USER and SMTP_PASSWORD:
-            notify_subscribers(puzzle_num, setter_name)
+            notify_subscribers(puzzle_num, setter_name, p_type)
             notify_msg = f' (notifying {sub_count} subscriber{"s" if sub_count != 1 else ""})'
         else:
             notify_msg = f' ({sub_count} subscriber{"s" if sub_count != 1 else ""} — SMTP not configured)'
@@ -1372,6 +1568,177 @@ def admin_subscribers():
 
 
 # ============================================================================
+# BLOG ADMIN
+# ============================================================================
+
+@app.route('/admin/blog')
+@login_required
+def admin_blog():
+    """Admin blog management page"""
+    return send_from_directory('static', 'admin-blog.html')
+
+
+@app.route('/admin/api/blog/posts')
+@login_required
+def admin_get_blog_posts():
+    """Get all blog posts (including drafts) for admin."""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute('''
+        SELECT id, slug, title, meta_description, body, status, created_at, published_at
+        FROM blog_posts
+        ORDER BY created_at DESC
+    ''')
+    posts = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return jsonify([{
+        'id': p['id'],
+        'slug': p['slug'],
+        'title': p['title'],
+        'meta_description': p['meta_description'],
+        'body': p['body'],
+        'status': p['status'],
+        'created_at': p['created_at'].isoformat() if p['created_at'] else None,
+        'published_at': p['published_at'].isoformat() if p['published_at'] else None,
+    } for p in posts])
+
+
+@app.route('/admin/api/blog/posts', methods=['POST'])
+@login_required
+def admin_create_blog_post():
+    """Create a new blog post."""
+    import re
+    data = request.get_json() or {}
+    title = (data.get('title') or '').strip()
+    slug = (data.get('slug') or '').strip()
+    meta_description = (data.get('meta_description') or '').strip()
+    body = (data.get('body') or '').strip()
+
+    if not title or not body:
+        return jsonify({'error': 'Title and body are required'}), 400
+
+    if not slug:
+        slug = re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')
+
+    if not re.match(r'^[a-z0-9][a-z0-9-]*[a-z0-9]$', slug) and len(slug) > 1:
+        return jsonify({'error': 'Slug must contain only lowercase letters, numbers, and hyphens'}), 400
+
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cursor.execute('''
+            INSERT INTO blog_posts (slug, title, meta_description, body)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id, slug, title, meta_description, body, status, created_at, published_at
+        ''', (slug, title, meta_description, body))
+        post = cursor.fetchone()
+        conn.commit()
+    except psycopg2.errors.UniqueViolation:
+        conn.rollback()
+        return jsonify({'error': 'A post with that slug already exists'}), 409
+    except Exception:
+        conn.rollback()
+        return jsonify({'error': 'Failed to create post'}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+    return jsonify({
+        'id': post['id'],
+        'slug': post['slug'],
+        'title': post['title'],
+        'meta_description': post['meta_description'],
+        'body': post['body'],
+        'status': post['status'],
+        'created_at': post['created_at'].isoformat() if post['created_at'] else None,
+        'published_at': post['published_at'].isoformat() if post['published_at'] else None,
+    }), 201
+
+
+@app.route('/admin/api/blog/posts/<int:post_id>', methods=['PUT'])
+@login_required
+def admin_update_blog_post(post_id):
+    """Update an existing blog post."""
+    data = request.get_json() or {}
+    title = (data.get('title') or '').strip()
+    meta_description = (data.get('meta_description') or '').strip()
+    body = (data.get('body') or '').strip()
+
+    if not title or not body:
+        return jsonify({'error': 'Title and body are required'}), 400
+
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute('''
+        UPDATE blog_posts
+        SET title = %s, meta_description = %s, body = %s
+        WHERE id = %s
+        RETURNING id, slug, title, status
+    ''', (title, meta_description, body, post_id))
+    post = cursor.fetchone()
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+    return jsonify({'success': True, 'post': dict(post)})
+
+
+@app.route('/admin/api/blog/posts/<int:post_id>/publish', methods=['POST'])
+@login_required
+def admin_publish_blog_post(post_id):
+    """Publish a blog post."""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute('''
+        UPDATE blog_posts
+        SET status = 'published', published_at = CURRENT_TIMESTAMP
+        WHERE id = %s
+        RETURNING id, slug, title, status, published_at
+    ''', (post_id,))
+    post = cursor.fetchone()
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+    return jsonify({'success': True, 'post': dict(post)})
+
+
+@app.route('/admin/api/blog/posts/<int:post_id>/unpublish', methods=['POST'])
+@login_required
+def admin_unpublish_blog_post(post_id):
+    """Unpublish a blog post (back to draft)."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE blog_posts
+        SET status = 'draft', published_at = NULL
+        WHERE id = %s
+    ''', (post_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/admin/api/blog/posts/<int:post_id>', methods=['DELETE'])
+@login_required
+def admin_delete_blog_post(post_id):
+    """Delete a blog post."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM blog_posts WHERE id = %s', (post_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({'success': True})
+
+
+# ============================================================================
 # IMPORT/SCRAPING ROUTES
 # ============================================================================
 
@@ -1442,7 +1809,7 @@ try:
     db_test.execute("SELECT 1 FROM puzzles LIMIT 1")
     db_test.close()
     print("✓ Database tables exist")
-except:
+except Exception:
     print("Database tables don't exist, initializing...")
     init_db()
     print("✓ Database initialized successfully!")
@@ -1450,9 +1817,10 @@ except:
 
 if __name__ == '__main__':
     # Initialize database on first run
-    if not os.path.exists(DATABASE):
-        print("Creating database...")
+    try:
         init_db()
+    except Exception:
+        pass
     
     print("\n" + "="*70)
     print("🧩 CRYPTIC CROSSWORD HINT SYSTEM - PRODUCTION")
