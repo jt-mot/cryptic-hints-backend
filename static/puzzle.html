@@ -4,17 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guardian Cryptic Crossword - Cryptic Hints</title>
-    <meta name="description" content="Solve Guardian cryptic crossword #__PUZZLE_NUMBER__ with progressive hints. Get help from definition only to full explanation. Interactive grid with auto-fill crossings.">
-    <meta name="keywords" content="guardian cryptic __PUZZLE_NUMBER__, cryptic crossword hints, crossword solver, cryptic crossword help">
-    <link rel="canonical" href="__SITE_URL__/puzzle/__PUZZLE_NUMBER__">
-    <meta property="og:title" content="Guardian Cryptic #__PUZZLE_NUMBER__ - Cryptic Hints">
-    <meta property="og:description" content="Solve Guardian cryptic crossword #__PUZZLE_NUMBER__ with four levels of progressive hints.">
+    <meta name="description" content="Solve this Guardian cryptic crossword with progressive hints. Get help from definition only to full explanation. Interactive grid with auto-fill crossings.">
+    <meta property="og:title" content="Guardian Cryptic Crossword - Cryptic Hints">
+    <meta property="og:description" content="Solve Guardian cryptic crosswords with four levels of progressive hints.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="__SITE_URL__/puzzle/__PUZZLE_NUMBER__">
     <meta property="og:site_name" content="Cryptic Hints">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Guardian Cryptic #__PUZZLE_NUMBER__ - Cryptic Hints">
-    <meta name="twitter:description" content="Solve Guardian cryptic crossword #__PUZZLE_NUMBER__ with progressive hints.">
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=__GA_TRACKING_ID__"></script>
     <script>
@@ -23,49 +18,22 @@
         gtag('js', new Date());
         gtag('config', '__GA_TRACKING_ID__');
     </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #f5f7fa;
-            --text: #1a1a2e;
-            --text-secondary: #334155;
-            --text-muted: #64748b;
-            --text-faint: #94a3b8;
-            --card-bg: white;
-            --card-border: #e2e8f0;
-            --card-shadow: rgba(0,0,0,0.06);
-            --input-border: #cbd5e1;
-            --input-focus-bg: #eff6ff;
-            --selected-bg: #f0f7ff;
-            --highlight-bg: #dbeafe;
-            --hint-bg: #f8fafc;
-            --hint-border: #cbd5e1;
-            --grid-border: #1a1a2e;
-            --cell-bg: #fff;
-            --cell-hover: #f1f5f9;
-            --spinner-border: #e2e8f0;
-            --mobile-toggle-bg: #fff;
-        }
-
-        [data-theme="dark"] {
-            --bg: #0f172a;
-            --text: #e2e8f0;
-            --text-secondary: #cbd5e1;
-            --text-muted: #94a3b8;
-            --text-faint: #64748b;
-            --card-bg: #1e293b;
-            --card-border: #334155;
-            --card-shadow: rgba(0,0,0,0.3);
-            --input-border: #475569;
-            --input-focus-bg: #1e3a5f;
-            --selected-bg: #1e3a5f;
-            --highlight-bg: #1e3a5f;
-            --hint-bg: #1e293b;
-            --hint-border: #475569;
-            --grid-border: #475569;
-            --cell-bg: #0f172a;
-            --cell-hover: #1e293b;
-            --spinner-border: #334155;
-            --mobile-toggle-bg: #1e293b;
+            --color-cream: #faf8f4;
+            --color-cream-dark: #f3f0e8;
+            --color-navy: #1a365d;
+            --color-navy-light: #2c4a7c;
+            --color-amber: #b8860b;
+            --color-amber-light: #d4a84b;
+            --color-teal: #2d6a6a;
+            --color-teal-light: #3d8b8b;
+            --color-charcoal: #374151;
+            --color-slate: #64748b;
+            --color-border: #e5e0d5;
         }
 
         * {
@@ -73,17 +41,17 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             margin: 0;
             padding: 0;
-            background: var(--bg);
-            color: var(--text);
+            background: var(--color-cream);
+            color: var(--color-charcoal);
         }
 
         .header {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: var(--color-navy);
             padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 8px rgba(26, 54, 93, 0.15);
             position: sticky;
             top: 0;
             z-index: 200;
@@ -100,6 +68,10 @@
         .header-center {
             text-align: center;
             flex: 1;
+        }
+
+        .header-spacer {
+            width: 80px;
         }
 
         .home-link {
@@ -126,9 +98,10 @@
         }
 
         h1 {
+            font-family: 'Libre Baskerville', Georgia, serif;
             margin: 0 0 8px 0;
             color: #fff;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 700;
             letter-spacing: -0.5px;
         }
@@ -149,7 +122,7 @@
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #4ade80, #22c55e);
+            background: linear-gradient(90deg, var(--color-amber), var(--color-amber-light));
             width: 0%;
             transition: width 0.5s ease;
             border-radius: 3px;
@@ -171,8 +144,8 @@
         /* Grid Sidebar - Fixed */
         .grid-sidebar {
             width: 380px;
-            background: var(--card-bg);
-            box-shadow: 4px 0 12px var(--card-shadow);
+            background: #fff;
+            box-shadow: 4px 0 12px rgba(0,0,0,0.08);
             position: sticky;
             top: 100px;
             height: calc(100vh - 100px);
@@ -183,7 +156,7 @@
         .grid-title {
             font-size: 11px;
             font-weight: 700;
-            color: var(--text-faint);
+            color: #94a3b8;
             margin-bottom: 15px;
             text-align: center;
             text-transform: uppercase;
@@ -198,8 +171,8 @@
         .crossword-grid {
             display: inline-grid;
             gap: 0;
-            border: 3px solid var(--grid-border);
-            background: var(--grid-border);
+            border: 3px solid #1a1a2e;
+            background: #1a1a2e;
             margin: 0 auto;
             border-radius: 4px;
             overflow: hidden;
@@ -208,7 +181,7 @@
         .cell {
             width: 24px;
             height: 24px;
-            border: 1px solid var(--input-border);
+            border: 1px solid #cbd5e1;
             position: relative;
             display: flex;
             align-items: center;
@@ -216,18 +189,17 @@
             font-weight: 600;
             font-size: 12px;
             font-family: 'Arial', sans-serif;
-            background: var(--cell-bg);
-            color: var(--text);
+            background: #fff;
             transition: background 0.15s ease;
         }
 
         .cell.white:hover {
-            background: var(--cell-hover);
+            background: #f1f5f9;
         }
 
         .cell.black {
-            background: var(--grid-border);
-            border-color: var(--grid-border);
+            background: #1a1a2e;
+            border-color: #1a1a2e;
         }
 
         .cell.filled {
@@ -236,7 +208,7 @@
         }
 
         .cell.highlighted {
-            background: var(--highlight-bg) !important;
+            background: #dbeafe !important;
         }
 
         .cell-number {
@@ -245,7 +217,7 @@
             left: 2px;
             font-size: 7px;
             font-weight: 600;
-            color: var(--text-muted);
+            color: #64748b;
         }
 
         .cell-letter {
@@ -268,7 +240,7 @@
             font-size: 18px;
             font-weight: 700;
             margin-bottom: 24px;
-            color: var(--text);
+            color: #1a1a2e;
             padding-bottom: 12px;
             border-bottom: 3px solid #3b82f6;
             display: inline-block;
@@ -279,11 +251,11 @@
         .clue-item {
             margin-bottom: 24px;
             padding: 24px;
-            background: var(--card-bg);
+            background: white;
             border-radius: 12px;
-            box-shadow: 0 2px 8px var(--card-shadow);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             transition: all 0.2s ease;
-            border: 1px solid var(--card-border);
+            border: 1px solid #e2e8f0;
         }
 
         .clue-item:hover {
@@ -292,13 +264,13 @@
         }
 
         .clue-item.selected {
-            box-shadow: 0 0 0 3px #3b82f6, 0 4px 16px rgba(59,130,246,0.2);
-            background: var(--selected-bg);
-            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px var(--color-teal), 0 4px 16px rgba(45, 106, 106, 0.2);
+            background: #f0fdfa;
+            border-color: var(--color-teal);
         }
 
         .clue-item.completed {
-            border-left: 4px solid #22c55e;
+            border-left: 4px solid var(--color-amber);
         }
 
         .clue-header {
@@ -309,18 +281,18 @@
             display: inline-block;
             min-width: 40px;
             font-weight: 800;
-            color: #3b82f6;
+            color: var(--color-teal);
             font-size: 18px;
         }
 
         .clue-text {
             font-size: 17px;
-            color: var(--text-secondary);
+            color: #334155;
             line-height: 1.7;
         }
 
         .enumeration {
-            color: var(--text-faint);
+            color: #94a3b8;
             font-size: 14px;
             margin-left: 8px;
             font-weight: 500;
@@ -330,13 +302,13 @@
         .answer-section {
             margin-top: 16px;
             padding-top: 16px;
-            border-top: 1px solid var(--card-border);
+            border-top: 1px solid #e2e8f0;
         }
 
         .answer-label {
             font-size: 12px;
             font-weight: 600;
-            color: var(--text-muted);
+            color: #64748b;
             margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -352,9 +324,7 @@
         .answer-box {
             width: 36px;
             height: 36px;
-            border: 2px solid var(--input-border);
-            background: var(--cell-bg);
-            color: var(--text);
+            border: 2px solid #cbd5e1;
             border-radius: 6px;
             text-align: center;
             font-size: 18px;
@@ -366,15 +336,15 @@
         }
 
         .answer-box:focus {
-            border-color: #3b82f6;
-            background: var(--input-focus-bg);
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+            border-color: var(--color-teal);
+            background: #f0fdfa;
+            box-shadow: 0 0 0 3px rgba(45, 106, 106, 0.2);
         }
 
         .answer-box.correct {
-            background: #dcfce7;
-            border-color: #22c55e;
-            color: #166534;
+            background: #fffbeb;
+            border-color: var(--color-amber);
+            color: #78350f;
         }
 
         .answer-box.prefilled {
@@ -391,7 +361,7 @@
 
         .check-button {
             padding: 10px 24px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            background: var(--color-navy);
             color: white;
             border: none;
             border-radius: 8px;
@@ -399,32 +369,32 @@
             font-size: 14px;
             font-weight: 600;
             transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+            box-shadow: 0 2px 8px rgba(26, 54, 93, 0.3);
         }
 
         .check-button:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            background: var(--color-navy-light);
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37,99,235,0.4);
+            box-shadow: 0 4px 12px rgba(26, 54, 93, 0.4);
         }
 
         .check-button.correct {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            background: var(--color-amber);
             cursor: default;
-            box-shadow: 0 2px 8px rgba(34,197,94,0.3);
+            box-shadow: 0 2px 8px rgba(184, 134, 11, 0.3);
         }
 
-        /* Hints - Progressive colors from easy (green) to revealing (red) */
+        /* Hints - Progressive colors from teal to amber */
         .hints-section {
             margin-top: 16px;
             padding-top: 16px;
-            border-top: 1px solid var(--card-border);
+            border-top: 1px solid var(--color-border);
         }
 
         .hints-label {
             font-size: 12px;
             font-weight: 600;
-            color: var(--text-muted);
+            color: var(--color-slate);
             margin-bottom: 10px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -445,65 +415,65 @@
             transition: all 0.2s ease;
         }
 
-        /* Hint 1 - Green (least revealing) */
+        /* Hint 1 - Teal (least revealing) */
         .hint-button.hint-1 {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            background: var(--color-teal);
         }
         .hint-button.hint-1:hover {
-            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            background: var(--color-teal-light);
         }
         .hint-button.hint-1.revealed {
-            background: #86efac;
-            color: #166534;
+            background: #ccfbf1;
+            color: #134e4a;
         }
 
-        /* Hint 2 - Yellow/Amber */
+        /* Hint 2 - Cyan */
         .hint-button.hint-2 {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            background: #0891b2;
         }
         .hint-button.hint-2:hover {
-            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            background: #0e7490;
         }
         .hint-button.hint-2.revealed {
-            background: #fde68a;
-            color: #92400e;
+            background: #cffafe;
+            color: #164e63;
         }
 
-        /* Hint 3 - Orange */
+        /* Hint 3 - Purple */
         .hint-button.hint-3 {
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            background: #7c3aed;
         }
         .hint-button.hint-3:hover {
-            background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+            background: #6d28d9;
         }
         .hint-button.hint-3.revealed {
-            background: #fed7aa;
-            color: #9a3412;
+            background: #ede9fe;
+            color: #4c1d95;
         }
 
-        /* Hint 4 - Red (most revealing) */
+        /* Hint 4 - Amber (most revealing) */
         .hint-button.hint-4 {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            background: var(--color-amber);
         }
         .hint-button.hint-4:hover {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            background: var(--color-amber-light);
         }
         .hint-button.hint-4.revealed {
-            background: #fecaca;
-            color: #991b1b;
+            background: #fef3c7;
+            color: #78350f;
         }
 
         .hint-text {
             margin-top: 8px;
             margin-bottom: 12px;
             padding: 14px 16px;
-            background: var(--hint-bg);
-            border-left: 4px solid var(--hint-border);
+            background: #f8fafc;
+            border-left: 4px solid #cbd5e1;
             border-radius: 6px;
             font-size: 15px;
             line-height: 1.7;
             display: none;
-            color: var(--text-secondary);
+            color: #334155;
         }
 
         .hint-text.visible {
@@ -561,7 +531,7 @@
         .loading-spinner {
             width: 48px;
             height: 48px;
-            border: 4px solid var(--spinner-border);
+            border: 4px solid #e2e8f0;
             border-top-color: #3b82f6;
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -573,13 +543,13 @@
         }
 
         .loading-state p {
-            color: var(--text-muted);
+            color: #64748b;
             font-size: 16px;
             margin: 0;
         }
 
         .loading-state .loading-title {
-            color: var(--text);
+            color: #1a1a2e;
             font-size: 18px;
             font-weight: 600;
             margin-bottom: 8px;
@@ -591,21 +561,21 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            background: var(--mobile-toggle-bg);
+            background: #fff;
             padding: 12px 16px;
-            box-shadow: 0 2px 8px var(--card-shadow);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             gap: 8px;
         }
 
         .mobile-toggle button {
             flex: 1;
             padding: 12px 16px;
-            border: 2px solid var(--card-border);
-            background: var(--card-bg);
+            border: 2px solid #e2e8f0;
+            background: #fff;
             border-radius: 8px;
             font-size: 14px;
             font-weight: 600;
-            color: var(--text-muted);
+            color: #64748b;
             cursor: pointer;
             transition: all 0.2s ease;
             display: flex;
@@ -871,183 +841,26 @@
             text-decoration: none;
         }
         .anagram-guide-link:hover { text-decoration: underline; }
-
-        .theme-toggle {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: rgba(255,255,255,0.8);
-            border-radius: 6px;
-            padding: 6px 10px;
-            cursor: pointer;
-            font-size: 16px;
-            line-height: 1;
-            transition: all 0.2s;
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .theme-toggle:hover {
-            background: rgba(255,255,255,0.2);
-            color: #fff;
-        }
-
-        /* Comments */
-        .comments-section {
-            max-width: 800px;
-            margin: 32px auto;
-            padding: 0 16px;
-        }
-        .comments-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            color: var(--text);
-        }
-        .comment-form {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 24px;
-        }
-        .comment-form input,
-        .comment-form textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--input-border);
-            border-radius: 6px;
-            font-family: inherit;
-            font-size: 14px;
-            background: var(--card-bg);
-            color: var(--text);
-            margin-bottom: 10px;
-        }
-        .comment-form textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
-        .comment-form input:focus,
-        .comment-form textarea:focus {
-            outline: none;
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
-        }
-        .comment-form button {
-            background: #2563eb;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            padding: 10px 20px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .comment-form button:hover {
-            background: #1d4ed8;
-        }
-        .comment-form button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .comment-form-error {
-            color: #dc2626;
-            font-size: 13px;
-            margin-bottom: 8px;
-            display: none;
-        }
-        .comment-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 10px;
-            padding: 14px 16px;
-            margin-bottom: 10px;
-        }
-        .comment-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-        }
-        .comment-author {
-            font-weight: 600;
-            color: var(--text);
-            font-size: 14px;
-        }
-        .comment-time {
-            color: var(--text-muted);
-            font-size: 12px;
-        }
-        .comment-body {
-            color: var(--text-secondary);
-            font-size: 14px;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-        .comments-empty {
-            text-align: center;
-            color: var(--text-muted);
-            padding: 20px;
-            font-size: 14px;
-        }
     </style>
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebPage",
-        "name": "Guardian Cryptic Crossword #__PUZZLE_NUMBER__",
-        "description": "Solve Guardian cryptic crossword #__PUZZLE_NUMBER__ with progressive hints.",
-        "url": "__SITE_URL__/puzzle/__PUZZLE_NUMBER__",
-        "isPartOf": {
-            "@type": "WebSite",
-            "name": "Cryptic Hints",
-            "url": "__SITE_URL__/"
-        },
-        "breadcrumb": {
-            "@type": "BreadcrumbList",
-            "itemListElement": [
-                {"@type": "ListItem", "position": 1, "name": "Home", "item": "__SITE_URL__/"},
-                {"@type": "ListItem", "position": 2, "name": "Puzzle #__PUZZLE_NUMBER__", "item": "__SITE_URL__/puzzle/__PUZZLE_NUMBER__"}
-            ]
-        }
-    }
-    </script>
 </head>
 <body>
-    <script>
-        (function() {
-            var saved = localStorage.getItem('theme');
-            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
-    <div class="header" style="position:relative">
+    <div class="header">
         <div class="header-content">
             <a href="/" class="home-link" title="Back to Home">
-                <svg width="28" height="28" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="36" height="36" rx="6" fill="url(#logoGradPuzzle)"/>
-                    <defs>
-                        <linearGradient id="logoGradPuzzle" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#22c55e"/>
-                            <stop offset="100%" stop-color="#16a34a"/>
-                        </linearGradient>
-                    </defs>
-                    <rect x="3" y="3" width="9" height="9" rx="1.5" fill="white"/>
-                    <rect x="13.5" y="3" width="9" height="9" rx="1.5" fill="white"/>
-                    <rect x="24" y="3" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
-                    <rect x="3" y="13.5" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
-                    <rect x="13.5" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
-                    <rect x="24" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
-                    <rect x="3" y="24" width="9" height="9" rx="1.5" fill="white"/>
-                    <rect x="13.5" y="24" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
-                    <rect x="24" y="24" width="9" height="9" rx="1.5" fill="white"/>
-                    <text x="18" y="21" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="700" font-family="Arial, sans-serif">?</text>
+                <svg width="28" height="28" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="38" height="38" rx="6" fill="#b8860b"/>
+                    <rect x="3" y="3" width="9.5" height="9.5" rx="1.5" fill="white"/>
+                    <rect x="14.25" y="3" width="9.5" height="9.5" rx="1.5" fill="white"/>
+                    <rect x="25.5" y="3" width="9.5" height="9.5" rx="1.5" fill="#1a365d"/>
+                    <rect x="3" y="14.25" width="9.5" height="9.5" rx="1.5" fill="#1a365d"/>
+                    <rect x="14.25" y="14.25" width="9.5" height="9.5" rx="1.5" fill="white"/>
+                    <rect x="25.5" y="14.25" width="9.5" height="9.5" rx="1.5" fill="white"/>
+                    <rect x="3" y="25.5" width="9.5" height="9.5" rx="1.5" fill="white"/>
+                    <rect x="14.25" y="25.5" width="9.5" height="9.5" rx="1.5" fill="#1a365d"/>
+                    <rect x="25.5" y="25.5" width="9.5" height="9.5" rx="1.5" fill="white"/>
+                    <text x="19" y="22" text-anchor="middle" fill="#b8860b" font-size="9" font-weight="700" font-family="Georgia, serif">?</text>
                 </svg>
-                <span>Cryptic Hints</span>
+                <span style="font-family: 'Libre Baskerville', Georgia, serif;">Cryptic Hints</span>
             </a>
             <div class="header-center">
                 <h1>Guardian Cryptic Crossword</h1>
@@ -1057,9 +870,7 @@
                 </div>
                 <div class="progress-text" id="progressText">0 / 0 solved</div>
             </div>
-            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
-                <span class="theme-icon"></span>
-            </button>
+            <div class="header-spacer"></div>
         </div>
     </div>
 
@@ -1135,36 +946,7 @@
         </div>
     </div>
 
-    <!-- Comments Section -->
-    <div class="comments-section" id="commentsSection" style="display:none;">
-        <h2 class="comments-title">Comments</h2>
-        <div class="comment-form">
-            <input type="text" id="commentAuthor" placeholder="Your name" maxlength="50">
-            <textarea id="commentBody" placeholder="Share your thoughts on this puzzle..." maxlength="2000"></textarea>
-            <div class="comment-form-error" id="commentError"></div>
-            <button id="commentSubmit" onclick="submitComment()">Post Comment</button>
-        </div>
-        <div id="commentsList"></div>
-    </div>
-
     <script>
-        // Theme toggle
-        function toggleTheme() {
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            const newTheme = isDark ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcon();
-        }
-
-        function updateThemeIcon() {
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            document.querySelectorAll('.theme-icon').forEach(el => {
-                el.textContent = isDark ? '\u2600\uFE0F' : '\uD83C\uDF19';
-            });
-        }
-        updateThemeIcon();
-
         const puzzleNumber = window.location.pathname.split('/').pop();
         let puzzleData = null;
         let userAnswers = {}; // {clueId: 'ANSWER'}
@@ -1234,9 +1016,6 @@
 
                 // Initialize progress bar
                 updateProgress();
-
-                // Load comments
-                loadComments();
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error loading puzzle: ' + error.message);
@@ -1688,24 +1467,18 @@
 
         function revealHint(clueId, level) {
             const hint = document.getElementById(`hint-${clueId}-${level}`);
-            const buttons = document.querySelectorAll(`button[onclick*="${clueId}"]`);
-            const button = buttons[level - 1];
+            hint.classList.add('visible');
 
-            if (hint.classList.contains('visible')) {
-                // Collapse
-                hint.classList.remove('visible');
-                if (button) button.classList.remove('revealed');
-                if (hintsRevealed[clueId]) {
-                    hintsRevealed[clueId] = hintsRevealed[clueId].filter(l => l !== level);
-                }
-            } else {
-                // Reveal
-                hint.classList.add('visible');
-                if (button) button.classList.add('revealed');
-                if (!hintsRevealed[clueId]) hintsRevealed[clueId] = [];
-                if (!hintsRevealed[clueId].includes(level)) {
-                    hintsRevealed[clueId].push(level);
-                }
+            // Mark button as revealed
+            const buttons = document.querySelectorAll(`button[onclick*="${clueId}"]`);
+            if (buttons[level - 1]) {
+                buttons[level - 1].classList.add('revealed');
+            }
+
+            // Track revealed hints
+            if (!hintsRevealed[clueId]) hintsRevealed[clueId] = [];
+            if (!hintsRevealed[clueId].includes(level)) {
+                hintsRevealed[clueId].push(level);
             }
             saveProgress();
         }
@@ -1910,101 +1683,6 @@
             document.getElementById('anagramInput').value = '';
             updateAnagramDisplay();
             document.getElementById('anagramInput').focus();
-        }
-
-        // ---- Comments ----
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function timeAgo(isoString) {
-            const seconds = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
-            if (seconds < 60) return 'just now';
-            const minutes = Math.floor(seconds / 60);
-            if (minutes < 60) return minutes + 'm ago';
-            const hours = Math.floor(minutes / 60);
-            if (hours < 24) return hours + 'h ago';
-            const days = Math.floor(hours / 24);
-            if (days < 30) return days + 'd ago';
-            return new Date(isoString).toLocaleDateString();
-        }
-
-        function renderComment(c) {
-            return `<div class="comment-card">
-                <div class="comment-meta">
-                    <span class="comment-author">${escapeHtml(c.author)}</span>
-                    <span class="comment-time">${timeAgo(c.created_at)}</span>
-                </div>
-                <div class="comment-body">${escapeHtml(c.body)}</div>
-            </div>`;
-        }
-
-        async function loadComments() {
-            try {
-                const resp = await fetch(`/api/puzzle/${puzzleNumber}/comments`);
-                const comments = await resp.json();
-                const list = document.getElementById('commentsList');
-                if (comments.length === 0) {
-                    list.innerHTML = '<div class="comments-empty">No comments yet. Be the first!</div>';
-                } else {
-                    list.innerHTML = comments.map(renderComment).join('');
-                }
-                document.getElementById('commentsSection').style.display = '';
-                // Restore saved author name
-                const saved = localStorage.getItem('commentAuthor');
-                if (saved) document.getElementById('commentAuthor').value = saved;
-            } catch (e) {
-                console.error('Error loading comments:', e);
-            }
-        }
-
-        async function submitComment() {
-            const authorInput = document.getElementById('commentAuthor');
-            const bodyInput = document.getElementById('commentBody');
-            const errorEl = document.getElementById('commentError');
-            const btn = document.getElementById('commentSubmit');
-            const author = authorInput.value.trim();
-            const body = bodyInput.value.trim();
-
-            errorEl.style.display = 'none';
-            if (!author || !body) {
-                errorEl.textContent = 'Please enter your name and a comment.';
-                errorEl.style.display = 'block';
-                return;
-            }
-
-            btn.disabled = true;
-            btn.textContent = 'Posting...';
-
-            try {
-                const resp = await fetch(`/api/puzzle/${puzzleNumber}/comments`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ author, body })
-                });
-                const data = await resp.json();
-                if (!resp.ok) {
-                    errorEl.textContent = data.error || 'Failed to post comment.';
-                    errorEl.style.display = 'block';
-                    return;
-                }
-                // Save author for next time
-                localStorage.setItem('commentAuthor', author);
-                bodyInput.value = '';
-                // Prepend new comment
-                const list = document.getElementById('commentsList');
-                const empty = list.querySelector('.comments-empty');
-                if (empty) empty.remove();
-                list.insertAdjacentHTML('afterbegin', renderComment(data));
-            } catch (e) {
-                errorEl.textContent = 'Network error. Please try again.';
-                errorEl.style.display = 'block';
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Post Comment';
-            }
         }
 
         loadPuzzle();
