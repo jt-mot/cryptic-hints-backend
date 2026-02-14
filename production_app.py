@@ -350,6 +350,64 @@ def blog_post_page(slug):
     return _serve_html('blog-post.html', extra={'__BLOG_SLUG__': slug})
 
 
+@app.route('/clue/<puzzle_number>/<clue_ref>')
+def clue_page(puzzle_number, clue_ref):
+    """Serve an individual clue page (e.g. /clue/29001/3-across)"""
+    return _serve_html('clue.html', extra={
+        '__PUZZLE_NUMBER__': str(puzzle_number),
+        '__CLUE_REF__': str(clue_ref),
+    })
+
+
+@app.route('/api/clue/<puzzle_number>/<clue_ref>')
+def get_clue_by_ref(puzzle_number, clue_ref):
+    """Get a single clue by puzzle number and clue reference (e.g. 3-across)."""
+    parts = clue_ref.rsplit('-', 1)
+    if len(parts) != 2 or parts[1] not in ('across', 'down'):
+        return jsonify({'error': 'Invalid clue reference. Use format: 3-across'}), 400
+
+    clue_number, direction = parts
+
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    cursor.execute('''
+        SELECT p.puzzle_number, p.setter, p.date, p.puzzle_type,
+               c.id, c.clue_number, c.direction, c.clue_text, c.enumeration, c.answer,
+               c.hint_level_1, c.hint_level_2, c.hint_level_3, c.hint_level_4
+        FROM clues c
+        JOIN puzzles p ON c.puzzle_id = p.id
+        WHERE p.puzzle_number = %s AND p.status = 'published'
+              AND c.clue_number = %s AND c.direction = %s
+        LIMIT 1
+    ''', (puzzle_number, clue_number, direction))
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not row:
+        return jsonify({'error': 'Clue not found'}), 404
+
+    return jsonify({
+        'puzzle_number': row['puzzle_number'],
+        'setter': row['setter'],
+        'date': str(row['date']),
+        'puzzle_type': row.get('puzzle_type', 'cryptic'),
+        'clue_id': row['id'],
+        'clue_number': row['clue_number'],
+        'direction': row['direction'],
+        'clue_text': row['clue_text'],
+        'enumeration': row['enumeration'],
+        'answer': row['answer'],
+        'hints': [
+            row['hint_level_1'] or '',
+            row['hint_level_2'] or '',
+            row['hint_level_3'] or '',
+            row['hint_level_4'] or '',
+        ]
+    })
+
+
 @app.route('/api/blog/posts')
 def get_blog_posts():
     """Get all published blog posts, newest first."""
@@ -406,6 +464,7 @@ Allow: /
 Allow: /puzzle/
 Allow: /guide
 Allow: /blog
+Allow: /clue/
 Disallow: /admin/
 Disallow: /api/
 
@@ -419,6 +478,7 @@ def sitemap_xml():
     """Generate dynamic sitemap with all published puzzles"""
     puzzles = []
     blog_posts = []
+    clues = []
     try:
         conn = get_db()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -436,6 +496,14 @@ def sitemap_xml():
             ORDER BY published_at DESC
         """)
         blog_posts = cursor.fetchall()
+        cursor.execute("""
+            SELECT p.puzzle_number, c.clue_number, c.direction
+            FROM clues c
+            JOIN puzzles p ON c.puzzle_id = p.id
+            WHERE p.status = 'published'
+            ORDER BY p.puzzle_number DESC, c.direction, CAST(c.clue_number AS INTEGER)
+        """)
+        clues = cursor.fetchall()
     except Exception:
         app.logger.exception("Failed to query data for sitemap")
 
@@ -501,10 +569,117 @@ def sitemap_xml():
         xml += '    <priority>0.7</priority>\n'
         xml += '  </url>\n'
 
+    # Individual clue pages
+    for clue in clues:
+        ref = f'{clue["clue_number"]}-{clue["direction"]}'
+        xml += '  <url>\n'
+        xml += f'    <loc>{SITE_URL}/clue/{clue["puzzle_number"]}/{ref}</loc>\n'
+        xml += '    <changefreq>monthly</changefreq>\n'
+        xml += '    <priority>0.5</priority>\n'
+        xml += '  </url>\n'
+
     xml += '</urlset>'
 
     response = make_response(xml)
     response.headers['Content-Type'] = 'application/xml'
+    return response
+
+
+def _rss_date(dt):
+    """Format a datetime for RSS <pubDate> (RFC 822)."""
+    if dt is None:
+        return ''
+    if hasattr(dt, 'strftime'):
+        return dt.strftime('%a, %d %b %Y %H:%M:%S +0000')
+    return str(dt)
+
+
+@app.route('/feed/puzzles')
+def rss_puzzles():
+    """RSS feed of published puzzles."""
+    try:
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("""
+            SELECT puzzle_number, setter, puzzle_type, published_at
+            FROM puzzles
+            WHERE status = 'published'
+            ORDER BY published_at DESC
+            LIMIT 30
+        """)
+        puzzles = cursor.fetchall()
+        cursor.close()
+        conn.close()
+    except Exception:
+        puzzles = []
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n'
+    xml += '<channel>\n'
+    xml += f'  <title>Cryptic Hints - New Puzzles</title>\n'
+    xml += f'  <link>{SITE_URL}/</link>\n'
+    xml += f'  <description>Latest Guardian cryptic crosswords with progressive hints</description>\n'
+    xml += f'  <atom:link href="{SITE_URL}/feed/puzzles" rel="self" type="application/rss+xml"/>\n'
+
+    for p in puzzles:
+        ptype = 'Quiptic' if p.get('puzzle_type') == 'quiptic' else 'Cryptic'
+        setter_str = f' by {p["setter"]}' if p.get('setter') and p['setter'] != 'Unknown' else ''
+        xml += '  <item>\n'
+        xml += f'    <title>Guardian {ptype} #{p["puzzle_number"]}{setter_str}</title>\n'
+        xml += f'    <link>{SITE_URL}/puzzle/{p["puzzle_number"]}</link>\n'
+        xml += f'    <guid>{SITE_URL}/puzzle/{p["puzzle_number"]}</guid>\n'
+        xml += f'    <description>Solve Guardian {ptype} #{p["puzzle_number"]}{setter_str} with four levels of progressive hints.</description>\n'
+        if p.get('published_at'):
+            xml += f'    <pubDate>{_rss_date(p["published_at"])}</pubDate>\n'
+        xml += '  </item>\n'
+
+    xml += '</channel>\n</rss>'
+    response = make_response(xml)
+    response.headers['Content-Type'] = 'application/rss+xml'
+    return response
+
+
+@app.route('/feed/blog')
+def rss_blog():
+    """RSS feed of published blog posts."""
+    try:
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("""
+            SELECT slug, title, meta_description, published_at
+            FROM blog_posts
+            WHERE status = 'published'
+            ORDER BY published_at DESC
+            LIMIT 30
+        """)
+        posts = cursor.fetchall()
+        cursor.close()
+        conn.close()
+    except Exception:
+        posts = []
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n'
+    xml += '<channel>\n'
+    xml += f'  <title>Cryptic Hints Blog</title>\n'
+    xml += f'  <link>{SITE_URL}/blog</link>\n'
+    xml += f'  <description>Tips, guides, and insights about cryptic crosswords</description>\n'
+    xml += f'  <atom:link href="{SITE_URL}/feed/blog" rel="self" type="application/rss+xml"/>\n'
+
+    for p in posts:
+        xml += '  <item>\n'
+        xml += f'    <title>{p["title"]}</title>\n'
+        xml += f'    <link>{SITE_URL}/blog/{p["slug"]}</link>\n'
+        xml += f'    <guid>{SITE_URL}/blog/{p["slug"]}</guid>\n'
+        if p.get('meta_description'):
+            xml += f'    <description>{p["meta_description"]}</description>\n'
+        if p.get('published_at'):
+            xml += f'    <pubDate>{_rss_date(p["published_at"])}</pubDate>\n'
+        xml += '  </item>\n'
+
+    xml += '</channel>\n</rss>'
+    response = make_response(xml)
+    response.headers['Content-Type'] = 'application/rss+xml'
     return response
 
 
