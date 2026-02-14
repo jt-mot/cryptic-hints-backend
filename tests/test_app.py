@@ -69,6 +69,7 @@ class TestPublicRoutes:
                 {'puzzle_number': '29002', 'published_at': None},
             ],
             [],  # blog posts
+            [],  # clues
         ]
         resp = client.get('/sitemap.xml')
         assert resp.status_code == 200
@@ -599,3 +600,109 @@ class TestBlogAdmin:
         assert resp.status_code == 200
         data = json.loads(resp.data)
         assert data['success'] is True
+
+
+# ============================================================================
+# Individual Clue Pages
+# ============================================================================
+
+class TestCluePages:
+    def test_clue_page_serves_html(self, client):
+        resp = client.get('/clue/29001/3-across')
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        assert '__CLUE_REF__' not in html
+        assert '3-across' in html
+        assert '29001' in html
+
+    def test_clue_api_returns_clue(self, client, mock_db):
+        from datetime import date
+        mock_db.fetchone.return_value = {
+            'puzzle_number': '29001', 'setter': 'Picaroon',
+            'date': date(2025, 6, 1), 'puzzle_type': 'cryptic',
+            'id': 42, 'clue_number': '3', 'direction': 'across',
+            'clue_text': 'Some clue (5)', 'enumeration': '5',
+            'answer': 'TESTS',
+            'hint_level_1': 'Hint one', 'hint_level_2': 'Hint two',
+            'hint_level_3': 'Hint three', 'hint_level_4': 'Hint four',
+        }
+        resp = client.get('/api/clue/29001/3-across')
+        assert resp.status_code == 200
+        data = json.loads(resp.data)
+        assert data['clue_number'] == '3'
+        assert data['direction'] == 'across'
+        assert data['clue_text'] == 'Some clue (5)'
+        assert data['setter'] == 'Picaroon'
+        assert len(data['hints']) == 4
+
+    def test_clue_api_not_found(self, client, mock_db):
+        mock_db.fetchone.return_value = None
+        resp = client.get('/api/clue/29001/99-across')
+        assert resp.status_code == 404
+
+    def test_clue_api_invalid_ref(self, client):
+        resp = client.get('/api/clue/29001/bad-format-here')
+        assert resp.status_code == 400
+
+    def test_clue_api_invalid_direction(self, client):
+        resp = client.get('/api/clue/29001/3-diagonal')
+        assert resp.status_code == 400
+
+
+# ============================================================================
+# RSS Feeds
+# ============================================================================
+
+class TestRSSFeeds:
+    def test_puzzle_feed_returns_xml(self, client, mock_db):
+        mock_db.fetchall.return_value = []
+        resp = client.get('/feed/puzzles')
+        assert resp.status_code == 200
+        assert 'application/rss+xml' in resp.content_type
+        assert b'<rss' in resp.data
+        assert b'Cryptic Hints' in resp.data
+
+    def test_puzzle_feed_with_data(self, client, mock_db):
+        from datetime import datetime
+        mock_db.fetchall.return_value = [
+            {'puzzle_number': '29001', 'setter': 'Picaroon',
+             'puzzle_type': 'cryptic', 'published_at': datetime(2025, 6, 1, 10, 0)},
+        ]
+        resp = client.get('/feed/puzzles')
+        assert resp.status_code == 200
+        assert b'/puzzle/29001' in resp.data
+        assert b'Picaroon' in resp.data
+
+    def test_puzzle_feed_db_error(self, client):
+        with patch('production_app.get_db', side_effect=Exception('DB down')):
+            resp = client.get('/feed/puzzles')
+        assert resp.status_code == 200
+        assert b'<rss' in resp.data
+
+    def test_blog_feed_returns_xml(self, client, mock_db):
+        mock_db.fetchall.return_value = []
+        resp = client.get('/feed/blog')
+        assert resp.status_code == 200
+        assert 'application/rss+xml' in resp.content_type
+        assert b'<rss' in resp.data
+
+    def test_blog_feed_with_data(self, client, mock_db):
+        from datetime import datetime
+        mock_db.fetchall.return_value = [
+            {'slug': 'my-post', 'title': 'My Post',
+             'meta_description': 'A summary', 'published_at': datetime(2025, 6, 1)},
+        ]
+        resp = client.get('/feed/blog')
+        assert resp.status_code == 200
+        assert b'/blog/my-post' in resp.data
+        assert b'My Post' in resp.data
+
+    def test_sitemap_includes_clue_pages(self, client, mock_db):
+        mock_db.fetchall.side_effect = [
+            [{'puzzle_number': '29001', 'published_at': None}],  # puzzles
+            [],  # blog posts
+            [{'puzzle_number': '29001', 'clue_number': '1', 'direction': 'across'}],  # clues
+        ]
+        resp = client.get('/sitemap.xml')
+        assert resp.status_code == 200
+        assert b'/clue/29001/1-across' in resp.data
