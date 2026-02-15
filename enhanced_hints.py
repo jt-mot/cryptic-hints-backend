@@ -259,7 +259,7 @@ class EnhancedHintGenerator:
 
             prompt = f"""You are helping create progressive hints for a cryptic crossword clue. Your goal is to help solvers learn how cryptic clues work by guiding them step-by-step toward the answer.
 
-IMPORTANT: Work out the full parsing internally BEFORE writing your response. Each hint must be clean, polished, and final. Never include self-corrections, backtracking, or thinking-aloud phrases like "wait", "actually", "no", "hmm", "let me reconsider", or "that's wrong". If the expert explanation contains errors, silently correct them.
+IMPORTANT: Work out the full parsing internally BEFORE writing your response. Each hint must be clean, polished, and final. Never include self-corrections, backtracking, or thinking-aloud phrases like "wait", "actually", "no", "hmm", "let me reconsider", or "that's wrong".
 
 CONTEXT:
 - Definition (the "straight" part that means the answer): {definition_text}
@@ -287,7 +287,8 @@ Example: "'wild' is the anagram indicator - rearrange the letters of 'PIRATES'"
 Example: "'reportedly' signals a homophone - think of a word for 'holy man' that sounds like..."
 
 HINT 4 - FULL ANSWER:
-Give the complete answer and a concise, correct explanation of how the wordplay works. State the answer, then walk through the parsing cleanly in one pass.
+Give the complete answer and a concise explanation of how the wordplay works. State the answer, then walk through the parsing cleanly in one pass.
+CRITICAL: When an expert explanation is provided above, base your answer on it. The expert explanation is from a trusted cryptic crossword blog and its wordplay parsing is almost always correct. You may rephrase it for clarity or add helpful context, but do NOT contradict or re-derive the core logic. Only analyse independently if no expert explanation is provided.
 Example: "Answer: TRAPPIST | 'Reportedly' indicates homophone - sounds like 'trapeze artist' = TRAPPIST (type of monk)"
 
 Respond with ONLY a JSON object in this exact format:
