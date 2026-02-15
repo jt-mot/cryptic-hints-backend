@@ -62,26 +62,37 @@ class TestPublicRoutes:
         assert 'cryptic-hints.com' in text
         assert 'Allow: /guide' in text
 
-    def test_sitemap_xml_with_puzzles(self, client, mock_db):
-        mock_db.fetchall.side_effect = [
-            [  # puzzles
-                {'puzzle_number': '29001', 'published_at': None},
-                {'puzzle_number': '29002', 'published_at': None},
-            ],
-            [],  # blog posts
-            [],  # clues
-        ]
+    def test_sitemap_index(self, client):
         resp = client.get('/sitemap.xml')
+        assert resp.status_code == 200
+        assert b'<sitemapindex' in resp.data
+        assert b'/sitemap-pages.xml' in resp.data
+        assert b'/sitemap-puzzles.xml' in resp.data
+        assert b'/sitemap-blog.xml' in resp.data
+        assert b'/sitemap-clues.xml' in resp.data
+
+    def test_sitemap_pages(self, client):
+        resp = client.get('/sitemap-pages.xml')
+        assert resp.status_code == 200
+        assert b'<urlset' in resp.data
+        assert b'/guide' in resp.data
+        assert b'/blog' in resp.data
+
+    def test_sitemap_puzzles(self, client, mock_db):
+        mock_db.fetchall.return_value = [
+            {'puzzle_number': '29001', 'published_at': None},
+            {'puzzle_number': '29002', 'published_at': None},
+        ]
+        resp = client.get('/sitemap-puzzles.xml')
         assert resp.status_code == 200
         assert b'<urlset' in resp.data
         assert b'/puzzle/29001' in resp.data
         assert b'/puzzle/29002' in resp.data
-        assert b'/blog' in resp.data
 
-    def test_sitemap_xml_db_error_returns_empty(self, client):
+    def test_sitemap_puzzles_db_error(self, client):
         """Sitemap should not 500 on DB error (issue #1 fix)."""
         with patch('production_app.get_db', side_effect=Exception('DB down')):
-            resp = client.get('/sitemap.xml')
+            resp = client.get('/sitemap-puzzles.xml')
         assert resp.status_code == 200
         assert b'<urlset' in resp.data
 
@@ -697,12 +708,18 @@ class TestRSSFeeds:
         assert b'/blog/my-post' in resp.data
         assert b'My Post' in resp.data
 
-    def test_sitemap_includes_clue_pages(self, client, mock_db):
-        mock_db.fetchall.side_effect = [
-            [{'puzzle_number': '29001', 'published_at': None}],  # puzzles
-            [],  # blog posts
-            [{'puzzle_number': '29001', 'clue_number': '1', 'direction': 'across'}],  # clues
+    def test_sitemap_clues(self, client, mock_db):
+        mock_db.fetchall.return_value = [
+            {'puzzle_number': '29001', 'clue_number': '1', 'direction': 'across', 'published_at': None},
         ]
-        resp = client.get('/sitemap.xml')
+        resp = client.get('/sitemap-clues.xml')
         assert resp.status_code == 200
         assert b'/clue/29001/1-across' in resp.data
+
+    def test_sitemap_blog(self, client, mock_db):
+        mock_db.fetchall.return_value = [
+            {'slug': 'test-post', 'published_at': None},
+        ]
+        resp = client.get('/sitemap-blog.xml')
+        assert resp.status_code == 200
+        assert b'/blog/test-post' in resp.data

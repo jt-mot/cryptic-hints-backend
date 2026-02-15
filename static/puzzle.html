@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardian Cryptic Crossword - Cryptic Hints</title>
-    <meta name="description" content="Solve this Guardian cryptic crossword with progressive hints. Get help from definition only to full explanation. Interactive grid with auto-fill crossings.">
-    <meta property="og:title" content="Guardian Cryptic Crossword - Cryptic Hints">
-    <meta property="og:description" content="Solve Guardian cryptic crosswords with four levels of progressive hints.">
+    <title>Guardian Cryptic #__PUZZLE_NUMBER__ - Hints &amp; Solutions | Cryptic Hints</title>
+    <meta name="description" content="Solve Guardian cryptic crossword #__PUZZLE_NUMBER__ with progressive hints. Get help from definition only to full explanation. Interactive grid with auto-fill crossings.">
+    <link rel="canonical" href="__SITE_URL__/puzzle/__PUZZLE_NUMBER__">
+    <meta property="og:title" content="Guardian Cryptic #__PUZZLE_NUMBER__ - Hints &amp; Solutions | Cryptic Hints">
+    <meta property="og:description" content="Solve Guardian cryptic crossword #__PUZZLE_NUMBER__ with four levels of progressive hints.">
     <meta property="og:type" content="website">
+    <meta property="og:url" content="__SITE_URL__/puzzle/__PUZZLE_NUMBER__">
     <meta property="og:site_name" content="Cryptic Hints">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Guardian Cryptic #__PUZZLE_NUMBER__ - Cryptic Hints">
@@ -845,6 +847,27 @@
         }
         .anagram-guide-link:hover { text-decoration: underline; }
     </style>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "Guardian Cryptic #__PUZZLE_NUMBER__ - Hints & Solutions",
+        "description": "Solve Guardian cryptic crossword #__PUZZLE_NUMBER__ with progressive hints from definition to full explanation.",
+        "url": "__SITE_URL__/puzzle/__PUZZLE_NUMBER__",
+        "isPartOf": {
+            "@type": "WebSite",
+            "name": "Cryptic Hints",
+            "url": "__SITE_URL__/"
+        },
+        "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "Home", "item": "__SITE_URL__/"},
+                {"@type": "ListItem", "position": 2, "name": "Puzzle #__PUZZLE_NUMBER__", "item": "__SITE_URL__/puzzle/__PUZZLE_NUMBER__"}
+            ]
+        }
+    }
+    </script>
 </head>
 <body>
     <div class="header">
