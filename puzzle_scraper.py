@@ -167,6 +167,17 @@ class FifteensquaredScraper:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
 
+    @staticmethod
+    def _match_definitions(hint_buffer, all_definitions_by_text):
+        """Match HTML-extracted definitions to a clue's hint text."""
+        matched = []
+        hint_text_combined = ' '.join(hint_buffer)
+        for def_text in all_definitions_by_text.values():
+            if def_text in hint_text_combined:
+                matched.append(def_text)
+                break  # Only use the first matched definition per clue
+        return matched
+
     def find_puzzle_post(self, puzzle_number: str, puzzle_type: str = 'cryptic') -> Optional[str]:
         """Search for puzzle post with retries
 
@@ -268,16 +279,16 @@ class FifteensquaredScraper:
                         print(f"   DEBUG: Span {i+1} text: {span.get_text()[:50]}")
                 
                 # Search ALL styled spans in content (not just in paragraphs)
+                # Some authors use italic+underline, others use underline only
                 for span in styled_spans:
                     style = span.get('style', '').lower()
-                    # Check if style has both italic and underline
-                    if 'italic' in style and 'underline' in style:
+                    if 'underline' in style:
                         def_text = span.get_text().strip()
-                        if len(def_text) > 2:
-                            # Use span text as both key and value for now
+                        # Filter out common non-definition underlined text
+                        if len(def_text) > 2 and def_text.lower() not in ('underlined', 'across', 'down'):
                             all_definitions_by_text[def_text] = def_text
                 
-                print(f"   DEBUG: Found {len(all_definitions_by_text)} definitions with italic+underline style")
+                print(f"   DEBUG: Found {len(all_definitions_by_text)} definitions with underline style")
                 if all_definitions_by_text:
                     print(f"   DEBUG: Sample definitions: {list(all_definitions_by_text.values())[:3]}")
                 
@@ -289,72 +300,71 @@ class FifteensquaredScraper:
                 all_paragraphs = content.find_all('p')
                 
                 print(f"   Processing {len(lines)} lines of text...")
-                
+
+                # Debug: show first lines to understand format
+                for dbg_i, dbg_line in enumerate(lines[:20]):
+                    print(f"   DEBUG line {dbg_i}: {dbg_line[:100]}")
+
                 i = 0
                 while i < len(lines):
                     line = lines[i]
-                    
+
                     # Check for direction marker
                     if re.match(r'^(ACROSS|DOWN)$', line, re.IGNORECASE):
                         current_direction = line.lower()
                         print(f"   Found direction: {current_direction}")
                         i += 1
                         continue
-                    
-                    # Check if this is a clue number
+
+                    # Format 1: Clue number alone on a line, answer on next line
                     if current_direction and re.match(r'^\d+[a-z]?$', line):
                         clue_num = line
-                        
+
                         # Next line should be the answer
                         if i + 1 < len(lines):
                             answer_line = lines[i + 1]
-                            
+
                             # Check if it looks like an answer (uppercase words)
                             if re.match(r'^[A-Z][A-Z\s\-\']+$', answer_line):
                                 clue_id = f"{clue_num}-{current_direction}"
                                 print(f"   Found clue: {clue_id} - {answer_line}")
-                                
+
                                 # Collect explanation text
                                 hint_buffer = []
                                 j = i + 2  # Start after answer
-                                
+
                                 # Also find ALL definitions in this clue's paragraphs
                                 html_definitions = []
-                                
+
                                 while j < len(lines):
                                     next_line = lines[j]
-                                    
+
                                     # Stop if we hit another clue number or direction
                                     if re.match(r'^\d+[a-z]?$', next_line):
                                         break
                                     if re.match(r'^(ACROSS|DOWN)$', next_line, re.IGNORECASE):
                                         break
-                                    
+                                    # Also stop on Format 2 patterns
+                                    if re.match(r'^\d+[a-z]?\s+[A-Z][A-Z\s\-\']+', next_line):
+                                        break
+
                                     # Skip meta text
-                                    skip_phrases = ['posted', 'comment', 'tagged', 'bookmark', 
+                                    skip_phrases = ['posted', 'comment', 'tagged', 'bookmark',
                                                    'permalink', 'navigation', 'leave a reply',
                                                    'you must be logged', 'fill in your details',
                                                    'the puzzle may be found']
-                                    
+
                                     if not any(skip in next_line.lower() for skip in skip_phrases):
                                         if len(next_line) > 10:
                                             hint_buffer.append(next_line)
-                                    
+
                                     j += 1
-                                
+
                                 # Match definitions to this specific clue
-                                # by finding which definition text appears in the hint paragraphs
-                                matched_definitions = []
-                                hint_text_combined = ' '.join(hint_buffer)
-                                
-                                for def_text in all_definitions_by_text.values():
-                                    # Check if this definition appears in any of the hint text
-                                    if def_text in hint_text_combined:
-                                        matched_definitions.append(def_text)
-                                        break  # Only use the first matched definition per clue
-                                
+                                matched_definitions = self._match_definitions(
+                                    hint_buffer, all_definitions_by_text)
+
                                 if hint_buffer:
-                                    # Store both text and extracted definitions
                                     hints_map[clue_id] = {
                                         'text': hint_buffer,
                                         'definitions': matched_definitions
@@ -363,9 +373,61 @@ class FifteensquaredScraper:
                                         print(f"      -> {len(hint_buffer)} hint lines, {len(matched_definitions)} definitions: {matched_definitions}")
                                     else:
                                         print(f"      -> {len(hint_buffer)} hint lines, 0 definitions")
-                                
+
                                 i = j - 1  # Continue from where we stopped
-                    
+                                i += 1
+                                continue
+
+                    # Format 2: "1a ANSWER" or "1 ANSWER" on the same line
+                    if current_direction:
+                        m = re.match(r'^(\d+[a-z]?)\s+([A-Z][A-Z\s\-\']+?)(?:\s*$)', line)
+                        if m:
+                            clue_num = m.group(1).rstrip('aAdD')  # Strip direction suffix
+                            answer_text = m.group(2).strip()
+                            # Sanity check: answer should be mostly uppercase letters
+                            if len(answer_text) >= 2 and answer_text == answer_text.upper():
+                                clue_id = f"{clue_num}-{current_direction}"
+                                print(f"   Found clue (format 2): {clue_id} - {answer_text}")
+
+                                hint_buffer = []
+                                j = i + 1
+
+                                while j < len(lines):
+                                    next_line = lines[j]
+
+                                    if re.match(r'^\d+[a-z]?$', next_line):
+                                        break
+                                    if re.match(r'^(ACROSS|DOWN)$', next_line, re.IGNORECASE):
+                                        break
+                                    if re.match(r'^\d+[a-z]?\s+[A-Z][A-Z\s\-\']+', next_line):
+                                        break
+
+                                    skip_phrases = ['posted', 'comment', 'tagged', 'bookmark',
+                                                   'permalink', 'navigation', 'leave a reply',
+                                                   'you must be logged', 'fill in your details',
+                                                   'the puzzle may be found']
+
+                                    if not any(skip in next_line.lower() for skip in skip_phrases):
+                                        if len(next_line) > 10:
+                                            hint_buffer.append(next_line)
+
+                                    j += 1
+
+                                matched_definitions = self._match_definitions(
+                                    hint_buffer, all_definitions_by_text)
+
+                                if hint_buffer:
+                                    hints_map[clue_id] = {
+                                        'text': hint_buffer,
+                                        'definitions': matched_definitions
+                                    }
+                                    if matched_definitions:
+                                        print(f"      -> {len(hint_buffer)} hint lines, {len(matched_definitions)} definitions: {matched_definitions}")
+                                    else:
+                                        print(f"      -> {len(hint_buffer)} hint lines, 0 definitions")
+
+                                i = j - 1  # Continue from where we stopped
+
                     i += 1
                 
                 print(f"✓ Extracted hints for {len(hints_map)} clues")
