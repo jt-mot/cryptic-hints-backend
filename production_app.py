@@ -473,12 +473,66 @@ Sitemap: {SITE_URL}/sitemap.xml
     return Response(content, mimetype='text/plain')
 
 
+def _sitemap_lastmod(pub_date):
+    """Format a date for sitemap <lastmod>."""
+    if not pub_date:
+        return ''
+    try:
+        if hasattr(pub_date, 'strftime'):
+            return f'    <lastmod>{pub_date.strftime("%Y-%m-%d")}</lastmod>\n'
+        return f'    <lastmod>{str(pub_date)[:10]}</lastmod>\n'
+    except Exception:
+        return ''
+
+
+def _xml_response(xml):
+    """Return an XML response."""
+    response = make_response(xml)
+    response.headers['Content-Type'] = 'application/xml'
+    return response
+
+
 @app.route('/sitemap.xml')
-def sitemap_xml():
-    """Generate dynamic sitemap with all published puzzles"""
+def sitemap_index():
+    """Sitemap index pointing to sub-sitemaps for better crawlability."""
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for name in ['pages', 'puzzles', 'blog', 'clues']:
+        xml += '  <sitemap>\n'
+        xml += f'    <loc>{SITE_URL}/sitemap-{name}.xml</loc>\n'
+        xml += '  </sitemap>\n'
+    xml += '</sitemapindex>'
+    return _xml_response(xml)
+
+
+@app.route('/sitemap-pages.xml')
+def sitemap_pages():
+    """Static pages sitemap."""
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    xml += '  <url>\n'
+    xml += f'    <loc>{SITE_URL}/</loc>\n'
+    xml += '    <changefreq>daily</changefreq>\n'
+    xml += '    <priority>1.0</priority>\n'
+    xml += '  </url>\n'
+    xml += '  <url>\n'
+    xml += f'    <loc>{SITE_URL}/guide</loc>\n'
+    xml += '    <changefreq>monthly</changefreq>\n'
+    xml += '    <priority>0.9</priority>\n'
+    xml += '  </url>\n'
+    xml += '  <url>\n'
+    xml += f'    <loc>{SITE_URL}/blog</loc>\n'
+    xml += '    <changefreq>weekly</changefreq>\n'
+    xml += '    <priority>0.8</priority>\n'
+    xml += '  </url>\n'
+    xml += '</urlset>'
+    return _xml_response(xml)
+
+
+@app.route('/sitemap-puzzles.xml')
+def sitemap_puzzles():
+    """Puzzle pages sitemap."""
     puzzles = []
-    blog_posts = []
-    clues = []
     try:
         conn = get_db()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -489,6 +543,29 @@ def sitemap_xml():
             ORDER BY published_at DESC
         """)
         puzzles = cursor.fetchall()
+    except Exception:
+        app.logger.exception("Failed to query puzzles for sitemap")
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for puzzle in puzzles:
+        xml += '  <url>\n'
+        xml += f'    <loc>{SITE_URL}/puzzle/{puzzle["puzzle_number"]}</loc>\n'
+        xml += _sitemap_lastmod(puzzle.get('published_at'))
+        xml += '    <changefreq>monthly</changefreq>\n'
+        xml += '    <priority>0.8</priority>\n'
+        xml += '  </url>\n'
+    xml += '</urlset>'
+    return _xml_response(xml)
+
+
+@app.route('/sitemap-blog.xml')
+def sitemap_blog():
+    """Blog posts sitemap."""
+    blog_posts = []
+    try:
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute("""
             SELECT slug, published_at
             FROM blog_posts
@@ -496,8 +573,31 @@ def sitemap_xml():
             ORDER BY published_at DESC
         """)
         blog_posts = cursor.fetchall()
+    except Exception:
+        app.logger.exception("Failed to query blog posts for sitemap")
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for post in blog_posts:
+        xml += '  <url>\n'
+        xml += f'    <loc>{SITE_URL}/blog/{post["slug"]}</loc>\n'
+        xml += _sitemap_lastmod(post.get('published_at'))
+        xml += '    <changefreq>monthly</changefreq>\n'
+        xml += '    <priority>0.7</priority>\n'
+        xml += '  </url>\n'
+    xml += '</urlset>'
+    return _xml_response(xml)
+
+
+@app.route('/sitemap-clues.xml')
+def sitemap_clues():
+    """Individual clue pages sitemap."""
+    clues = []
+    try:
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute("""
-            SELECT p.puzzle_number, c.clue_number, c.direction
+            SELECT p.puzzle_number, c.clue_number, c.direction, p.published_at
             FROM clues c
             JOIN puzzles p ON c.puzzle_id = p.id
             WHERE p.status = 'published'
@@ -505,84 +605,20 @@ def sitemap_xml():
         """)
         clues = cursor.fetchall()
     except Exception:
-        app.logger.exception("Failed to query data for sitemap")
+        app.logger.exception("Failed to query clues for sitemap")
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-
-    # Homepage
-    xml += '  <url>\n'
-    xml += f'    <loc>{SITE_URL}/</loc>\n'
-    xml += '    <changefreq>daily</changefreq>\n'
-    xml += '    <priority>1.0</priority>\n'
-    xml += '  </url>\n'
-
-    # Guide page
-    xml += '  <url>\n'
-    xml += f'    <loc>{SITE_URL}/guide</loc>\n'
-    xml += '    <changefreq>monthly</changefreq>\n'
-    xml += '    <priority>0.9</priority>\n'
-    xml += '  </url>\n'
-
-    # Blog listing
-    xml += '  <url>\n'
-    xml += f'    <loc>{SITE_URL}/blog</loc>\n'
-    xml += '    <changefreq>weekly</changefreq>\n'
-    xml += '    <priority>0.8</priority>\n'
-    xml += '  </url>\n'
-
-    # Individual puzzle pages
-    for puzzle in puzzles:
-        lastmod = ''
-        pub_date = puzzle.get('published_at')
-        if pub_date:
-            try:
-                if hasattr(pub_date, 'strftime'):
-                    lastmod = f'    <lastmod>{pub_date.strftime("%Y-%m-%d")}</lastmod>\n'
-                else:
-                    lastmod = f'    <lastmod>{str(pub_date)[:10]}</lastmod>\n'
-            except Exception:
-                pass
-        xml += '  <url>\n'
-        xml += f'    <loc>{SITE_URL}/puzzle/{puzzle["puzzle_number"]}</loc>\n'
-        xml += lastmod
-        xml += '    <changefreq>monthly</changefreq>\n'
-        xml += '    <priority>0.8</priority>\n'
-        xml += '  </url>\n'
-
-    # Blog posts
-    for post in blog_posts:
-        lastmod = ''
-        pub_date = post.get('published_at')
-        if pub_date:
-            try:
-                if hasattr(pub_date, 'strftime'):
-                    lastmod = f'    <lastmod>{pub_date.strftime("%Y-%m-%d")}</lastmod>\n'
-                else:
-                    lastmod = f'    <lastmod>{str(pub_date)[:10]}</lastmod>\n'
-            except Exception:
-                pass
-        xml += '  <url>\n'
-        xml += f'    <loc>{SITE_URL}/blog/{post["slug"]}</loc>\n'
-        xml += lastmod
-        xml += '    <changefreq>monthly</changefreq>\n'
-        xml += '    <priority>0.7</priority>\n'
-        xml += '  </url>\n'
-
-    # Individual clue pages
     for clue in clues:
         ref = f'{clue["clue_number"]}-{clue["direction"]}'
         xml += '  <url>\n'
         xml += f'    <loc>{SITE_URL}/clue/{clue["puzzle_number"]}/{ref}</loc>\n'
+        xml += _sitemap_lastmod(clue.get('published_at'))
         xml += '    <changefreq>monthly</changefreq>\n'
         xml += '    <priority>0.5</priority>\n'
         xml += '  </url>\n'
-
     xml += '</urlset>'
-
-    response = make_response(xml)
-    response.headers['Content-Type'] = 'application/xml'
-    return response
+    return _xml_response(xml)
 
 
 def _rss_date(dt):
