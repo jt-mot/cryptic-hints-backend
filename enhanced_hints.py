@@ -333,20 +333,21 @@ Respond with ONLY a JSON object in this exact format:
                         if data.get('content') and len(data['content']) > 0:
                             text = data['content'][0].get('text', '')
 
-                            # Parse JSON from response
-                            if '```json' in text:
-                                text = text.split('```json')[1].split('```')[0]
-                            elif '```' in text:
-                                text = text.split('```')[1].split('```')[0]
+                            # Parse JSON from response - try multiple extraction strategies
+                            hints_data = self._parse_hints_json(text)
+                            if hints_data:
+                                return [
+                                    hints_data.get('hint1', ''),
+                                    hints_data.get('hint2', ''),
+                                    hints_data.get('hint3', ''),
+                                    hints_data.get('hint4', '')
+                                ]
 
-                            hints_data = json.loads(text.strip())
-
-                            return [
-                                hints_data.get('hint1', ''),
-                                hints_data.get('hint2', ''),
-                                hints_data.get('hint3', ''),
-                                hints_data.get('hint4', '')
-                            ]
+                            # JSON parsing failed - log the raw response for debugging
+                            preview = text[:150] if text else '(empty)'
+                            raise json.JSONDecodeError(
+                                f"Could not extract JSON from response: {preview}", text or '', 0
+                            )
 
                     # Retry on rate limit (429) or server errors (5xx)
                     if response.status_code in (429, 500, 502, 503, 529):
@@ -374,6 +375,62 @@ Respond with ONLY a JSON object in this exact format:
 
         except Exception as e:
             print(f"      Claude API error: {e} - falling back to regex")
+
+        return None
+
+    @staticmethod
+    def _parse_hints_json(text: str) -> Optional[Dict]:
+        """Extract and parse the hints JSON from Claude's response text.
+
+        Tries multiple strategies:
+        1. Direct JSON parse
+        2. Extract from markdown code blocks
+        3. Find JSON object with regex (handles surrounding text)
+        """
+        if not text or not text.strip():
+            return None
+
+        text = text.strip()
+
+        # Strategy 1: Direct parse
+        try:
+            data = json.loads(text)
+            if isinstance(data, dict) and 'hint1' in data:
+                return data
+        except json.JSONDecodeError:
+            pass
+
+        # Strategy 2: Markdown code blocks
+        if '```' in text:
+            try:
+                if '```json' in text:
+                    block = text.split('```json')[1].split('```')[0]
+                else:
+                    block = text.split('```')[1].split('```')[0]
+                data = json.loads(block.strip())
+                if isinstance(data, dict) and 'hint1' in data:
+                    return data
+            except (json.JSONDecodeError, IndexError):
+                pass
+
+        # Strategy 3: Find JSON object by matching braces
+        start = text.find('{')
+        if start != -1:
+            # Find the matching closing brace
+            depth = 0
+            for i in range(start, len(text)):
+                if text[i] == '{':
+                    depth += 1
+                elif text[i] == '}':
+                    depth -= 1
+                    if depth == 0:
+                        try:
+                            data = json.loads(text[start:i + 1])
+                            if isinstance(data, dict) and 'hint1' in data:
+                                return data
+                        except json.JSONDecodeError:
+                            pass
+                        break
 
         return None
 
