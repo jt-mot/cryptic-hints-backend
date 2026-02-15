@@ -1228,12 +1228,13 @@
             enumParts.forEach((part, partIndex) => {
                 const count = parseInt(part);
                 for (let i = 0; i < count; i++) {
-                    boxesHTML += `<input type="text" maxlength="1" 
-                        class="answer-box" 
-                        data-clue-id="${clueId}" 
+                    boxesHTML += `<input type="text" maxlength="1"
+                        class="answer-box"
+                        data-clue-id="${clueId}"
                         data-index="${totalBoxes}"
                         oninput="handleAnswerInput('${clueId}', ${totalBoxes}, this.value)"
-                        onkeydown="handleAnswerKeydown(event, '${clueId}', ${totalBoxes})">`;
+                        onkeydown="handleAnswerKeydown(event, '${clueId}', ${totalBoxes})"
+                        onfocus="this.select()">`;
                     totalBoxes++;
                 }
                 if (partIndex < enumParts.length - 1) {
@@ -1285,11 +1286,19 @@
                     `.answer-box[data-clue-id="${clueId}"][data-index="${index}"]`
                 );
                 input.value = value;
+                input.classList.remove('prefilled');
 
-                // Auto-advance
-                const nextInput = document.querySelector(
-                    `.answer-box[data-clue-id="${clueId}"][data-index="${index + 1}"]`
+                // Auto-advance: skip over prefilled boxes
+                let nextIdx = index + 1;
+                let nextInput = document.querySelector(
+                    `.answer-box[data-clue-id="${clueId}"][data-index="${nextIdx}"]`
                 );
+                while (nextInput && nextInput.classList.contains('prefilled')) {
+                    nextIdx++;
+                    nextInput = document.querySelector(
+                        `.answer-box[data-clue-id="${clueId}"][data-index="${nextIdx}"]`
+                    );
+                }
                 if (nextInput) {
                     nextInput.focus();
                 }
@@ -1301,7 +1310,11 @@
         function handleAnswerKeydown(event, clueId, index) {
             if (event.key === 'Backspace') {
                 const input = event.target;
-                if (!input.value) {
+                if (input.value) {
+                    // Clear current box and remove prefilled styling
+                    input.classList.remove('prefilled');
+                } else {
+                    // Box is already empty, move to previous
                     const prevInput = document.querySelector(
                         `.answer-box[data-clue-id="${clueId}"][data-index="${index - 1}"]`
                     );
@@ -1470,18 +1483,26 @@
 
         function revealHint(clueId, level) {
             const hint = document.getElementById(`hint-${clueId}-${level}`);
-            hint.classList.add('visible');
+            const isVisible = hint.classList.contains('visible');
 
-            // Mark button as revealed
             const buttons = document.querySelectorAll(`button[onclick*="${clueId}"]`);
-            if (buttons[level - 1]) {
-                buttons[level - 1].classList.add('revealed');
-            }
+            const button = buttons[level - 1];
 
-            // Track revealed hints
-            if (!hintsRevealed[clueId]) hintsRevealed[clueId] = [];
-            if (!hintsRevealed[clueId].includes(level)) {
-                hintsRevealed[clueId].push(level);
+            if (isVisible) {
+                // Collapse
+                hint.classList.remove('visible');
+                if (button) button.classList.remove('revealed');
+                if (hintsRevealed[clueId]) {
+                    hintsRevealed[clueId] = hintsRevealed[clueId].filter(l => l !== level);
+                }
+            } else {
+                // Reveal
+                hint.classList.add('visible');
+                if (button) button.classList.add('revealed');
+                if (!hintsRevealed[clueId]) hintsRevealed[clueId] = [];
+                if (!hintsRevealed[clueId].includes(level)) {
+                    hintsRevealed[clueId].push(level);
+                }
             }
             saveProgress();
         }
