@@ -322,8 +322,22 @@ def _serve_html(filename, extra=None):
 
 @app.route('/')
 def homepage():
-    """Serve the homepage"""
-    return _serve_html('index.html')
+    """Serve the homepage with latest puzzle number for static fallback"""
+    latest = ''
+    try:
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("""
+            SELECT puzzle_number FROM puzzles
+            WHERE status = 'published'
+            ORDER BY published_at DESC LIMIT 1
+        """)
+        row = cursor.fetchone()
+        if row:
+            latest = str(row['puzzle_number'])
+    except Exception:
+        pass
+    return _serve_html('index.html', extra={'__LATEST_PUZZLE__': latest})
 
 
 @app.route('/puzzle/<puzzle_number>')
