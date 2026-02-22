@@ -194,7 +194,7 @@ class EnhancedHintGenerator:
 
     def generate_hints(self, hint_paragraphs: List[str], author: str = 'generic',
                        definitions: List[str] = None, clue_text: str = None,
-                       answer: str = None) -> List[str]:
+                       answer: str = None, puzzle_type: str = 'cryptic') -> List[str]:
         """
         Generate 4-level progressive hints using Claude AI with regex fallback
 
@@ -210,6 +210,7 @@ class EnhancedHintGenerator:
             definitions: Extracted HTML definitions (underlined/italicized text)
             clue_text: The original clue text (optional, improves hint quality)
             answer: The answer (optional, improves hint quality)
+            puzzle_type: 'cryptic' or 'quiptic'
 
         Returns:
             List of 4 hints, progressively more revealing
@@ -229,7 +230,7 @@ class EnhancedHintGenerator:
         # Try Claude API first if enabled and available
         if self.use_claude and self.api_key and REQUESTS_AVAILABLE:
             claude_hints = self._generate_hints_with_claude(
-                full_text, definitions, clue_text, answer
+                full_text, definitions, clue_text, answer, puzzle_type
             )
             if claude_hints:
                 print(f"      Claude API: Generated hints successfully")
@@ -249,7 +250,8 @@ class EnhancedHintGenerator:
                                                clue_text=clue_text, answer=answer)
 
     def _generate_hints_with_claude(self, explanation: str, definitions: List[str],
-                                     clue_text: str = None, answer: str = None) -> Optional[List[str]]:
+                                     clue_text: str = None, answer: str = None,
+                                     puzzle_type: str = 'cryptic') -> Optional[List[str]]:
         """
         Use Claude API to generate intelligent progressive hints
 
@@ -259,10 +261,16 @@ class EnhancedHintGenerator:
             # Build the prompt with all available context
             definition_text = definitions[0] if definitions else "unknown"
 
+            # Quiptic-specific guidance
+            quiptic_note = ""
+            if puzzle_type == 'quiptic':
+                quiptic_note = """
+NOTE: This is a QUIPTIC clue (an easier cryptic crossword aimed at beginners). Quiptics still use standard cryptic devices (anagrams, charades, hidden words, double definitions, etc.) but the wordplay is more straightforward and the indicators are more obvious. Keep your explanations simple and clear. Do NOT overcomplicate the parsing - if the wordplay is simple, say so plainly."""
+
             prompt = f"""You are helping create progressive hints for a cryptic crossword clue. Your goal is to help solvers learn how cryptic clues work by guiding them step-by-step toward the answer.
 
 IMPORTANT: Work out the full parsing internally BEFORE writing your response. Each hint must be clean, polished, and final. Never include self-corrections, backtracking, or thinking-aloud phrases like "wait", "actually", "no", "hmm", "let me reconsider", or "that's wrong".
-
+{quiptic_note}
 CONTEXT:
 - Definition (the "straight" part that means the answer): {definition_text}
 - Clue text: {clue_text if clue_text else "not provided"}
