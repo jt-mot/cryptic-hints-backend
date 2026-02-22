@@ -513,7 +513,8 @@ class PuzzleScraper:
                     self.detected_author,
                     definitions=definitions,
                     clue_text=clue.get('clue_text'),
-                    answer=clue.get('answer')
+                    answer=clue.get('answer'),
+                    puzzle_type=puzzle_type
                 )
                 
                 # Debug: Check first clue
@@ -531,7 +532,8 @@ class PuzzleScraper:
                     self.detected_author,
                     definitions=[],
                     clue_text=clue.get('clue_text'),
-                    answer=clue.get('answer')
+                    answer=clue.get('answer'),
+                    puzzle_type=puzzle_type
                 )
         
         clues_with_hints = len([c for c in puzzle_data['clues'] if any(c['hints'])])
