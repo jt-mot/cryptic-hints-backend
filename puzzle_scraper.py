@@ -305,16 +305,22 @@ class FifteensquaredScraper:
                 for dbg_i, dbg_line in enumerate(lines[:20]):
                     print(f"   DEBUG line {dbg_i}: {dbg_line[:100]}")
 
+                # Reusable pattern: ALL CAPS answer with optional enumeration
+                # Matches: "ANTELOPE", "ANTELOPE (8)", "SALT AND PEPPER (4,3,6)"
+                _ANSWER_LINE_RE = r'^([A-Z][A-Z\s\-\'/]+?)(?:\s*\([0-9,.\s\-]+\))?\s*$'
+
                 # Helper: checks if a line looks like the start of a new clue
                 def _is_clue_start(ln):
-                    # Just a number: "1" or "12a"
-                    if re.match(r'^\d+[a-z]?$', ln):
+                    # Just a number (1-99): "1" or "12a"
+                    if re.match(r'^\d{1,2}[a-z]?$', ln):
                         return True
-                    # Number + all-caps answer: "1a ANTELOPE"
-                    if re.match(r'^\d+[a-z]?\s+[A-Z][A-Z\s\-\']+$', ln):
+                    # Number + all-caps answer (with optional enumeration)
+                    # "1a ANTELOPE" or "1a ANTELOPE (8)"
+                    if re.match(r'^\d{1,2}[a-z]?\s+[A-Z][A-Z\s\-\'/]+', ln):
                         return True
-                    # Number + mixed text (clue): "1 Animal bound on stake"
-                    if re.match(r'^\d+[a-z]?\s+\S', ln):
+                    # Number + clue text starting with capital (Format B)
+                    # "1 Animal bound on stake" but NOT "3 letter abbreviation..."
+                    if re.match(r'^\d{1,2}[a-z]?\s+[A-Z][a-z]', ln):
                         return True
                     return False
 
@@ -377,38 +383,64 @@ class FifteensquaredScraper:
 
                     # Format A: Number alone, answer on next line
                     #   "1"
-                    #   "ANTELOPE"
+                    #   "ANTELOPE" or "ANTELOPE (8)"
                     #   "A charade of..."
                     if re.match(r'^\d+[a-z]?$', line):
-                        if i + 1 < len(lines) and re.match(r'^[A-Z][A-Z\s\-\']+$', lines[i + 1]):
-                            clue_num = line
-                            answer_text = lines[i + 1].strip()
-                            explanation_start = i + 2
+                        if i + 1 < len(lines):
+                            m_ans = re.match(_ANSWER_LINE_RE, lines[i + 1])
+                            if m_ans:
+                                clue_num = line
+                                answer_text = m_ans.group(1).strip()
+                                explanation_start = i + 2
 
                     # Format B: Number + clue text, answer on next line
                     #   "1 Animal bound on stake"
-                    #   "ANTELOPE"
+                    #   "ANTELOPE" or "ANTELOPE (8)"
                     #   "A charade of..."
                     if not clue_num:
                         m = re.match(r'^(\d+[a-z]?)\s+\S', line)
                         if m and i + 1 < len(lines):
                             next_line = lines[i + 1]
-                            if re.match(r'^[A-Z][A-Z\s\-\']+$', next_line):
+                            m_ans = re.match(_ANSWER_LINE_RE, next_line)
+                            if m_ans:
                                 clue_num = m.group(1)
-                                answer_text = next_line.strip()
+                                answer_text = m_ans.group(1).strip()
                                 explanation_start = i + 2
 
-                    # Format C: Number + all-caps answer on same line
-                    #   "1a ANTELOPE"
+                    # Format C: Number + all-caps answer (with optional enumeration) on same line
+                    #   "1a ANTELOPE" or "1a ANTELOPE (8)"
                     #   "A charade of..."
                     if not clue_num:
-                        m = re.match(r'^(\d+[a-z]?)\s+([A-Z][A-Z\s\-\']+?)(?:\s*$)', line)
+                        m = re.match(r'^(\d+[a-z]?)\s+([A-Z][A-Z\s\-\'/]+?)(?:\s*\([0-9,.\s\-]+\))?\s*$', line)
                         if m:
                             candidate = m.group(2).strip()
                             if len(candidate) >= 2 and candidate == candidate.upper():
                                 clue_num = m.group(1)
                                 answer_text = candidate
                                 explanation_start = i + 1
+
+                    # Format D: Number + CAPS answer (+ optional enum) + separator + explanation on same line
+                    #   "1a ANTELOPE (8) – A charade of ANTE and LOPE"
+                    #   "1a ANTELOPE – A charade of..."
+                    #   "1a ANTELOPE (8): A charade of..."
+                    if not clue_num:
+                        m = re.match(
+                            r'^(\d+[a-z]?)\s+([A-Z][A-Z\s\-\'/]+?)(?:\s*\([0-9,.\s\-]+\))?\s*[-–—:;]\s*(.+)$',
+                            line
+                        )
+                        if m:
+                            candidate = m.group(2).strip()
+                            if len(candidate) >= 2 and candidate == candidate.upper():
+                                clue_num = m.group(1)
+                                answer_text = candidate
+                                first_expl = m.group(3).strip()
+                                # Collect remaining explanation lines after this one
+                                more_buf, j = _collect_explanation(i + 1)
+                                hint_buffer = ([first_expl] if len(first_expl) > 5 else []) + more_buf
+                                clean_num = re.match(r'^(\d+)', clue_num).group(1)
+                                _store_clue(clean_num, answer_text, hint_buffer, fmt_label='D')
+                                i = j
+                                continue
 
                     if clue_num and answer_text and explanation_start is not None:
                         # Strip direction suffix from clue number (e.g. "1a" -> "1")
