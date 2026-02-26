@@ -18,6 +18,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
 import psycopg2.errors
 from psycopg2.extras import RealDictCursor
+import html as html_module
 import json
 from datetime import datetime, date
 import os
@@ -307,7 +308,7 @@ def login_required(f):
 # PUBLIC ROUTES (Frontend)
 # ============================================================================
 
-def _serve_html(filename, extra=None):
+def _serve_html(filename, extra=None, status=200):
     """Read an HTML file from static/ and inject config values."""
     filepath = os.path.join(app.static_folder, filename)
     with open(filepath, 'r') as f:
@@ -317,7 +318,7 @@ def _serve_html(filename, extra=None):
     if extra:
         for key, value in extra.items():
             html = html.replace(key, value)
-    return Response(html, mimetype='text/html')
+    return Response(html, status=status, mimetype='text/html')
 
 
 @app.route('/')
@@ -342,8 +343,86 @@ def homepage():
 
 @app.route('/puzzle/<puzzle_number>')
 def puzzle_page(puzzle_number):
-    """Serve the puzzle solving page"""
-    return _serve_html('puzzle.html', extra={'__PUZZLE_NUMBER__': str(puzzle_number)})
+    """Serve the puzzle solving page with server-side rendered clue list for SEO."""
+    esc = html_module.escape
+    puzzle_number = str(puzzle_number)
+
+    # Default values
+    ssr_content = ''
+    puzzle_info = 'Loading...'
+    page_title = f'Guardian Cryptic #{esc(puzzle_number)} - Hints &amp; Solutions | Cryptic Hints'
+    page_desc = (f'Solve Guardian cryptic crossword #{esc(puzzle_number)} with progressive hints. '
+                 'Get help from definition only to full explanation.')
+    status = 200
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+        cursor.execute('''
+            SELECT id, puzzle_type, puzzle_number, setter, date
+            FROM puzzles WHERE puzzle_number = %s AND status = 'published' LIMIT 1
+        ''', (puzzle_number,))
+        puzzle = cursor.fetchone()
+
+        if puzzle:
+            cursor.execute('''
+                SELECT clue_number, direction, clue_text, enumeration
+                FROM clues WHERE puzzle_id = %s
+                ORDER BY CASE WHEN direction = 'across' THEN 0 ELSE 1 END,
+                         CAST(clue_number AS INTEGER)
+            ''', (puzzle['id'],))
+            clues = cursor.fetchall()
+
+            ptype = 'Quiptic' if puzzle.get('puzzle_type') == 'quiptic' else 'Cryptic'
+            setter = esc(puzzle['setter']) if puzzle.get('setter') else 'Unknown'
+            puzzle_info = f'#{esc(puzzle_number)} by {setter} | {puzzle["date"]}'
+
+            page_title = (f'Guardian {ptype} #{esc(puzzle_number)} by {setter} '
+                          f'- Hints &amp; Solutions | Cryptic Hints')
+            page_desc = (f'Solve Guardian {ptype.lower()} crossword #{esc(puzzle_number)} '
+                         f'by {setter} with four levels of progressive hints.')
+
+            # Build SSR clue list
+            across_html = ''
+            down_html = ''
+            for clue in clues:
+                enum = f' ({esc(clue["enumeration"])})' if clue.get('enumeration') else ''
+                clue_html = (f'<p><strong>{esc(clue["clue_number"])}.</strong> '
+                             f'{esc(clue["clue_text"])}{enum} '
+                             f'<a href="/clue/{esc(puzzle_number)}/{esc(clue["clue_number"])}'
+                             f'-{esc(clue["direction"])}">Hints</a></p>')
+                if clue['direction'] == 'across':
+                    across_html += clue_html
+                else:
+                    down_html += clue_html
+
+            ssr_content = (
+                '<div class="direction-section">'
+                '<h2 class="direction-title">Across</h2>'
+                f'{across_html}'
+                '</div>'
+                '<div class="direction-section">'
+                '<h2 class="direction-title">Down</h2>'
+                f'{down_html}'
+                '</div>'
+            )
+        else:
+            ssr_content = '<p>Puzzle not found.</p>'
+            status = 404
+
+        cursor.close()
+        conn.close()
+    except Exception:
+        pass  # Fall back to empty SSR content
+
+    return _serve_html('puzzle.html', extra={
+        '__PUZZLE_NUMBER__': puzzle_number,
+        '__PUZZLE_SSR_CONTENT__': ssr_content,
+        '__PUZZLE_INFO__': puzzle_info,
+        '__PUZZLE_PAGE_TITLE__': page_title,
+        '__PUZZLE_PAGE_DESC__': page_desc,
+    }, status=status)
 
 
 @app.route('/guide')
@@ -366,11 +445,103 @@ def blog_post_page(slug):
 
 @app.route('/clue/<puzzle_number>/<clue_ref>')
 def clue_page(puzzle_number, clue_ref):
-    """Serve an individual clue page (e.g. /clue/29001/3-across)"""
+    """Serve an individual clue page with server-side rendered content for SEO."""
+    esc = html_module.escape
+    puzzle_number = str(puzzle_number)
+    clue_ref = str(clue_ref)
+
+    # Default SSR values (used if DB query fails)
+    ssr_content = '<div class="loading-state">Loading clue...</div>'
+    page_title = f'Clue {esc(clue_ref)} - Guardian Cryptic #{esc(puzzle_number)} | Cryptic Hints'
+    page_desc = (f'Hints for clue {esc(clue_ref)} from Guardian cryptic crossword '
+                 f'#{esc(puzzle_number)}. Progressive hints from gentle nudge to full explanation.')
+    clue_label = clue_ref
+    status = 200
+
+    # Try to fetch clue data from DB for server-side rendering
+    parts = clue_ref.rsplit('-', 1)
+    if len(parts) == 2 and parts[1] in ('across', 'down'):
+        clue_number, direction = parts
+        try:
+            conn = get_db()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute('''
+                SELECT p.puzzle_number, p.setter, p.date, p.puzzle_type,
+                       c.clue_number, c.direction, c.clue_text, c.enumeration,
+                       c.hint_level_1, c.hint_level_2, c.hint_level_3, c.hint_level_4
+                FROM clues c
+                JOIN puzzles p ON c.puzzle_id = p.id
+                WHERE p.puzzle_number = %s AND p.status = 'published'
+                      AND c.clue_number = %s AND c.direction = %s
+                LIMIT 1
+            ''', (puzzle_number, clue_number, direction))
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+
+            if row:
+                dir_label = direction.capitalize()
+                label = f'{row["clue_number"]} {dir_label}'
+                clue_label = label
+                ptype = 'Quiptic' if row.get('puzzle_type') == 'quiptic' else 'Cryptic'
+                setter_html = (f' by {esc(row["setter"])}' if row.get('setter')
+                               and row['setter'] != 'Unknown' else '')
+                enum_html = (f'<span class="clue-enum">({esc(row["enumeration"])})</span>'
+                             if row.get('enumeration') else '')
+
+                hints = [
+                    row['hint_level_1'] or '',
+                    row['hint_level_2'] or '',
+                    row['hint_level_3'] or '',
+                    row['hint_level_4'] or '',
+                ]
+                hint_labels = [
+                    'Hint 1: Gentle nudge', 'Hint 2: More specific',
+                    'Hint 3: Strong hint', 'Hint 4: Full explanation',
+                ]
+                hints_html = ''
+                for i, hint in enumerate(hints):
+                    if not hint:
+                        continue
+                    hints_html += (f'<button class="hint-btn" id="hint-btn-{i}" '
+                                   f'onclick="toggleHint({i})">{hint_labels[i]}</button>')
+                    hints_html += f'<div class="hint-text" id="hint-{i}">{esc(hint)}</div>'
+
+                ssr_content = (
+                    '<div class="clue-card">'
+                    '<div class="clue-header">'
+                    f'<span class="clue-number">{esc(label)}</span>'
+                    f'{enum_html}'
+                    '</div>'
+                    f'<div class="clue-text">{esc(row["clue_text"])}</div>'
+                    f'<div class="clue-meta">Guardian {ptype} #{esc(puzzle_number)}{setter_html}'
+                    f' &middot; <a href="/puzzle/{esc(puzzle_number)}">View full puzzle</a></div>'
+                    '<div class="hints-section">'
+                    '<h2>Progressive Hints</h2>'
+                    f'{hints_html}'
+                    '</div>'
+                    '</div>'
+                    f'<a href="/puzzle/{esc(puzzle_number)}" class="full-puzzle-link">'
+                    'Solve the full puzzle &rarr;</a>'
+                )
+                page_title = f'{label} - Guardian {ptype} #{puzzle_number} | Cryptic Hints'
+                page_desc = (f'Hints for {label} from Guardian {ptype.lower()} '
+                             f'#{puzzle_number}: \u201c{esc(row["clue_text"])}\u201d')
+            else:
+                ssr_content = (f'<div class="error-state">Clue not found. '
+                               f'<a href="/puzzle/{esc(puzzle_number)}">View full puzzle</a></div>')
+                status = 404
+        except Exception:
+            pass  # Fall back to default "Loading clue..." content
+
     return _serve_html('clue.html', extra={
-        '__PUZZLE_NUMBER__': str(puzzle_number),
-        '__CLUE_REF__': str(clue_ref),
-    })
+        '__PUZZLE_NUMBER__': puzzle_number,
+        '__CLUE_REF__': clue_ref,
+        '__CLUE_SSR_CONTENT__': ssr_content,
+        '__CLUE_PAGE_TITLE__': page_title,
+        '__CLUE_PAGE_DESC__': page_desc,
+        '__CLUE_LABEL__': clue_label,
+    }, status=status)
 
 
 @app.route('/api/clue/<puzzle_number>/<clue_ref>')
