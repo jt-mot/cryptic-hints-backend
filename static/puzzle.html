@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardian Cryptic #__PUZZLE_NUMBER__ - Hints &amp; Solutions | Cryptic Hints</title>
-    <meta name="description" content="Solve Guardian cryptic crossword #__PUZZLE_NUMBER__ with progressive hints. Get help from definition only to full explanation. Interactive grid with auto-fill crossings.">
+    <title>__PUZZLE_PAGE_TITLE__</title>
+    <meta name="description" content="__PUZZLE_PAGE_DESC__">
     <link rel="canonical" href="__SITE_URL__/puzzle/__PUZZLE_NUMBER__">
-    <meta property="og:title" content="Guardian Cryptic #__PUZZLE_NUMBER__ - Hints &amp; Solutions | Cryptic Hints">
-    <meta property="og:description" content="Solve Guardian cryptic crossword #__PUZZLE_NUMBER__ with four levels of progressive hints.">
+    <meta property="og:title" content="__PUZZLE_PAGE_TITLE__">
+    <meta property="og:description" content="__PUZZLE_PAGE_DESC__">
     <meta property="og:type" content="website">
     <meta property="og:url" content="__SITE_URL__/puzzle/__PUZZLE_NUMBER__">
     <meta property="og:site_name" content="Cryptic Hints">
@@ -890,7 +890,7 @@
             </a>
             <div class="header-center">
                 <h1>Guardian Cryptic Crossword</h1>
-                <div class="puzzle-info" id="puzzleInfo">Loading...</div>
+                <div class="puzzle-info" id="puzzleInfo">__PUZZLE_INFO__</div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
@@ -950,8 +950,11 @@
         
         <!-- Clues Main Area -->
         <div class="clues-main">
+            <!-- Server-side rendered clue list for SEO (hidden once JS loads) -->
+            <div id="ssrClues">__PUZZLE_SSR_CONTENT__</div>
+
             <!-- Loading State -->
-            <div class="loading-state" id="loadingState">
+            <div class="loading-state" id="loadingState" style="display: none;">
                 <div class="loading-spinner"></div>
                 <p class="loading-title">Loading puzzle...</p>
                 <p>This should only take a moment</p>
@@ -1002,6 +1005,10 @@
 
         async function loadPuzzle() {
             try {
+                // Hide SSR content and show loading spinner
+                var ssrEl = document.getElementById('ssrClues');
+                if (ssrEl) ssrEl.style.display = 'none';
+                document.getElementById('loadingState').style.display = 'block';
                 console.log('Loading puzzle:', puzzleNumber);
                 const response = await fetch(`/api/puzzle/${puzzleNumber}`);
                 puzzleData = await response.json();

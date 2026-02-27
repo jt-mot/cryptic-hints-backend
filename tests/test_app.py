@@ -651,6 +651,39 @@ class TestCluePages:
         resp = client.get('/api/clue/29001/99-across')
         assert resp.status_code == 404
 
+    def test_clue_page_ssr_with_data(self, client, mock_db):
+        """Clue page should server-side render content when DB has data."""
+        from datetime import date
+        mock_db.fetchone.return_value = {
+            'puzzle_number': '29001', 'setter': 'Picaroon',
+            'date': date(2025, 6, 1), 'puzzle_type': 'cryptic',
+            'id': 42, 'clue_number': '3', 'direction': 'across',
+            'clue_text': 'Some clue (5)', 'enumeration': '5',
+            'answer': 'TESTS',
+            'hint_level_1': 'Definition hint', 'hint_level_2': 'Technique hint',
+            'hint_level_3': 'Construction hint', 'hint_level_4': 'Full explanation',
+        }
+        resp = client.get('/clue/29001/3-across')
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        # SSR content should include the clue text
+        assert 'Some clue (5)' in html
+        # SSR content should include hint buttons
+        assert 'Hint 1: Gentle nudge' in html
+        assert 'Definition hint' in html
+        # Should NOT have loading placeholder
+        assert 'Loading clue...' not in html
+        # Title should include proper label
+        assert '3 Across' in html
+
+    def test_clue_page_ssr_not_found(self, client, mock_db):
+        """Clue page should return 404 when clue doesn't exist in DB."""
+        mock_db.fetchone.return_value = None
+        resp = client.get('/clue/99999/1-across')
+        assert resp.status_code == 404
+        html = resp.data.decode()
+        assert 'Clue not found' in html
+
     def test_clue_api_invalid_ref(self, client):
         resp = client.get('/api/clue/29001/bad-format-here')
         assert resp.status_code == 400
@@ -658,6 +691,41 @@ class TestCluePages:
     def test_clue_api_invalid_direction(self, client):
         resp = client.get('/api/clue/29001/3-diagonal')
         assert resp.status_code == 400
+
+
+class TestPuzzlePageSSR:
+    def test_puzzle_page_ssr_with_data(self, client, mock_db):
+        """Puzzle page should server-side render clue list when DB has data."""
+        from datetime import date
+        mock_db.fetchone.return_value = {
+            'id': 1, 'puzzle_type': 'cryptic', 'puzzle_number': '29001',
+            'setter': 'Picaroon', 'date': date(2025, 6, 1),
+        }
+        mock_db.fetchall.return_value = [
+            {'clue_number': '1', 'direction': 'across',
+             'clue_text': 'Animal bound on stake (8)', 'enumeration': '8'},
+            {'clue_number': '1', 'direction': 'down',
+             'clue_text': 'Room at the top (5)', 'enumeration': '5'},
+        ]
+        resp = client.get('/puzzle/29001')
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        # SSR content should include clue texts
+        assert 'Animal bound on stake' in html
+        assert 'Room at the top' in html
+        # SSR content should include hints links
+        assert '/clue/29001/1-across' in html
+        assert '/clue/29001/1-down' in html
+        # Title should include setter
+        assert 'Picaroon' in html
+
+    def test_puzzle_page_ssr_not_found(self, client, mock_db):
+        """Puzzle page should return 404 when puzzle doesn't exist."""
+        mock_db.fetchone.return_value = None
+        resp = client.get('/puzzle/99999')
+        assert resp.status_code == 404
+        html = resp.data.decode()
+        assert 'Puzzle not found' in html
 
 
 # ============================================================================
