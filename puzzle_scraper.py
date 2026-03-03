@@ -123,6 +123,9 @@ class GuardianScraper:
         - separatorLocations: {"separator": [positions]} e.g., {",": [4]} means comma after position 4
 
         This converts to enumeration like "4, 11" or "3-2, 4"
+
+        For linked/grouped clues (e.g. "1 and 5 across"), the separator position
+        may equal the entry's length, leaving a trailing separator. We strip it.
         """
         length = entry.get('length', 0)
         separator_locations = entry.get('separatorLocations', {})
@@ -146,8 +149,9 @@ class GuardianScraper:
 
         for pos, sep in breaks:
             word_len = pos - prev_pos
-            parts.append(str(word_len))
-            parts.append(sep + ' ' if sep == ',' else sep)  # Add space after comma
+            if word_len > 0:
+                parts.append(str(word_len))
+                parts.append(sep + ' ' if sep == ',' else sep)  # Add space after comma
             prev_pos = pos
 
         # Add final part
@@ -155,7 +159,10 @@ class GuardianScraper:
         if final_len > 0:
             parts.append(str(final_len))
 
-        return ''.join(parts).strip()
+        # Strip trailing separators (happens with linked/grouped clues where
+        # the separator position equals the entry's length)
+        result = ''.join(parts).strip()
+        return result.rstrip(', -')
 
 
 class FifteensquaredScraper:
