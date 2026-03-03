@@ -27,6 +27,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import threading
+import uuid
+import traceback as tb_module
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
@@ -36,6 +38,9 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 CORS(app)
+
+# In-memory store for background import tasks
+_import_tasks = {}
 
 DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://localhost/crosswords_dev')
 SITE_URL = os.environ.get('SITE_URL', 'https://www.cryptic-hints.com').rstrip('/')
@@ -1397,7 +1402,7 @@ def admin_review():
 @app.route('/admin/api/scrape-and-import', methods=['POST'])
 @login_required
 def scrape_and_import():
-    """Scrape puzzle from Guardian and fifteensquared, then import"""
+    """Start async puzzle import - returns task_id for polling"""
     data = request.json
     puzzle_number = data.get('puzzle_number')
     puzzle_type = data.get('puzzle_type', 'cryptic')  # 'cryptic' or 'quiptic'
@@ -1408,39 +1413,73 @@ def scrape_and_import():
     if puzzle_type not in ('cryptic', 'quiptic'):
         return jsonify({'success': False, 'message': 'Invalid puzzle type'})
 
+    task_id = str(uuid.uuid4())
+    _import_tasks[task_id] = {
+        'status': 'running',
+        'step': 'Starting import...',
+        'puzzle_number': puzzle_number,
+        'puzzle_type': puzzle_type,
+    }
+
+    thread = threading.Thread(
+        target=_run_import_task,
+        args=(task_id, puzzle_number, puzzle_type),
+        daemon=True,
+    )
+    thread.start()
+
+    return jsonify({'success': True, 'task_id': task_id})
+
+
+@app.route('/admin/api/import-status/<task_id>')
+@login_required
+def import_status(task_id):
+    """Poll import task status"""
+    task = _import_tasks.get(task_id)
+    if not task:
+        return jsonify({'status': 'not_found'}), 404
+    return jsonify(task)
+
+
+def _run_import_task(task_id, puzzle_number, puzzle_type):
+    """Background worker that scrapes and imports a puzzle"""
+    task = _import_tasks[task_id]
     try:
-        # Import the scraper
         from puzzle_scraper import PuzzleScraper
 
-        # Scrape the puzzle
+        task['step'] = 'Fetching puzzle from Guardian...'
+
         scraper = PuzzleScraper()
 
         try:
             puzzle_data = scraper.scrape_puzzle(puzzle_number, puzzle_type)
         except Exception as scrape_error:
             print(f"Scraping error: {scrape_error}")
-            import traceback
-            traceback.print_exc()
-            return jsonify({
-                'success': False,
+            tb_module.print_exc()
+            task.update({
+                'status': 'error',
                 'message': f'Scraping failed: {str(scrape_error)}',
-                'details': 'Error while fetching puzzle data'
+                'details': 'Error while fetching puzzle data',
             })
-        
+            return
+
         if 'error' in puzzle_data:
-            return jsonify({
-                'success': False, 
+            task.update({
+                'status': 'error',
                 'message': puzzle_data['error'],
-                'details': 'Could not fetch puzzle from Guardian'
+                'details': 'Could not fetch puzzle from Guardian',
             })
-        
+            return
+
+        task['step'] = 'Saving to database...'
+
         # Check hint coverage
         clues_with_hints = len([c for c in puzzle_data.get('clues', []) if any(c.get('hints', []))])
-        
+
         # Import into database
         conn = get_db()
         cursor = conn.cursor()
-        
+
         try:
             # Insert puzzle
             cursor.execute('''
@@ -1455,9 +1494,9 @@ def scrape_and_import():
                 puzzle_data.get('date', datetime.now().strftime('%Y-%m-%d')),
                 'draft'
             ))
-            
+
             puzzle_id = cursor.fetchone()[0]
-            
+
             # Store grid data if available
             if puzzle_data.get('grid'):
                 cursor.execute('''
@@ -1484,28 +1523,28 @@ def scrape_and_import():
                     api_usage.get('estimated_cost_usd', 0),
                     api_usage.get('model', ''),
                 ))
-            
+
             # Insert clues with hints
             clue_count = 0
             for clue_data in puzzle_data.get('clues', []):
                 hints = clue_data.get('hints', ['', '', '', ''])
-                
+
                 # Validate data
                 clue_number = str(clue_data.get('clue_number', ''))[:10]
                 direction = str(clue_data.get('direction', 'across'))[:10]
                 clue_text = str(clue_data.get('clue_text', ''))[:500]
                 answer = str(clue_data.get('answer', ''))[:100]
                 enumeration = str(clue_data.get('enumeration', ''))[:20]
-                
+
                 # Truncate hints if too long
                 hint1 = hints[0][:1000] if len(hints) > 0 else ''
                 hint2 = hints[1][:1000] if len(hints) > 1 else ''
                 hint3 = hints[2][:2000] if len(hints) > 2 else ''
                 hint4 = hints[3][:5000] if len(hints) > 3 else ''
-                
+
                 cursor.execute('''
                     INSERT INTO clues (
-                        puzzle_id, clue_number, direction, clue_text, 
+                        puzzle_id, clue_number, direction, clue_text,
                         answer, enumeration,
                         hint_level_1, hint_level_2, hint_level_3, hint_level_4,
                         hint_1_approved, hint_2_approved, hint_3_approved, hint_4_approved
@@ -1521,17 +1560,17 @@ def scrape_and_import():
                     False, False, False, False
                 ))
                 clue_count += 1
-            
+
             print(f"Inserted {clue_count} clues into database")
             conn.commit()
-            
+
         except Exception as db_error:
             conn.rollback()
             raise db_error
         finally:
             cursor.close()
             conn.close()
-        
+
         # Build response message
         message = f"Successfully imported puzzle {puzzle_number}"
         if clues_with_hints == 0:
@@ -1543,7 +1582,8 @@ def scrape_and_import():
         if api_usage.get('api_calls', 0) > 0:
             message += f" | API cost: ${api_usage['estimated_cost_usd']:.4f}"
 
-        return jsonify({
+        task.update({
+            'status': 'complete',
             'success': True,
             'puzzle_id': puzzle_id,
             'puzzle_number': puzzle_data.get('puzzle_number', puzzle_number),
@@ -1551,18 +1591,17 @@ def scrape_and_import():
             'clue_count': len(puzzle_data.get('clues', [])),
             'hints_found': clues_with_hints,
             'api_usage': api_usage,
-            'message': message
+            'message': message,
         })
-        
+
     except Exception as e:
-        print(f"Error in scrape_and_import: {e}")
-        import traceback
-        error_details = traceback.format_exc()
+        print(f"Error in import task: {e}")
+        error_details = tb_module.format_exc()
         print(error_details)
-        return jsonify({
-            'success': False, 
+        task.update({
+            'status': 'error',
             'message': str(e),
-            'details': error_details[:500]  # First 500 chars of traceback
+            'details': error_details[:500],
         })
 
 
