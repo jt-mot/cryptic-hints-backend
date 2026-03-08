@@ -20,7 +20,7 @@ import psycopg2.errors
 from psycopg2.extras import RealDictCursor
 import html as html_module
 import json
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import os
 import secrets
 import smtplib
@@ -41,6 +41,15 @@ CORS(app)
 
 # In-memory store for background import tasks
 _import_tasks = {}
+
+# Auto-import scheduler state
+_scheduler_state = {
+    'enabled': os.environ.get('AUTO_IMPORT_ENABLED', 'true').lower() == 'true',
+    'running': False,
+    'last_check': None,
+    'last_result': None,
+    'next_check': None,
+}
 
 DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://localhost/crosswords_dev')
 SITE_URL = os.environ.get('SITE_URL', 'https://www.cryptic-hints.com').rstrip('/')
@@ -2237,6 +2246,279 @@ def import_puzzle():
     })
 
 
+# ---------------------------------------------------------------------------
+# Auto-import scheduler
+# ---------------------------------------------------------------------------
+
+def _discover_latest_puzzle_number(puzzle_type='cryptic'):
+    """Fetch the Guardian crosswords series page and find the latest puzzle number."""
+    import requests as req
+    series = 'quiptic' if puzzle_type == 'quiptic' else 'cryptic'
+    url = f'https://www.theguardian.com/crosswords/series/{series}'
+    try:
+        resp = req.get(url, timeout=30, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+        resp.raise_for_status()
+        # Links look like /crosswords/cryptic/29940
+        import re as _re
+        pattern = rf'/crosswords/{series}/(\d+)'
+        numbers = [int(m) for m in _re.findall(pattern, resp.text)]
+        if numbers:
+            return str(max(numbers))
+    except Exception as e:
+        print(f"[auto-import] Failed to discover latest puzzle number: {e}")
+    return None
+
+
+def _auto_import_once(puzzle_type='cryptic'):
+    """Run one auto-import cycle. Returns a status message string."""
+
+    # Discover the latest puzzle number from Guardian
+    latest_num = _discover_latest_puzzle_number(puzzle_type)
+    if not latest_num:
+        return "Could not determine latest puzzle number from Guardian"
+
+    # Check if already imported
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id FROM puzzles WHERE puzzle_number = %s AND puzzle_type = %s",
+            (latest_num, puzzle_type),
+        )
+        existing = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if existing:
+            return f"Puzzle {latest_num} already imported"
+    except Exception as e:
+        return f"DB check failed: {e}"
+
+    # Check if fifteensquared has the analysis yet
+    from puzzle_scraper import FifteensquaredScraper
+    fs = FifteensquaredScraper()
+    post_url = fs.find_puzzle_post(latest_num, puzzle_type)
+    if not post_url:
+        return f"Puzzle {latest_num} not on fifteensquared yet"
+
+    # Run the full import
+    print(f"[auto-import] Importing puzzle {latest_num}...")
+    from puzzle_scraper import PuzzleScraper
+    scraper = PuzzleScraper()
+    try:
+        puzzle_data = scraper.scrape_puzzle(latest_num, puzzle_type)
+    except Exception as e:
+        return f"Scrape failed: {e}"
+
+    if 'error' in puzzle_data:
+        return f"Scrape error: {puzzle_data['error']}"
+
+    # Save to database
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT INTO puzzles (publication, puzzle_type, puzzle_number, setter, date, status)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+        ''', (
+            puzzle_data.get('publication', 'Guardian'),
+            puzzle_data.get('puzzle_type', puzzle_type),
+            puzzle_data.get('puzzle_number', latest_num),
+            puzzle_data.get('setter', 'Unknown'),
+            puzzle_data.get('date', datetime.now().strftime('%Y-%m-%d')),
+            'draft',
+        ))
+        puzzle_id = cursor.fetchone()[0]
+
+        if puzzle_data.get('grid'):
+            cursor.execute(
+                "UPDATE puzzles SET grid_data = %s WHERE id = %s",
+                (json.dumps(puzzle_data['grid']), puzzle_id),
+            )
+
+        api_usage = puzzle_data.get('api_usage', {})
+        if api_usage.get('api_calls', 0) > 0:
+            cursor.execute('''
+                INSERT INTO api_usage (
+                    puzzle_id, puzzle_number, api_calls,
+                    input_tokens, output_tokens,
+                    estimated_cost_usd, model
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ''', (
+                puzzle_id, latest_num,
+                api_usage.get('api_calls', 0),
+                api_usage.get('input_tokens', 0),
+                api_usage.get('output_tokens', 0),
+                api_usage.get('estimated_cost_usd', 0),
+                api_usage.get('model', ''),
+            ))
+
+        clue_count = 0
+        for clue_d in puzzle_data.get('clues', []):
+            hints = clue_d.get('hints', ['', '', '', ''])
+            cursor.execute('''
+                INSERT INTO clues (
+                    puzzle_id, clue_number, direction, clue_text,
+                    answer, enumeration,
+                    hint_level_1, hint_level_2, hint_level_3, hint_level_4,
+                    hint_1_approved, hint_2_approved, hint_3_approved, hint_4_approved
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ''', (
+                puzzle_id,
+                str(clue_d.get('clue_number', ''))[:10],
+                str(clue_d.get('direction', 'across'))[:10],
+                str(clue_d.get('clue_text', ''))[:500],
+                str(clue_d.get('answer', ''))[:100],
+                str(clue_d.get('enumeration', ''))[:20],
+                (hints[0][:1000] if len(hints) > 0 else ''),
+                (hints[1][:1000] if len(hints) > 1 else ''),
+                (hints[2][:2000] if len(hints) > 2 else ''),
+                (hints[3][:5000] if len(hints) > 3 else ''),
+                True, True, True, True,  # Auto-approve all hints
+            ))
+            clue_count += 1
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print(f"[auto-import] Saved {clue_count} clues")
+    except Exception as e:
+        return f"DB save failed: {e}"
+
+    # Publish the puzzle
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE puzzles
+            SET status = 'published', published_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+        ''', (puzzle_id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print(f"[auto-import] Published puzzle {latest_num}")
+    except Exception as e:
+        return f"Publish failed: {e}"
+
+    # Notify subscribers in background
+    setter_name = puzzle_data.get('setter', 'Unknown')
+    if SMTP_USER and SMTP_PASSWORD:
+        notify_subscribers(latest_num, setter_name, puzzle_type)
+
+    cost_str = ''
+    if api_usage.get('api_calls', 0) > 0:
+        cost_str = f", API cost: ${api_usage['estimated_cost_usd']:.4f}"
+    return f"Imported, approved, and published puzzle {latest_num} by {setter_name} ({clue_count} clues{cost_str})"
+
+
+def _scheduler_loop():
+    """Background loop: check hourly 9am-6pm Mon-Fri (UK time)."""
+    import time as _time
+    try:
+        from zoneinfo import ZoneInfo
+    except ImportError:
+        from backports.zoneinfo import ZoneInfo
+    uk_tz = ZoneInfo('Europe/London')
+
+    while True:
+        try:
+            now = datetime.now(uk_tz)
+            _scheduler_state['next_check'] = None
+
+            # Only Mon(0)-Fri(4), 9am-6pm UK time
+            if _scheduler_state['enabled'] and now.weekday() < 5 and 9 <= now.hour < 18:
+                _scheduler_state['running'] = True
+                _scheduler_state['last_check'] = now.isoformat()
+                print(f"\n[auto-import] Running check at {now.strftime('%Y-%m-%d %H:%M')} UK")
+                result = _auto_import_once('cryptic')
+                _scheduler_state['last_result'] = result
+                _scheduler_state['running'] = False
+                print(f"[auto-import] Result: {result}")
+            else:
+                _scheduler_state['running'] = False
+
+            # Sleep until the next hour boundary + 5 minutes
+            now2 = datetime.now(uk_tz)
+            minutes_to_next = 60 - now2.minute + 5
+            _scheduler_state['next_check'] = (
+                now2.replace(second=0, microsecond=0)
+                + timedelta(minutes=minutes_to_next)
+            ).isoformat()
+            _time.sleep(minutes_to_next * 60)
+
+        except Exception as e:
+            print(f"[auto-import] Scheduler error: {e}")
+            _scheduler_state['running'] = False
+            _scheduler_state['last_result'] = f"Error: {e}"
+            _time.sleep(300)  # Retry in 5 minutes on error
+
+
+def start_scheduler():
+    """Start the auto-import scheduler in a background thread."""
+    t = threading.Thread(target=_scheduler_loop, daemon=True, name='auto-import')
+    t.start()
+    print("[auto-import] Scheduler started (Mon-Fri 9am-6pm UK, hourly)")
+
+
+@app.route('/admin/api/auto-import/status')
+@login_required
+def auto_import_status():
+    """Get auto-import scheduler status"""
+    return jsonify(_scheduler_state)
+
+
+@app.route('/admin/api/auto-import/toggle', methods=['POST'])
+@login_required
+def auto_import_toggle():
+    """Enable or disable the auto-import scheduler"""
+    _scheduler_state['enabled'] = not _scheduler_state['enabled']
+    status = 'enabled' if _scheduler_state['enabled'] else 'disabled'
+    print(f"[auto-import] Scheduler {status}")
+    return jsonify({'success': True, 'enabled': _scheduler_state['enabled']})
+
+
+@app.route('/admin/api/auto-import/run-now', methods=['POST'])
+@login_required
+def auto_import_run_now():
+    """Trigger an immediate auto-import check"""
+    if _scheduler_state['running']:
+        return jsonify({'success': False, 'message': 'Import already running'})
+
+    task_id = str(uuid.uuid4())
+    _import_tasks[task_id] = {
+        'status': 'running',
+        'step': 'Running auto-import...',
+    }
+
+    def _run():
+        try:
+            _scheduler_state['running'] = True
+            _scheduler_state['last_check'] = datetime.now().isoformat()
+            result = _auto_import_once('cryptic')
+            _scheduler_state['last_result'] = result
+            _scheduler_state['running'] = False
+
+            is_success = result.startswith('Imported')
+            _import_tasks[task_id].update({
+                'status': 'complete' if is_success else 'error',
+                'message': result,
+                'success': is_success,
+            })
+        except Exception as e:
+            _scheduler_state['running'] = False
+            _import_tasks[task_id].update({
+                'status': 'error',
+                'message': str(e),
+            })
+
+    threading.Thread(target=_run, daemon=True).start()
+    return jsonify({'success': True, 'task_id': task_id})
+
+
 # Initialize database when running with gunicorn (production)
 # This runs on module import, before any requests
 try:
@@ -2248,6 +2530,9 @@ except Exception:
     print("Database tables don't exist, initializing...")
     init_db()
     print("✓ Database initialized successfully!")
+
+# Start the auto-import scheduler
+start_scheduler()
 
 
 if __name__ == '__main__':
