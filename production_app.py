@@ -233,6 +233,12 @@ def init_db():
         )
     ''')
 
+    # Prevent duplicate puzzles (safe to run repeatedly - IF NOT EXISTS)
+    cursor.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_puzzles_number_type
+        ON puzzles (puzzle_number, puzzle_type)
+    ''')
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS subscribers (
             id SERIAL PRIMARY KEY,
@@ -2279,19 +2285,24 @@ def _auto_import_once(puzzle_type='cryptic'):
     if not latest_num:
         return "Could not determine latest puzzle number from Guardian"
 
-    # Check if already imported
+    # Acquire advisory lock to prevent concurrent imports, then check DB
     try:
         conn = get_db()
         cursor = conn.cursor()
+        # Advisory lock keyed on puzzle number (prevents two workers importing same puzzle)
+        cursor.execute("SELECT pg_advisory_lock(hashtext(%s))", (f'import-{latest_num}',))
         cursor.execute(
             "SELECT id FROM puzzles WHERE puzzle_number = %s AND puzzle_type = %s",
             (latest_num, puzzle_type),
         )
         existing = cursor.fetchone()
+        if existing:
+            cursor.execute("SELECT pg_advisory_unlock(hashtext(%s))", (f'import-{latest_num}',))
+            cursor.close()
+            conn.close()
+            return f"Puzzle {latest_num} already imported"
         cursor.close()
         conn.close()
-        if existing:
-            return f"Puzzle {latest_num} already imported"
     except Exception as e:
         return f"DB check failed: {e}"
 
@@ -2381,11 +2392,23 @@ def _auto_import_once(puzzle_type='cryptic'):
             ))
             clue_count += 1
 
+        # Release advisory lock now that the puzzle row exists
+        cursor.execute("SELECT pg_advisory_unlock(hashtext(%s))", (f'import-{latest_num}',))
         conn.commit()
         cursor.close()
         conn.close()
         print(f"[auto-import] Saved {clue_count} clues")
     except Exception as e:
+        # Release lock on failure too
+        try:
+            unlock_conn = get_db()
+            unlock_cur = unlock_conn.cursor()
+            unlock_cur.execute("SELECT pg_advisory_unlock(hashtext(%s))", (f'import-{latest_num}',))
+            unlock_conn.commit()
+            unlock_cur.close()
+            unlock_conn.close()
+        except Exception:
+            pass
         return f"DB save failed: {e}"
 
     # Publish the puzzle
