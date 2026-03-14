@@ -26,6 +26,7 @@ import secrets
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import time
 import threading
 import uuid
 import traceback as tb_module
@@ -147,6 +148,88 @@ def get_db():
     """Get database connection"""
     conn = psycopg2.connect(DATABASE_URL)
     return conn
+
+
+def save_puzzle_to_db(puzzle_data, puzzle_number, puzzle_type, auto_approve=False):
+    """Save scraped puzzle data to the database.
+
+    Returns (puzzle_id, clue_count) on success.
+    Raises on failure (caller should handle).
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            INSERT INTO puzzles (publication, puzzle_type, puzzle_number, setter, date, status)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+        ''', (
+            puzzle_data.get('publication', 'Guardian'),
+            puzzle_data.get('puzzle_type', puzzle_type),
+            puzzle_data.get('puzzle_number', puzzle_number),
+            puzzle_data.get('setter', 'Unknown'),
+            puzzle_data.get('date', datetime.now().strftime('%Y-%m-%d')),
+            'draft',
+        ))
+        puzzle_id = cursor.fetchone()[0]
+
+        if puzzle_data.get('grid'):
+            cursor.execute(
+                "UPDATE puzzles SET grid_data = %s WHERE id = %s",
+                (json.dumps(puzzle_data['grid']), puzzle_id),
+            )
+
+        api_usage = puzzle_data.get('api_usage', {})
+        if api_usage.get('api_calls', 0) > 0:
+            cursor.execute('''
+                INSERT INTO api_usage (
+                    puzzle_id, puzzle_number, api_calls,
+                    input_tokens, output_tokens,
+                    estimated_cost_usd, model
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ''', (
+                puzzle_id,
+                puzzle_data.get('puzzle_number', puzzle_number),
+                api_usage.get('api_calls', 0),
+                api_usage.get('input_tokens', 0),
+                api_usage.get('output_tokens', 0),
+                api_usage.get('estimated_cost_usd', 0),
+                api_usage.get('model', ''),
+            ))
+
+        clue_count = 0
+        for clue_d in puzzle_data.get('clues', []):
+            hints = clue_d.get('hints', ['', '', '', ''])
+            cursor.execute('''
+                INSERT INTO clues (
+                    puzzle_id, clue_number, direction, clue_text,
+                    answer, enumeration,
+                    hint_level_1, hint_level_2, hint_level_3, hint_level_4,
+                    hint_1_approved, hint_2_approved, hint_3_approved, hint_4_approved
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ''', (
+                puzzle_id,
+                str(clue_d.get('clue_number', ''))[:10],
+                str(clue_d.get('direction', 'across'))[:10],
+                str(clue_d.get('clue_text', ''))[:500],
+                str(clue_d.get('answer', ''))[:100],
+                str(clue_d.get('enumeration', ''))[:20],
+                (hints[0][:1000] if len(hints) > 0 else ''),
+                (hints[1][:1000] if len(hints) > 1 else ''),
+                (hints[2][:2000] if len(hints) > 2 else ''),
+                (hints[3][:5000] if len(hints) > 3 else ''),
+                auto_approve, auto_approve, auto_approve, auto_approve,
+            ))
+            clue_count += 1
+
+        conn.commit()
+        return puzzle_id, clue_count
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
 
 
 def init_db():
@@ -275,6 +358,7 @@ def init_db():
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_date ON puzzles(date)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_status ON puzzles(status)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_clue_puzzle ON clues(puzzle_id)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_clue_lookup ON clues(puzzle_id, clue_number, direction)')
     cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriber_email ON subscribers(email)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_comments_puzzle ON comments(puzzle_number)')
     cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_blog_slug ON blog_posts(slug)')
@@ -1434,6 +1518,7 @@ def scrape_and_import():
         'step': 'Starting import...',
         'puzzle_number': puzzle_number,
         'puzzle_type': puzzle_type,
+        '_ts': time.time(),
     }
 
     thread = threading.Thread(
@@ -1450,6 +1535,13 @@ def scrape_and_import():
 @login_required
 def import_status(task_id):
     """Poll import task status"""
+    # Evict finished tasks older than 1 hour to prevent memory leak
+    now = time.time()
+    stale = [k for k, v in _import_tasks.items()
+             if v.get('status') != 'running' and now - v.get('_ts', now) > 3600]
+    for k in stale:
+        _import_tasks.pop(k, None)
+
     task = _import_tasks.get(task_id)
     if not task:
         return jsonify({'status': 'not_found'}), 404
@@ -1463,7 +1555,6 @@ def _run_import_task(task_id, puzzle_number, puzzle_type):
         from puzzle_scraper import PuzzleScraper
 
         task['step'] = 'Fetching puzzle from Guardian...'
-
         scraper = PuzzleScraper()
 
         try:
@@ -1471,139 +1562,34 @@ def _run_import_task(task_id, puzzle_number, puzzle_type):
         except Exception as scrape_error:
             print(f"Scraping error: {scrape_error}")
             tb_module.print_exc()
-            task.update({
-                'status': 'error',
-                'message': f'Scraping failed: {str(scrape_error)}',
-                'details': 'Error while fetching puzzle data',
-            })
+            task.update({'status': 'error', 'message': f'Scraping failed: {scrape_error}',
+                         'details': 'Error while fetching puzzle data'})
             return
 
         if 'error' in puzzle_data:
-            task.update({
-                'status': 'error',
-                'message': puzzle_data['error'],
-                'details': 'Could not fetch puzzle from Guardian',
-            })
+            task.update({'status': 'error', 'message': puzzle_data['error'],
+                         'details': 'Could not fetch puzzle from Guardian'})
             return
 
         task['step'] = 'Saving to database...'
+        puzzle_id, clue_count = save_puzzle_to_db(puzzle_data, puzzle_number, puzzle_type)
 
-        # Check hint coverage
         clues_with_hints = len([c for c in puzzle_data.get('clues', []) if any(c.get('hints', []))])
-
-        # Import into database
-        conn = get_db()
-        cursor = conn.cursor()
-
-        try:
-            # Insert puzzle
-            cursor.execute('''
-                INSERT INTO puzzles (publication, puzzle_type, puzzle_number, setter, date, status)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                RETURNING id
-            ''', (
-                puzzle_data.get('publication', 'Guardian'),
-                puzzle_data.get('puzzle_type', puzzle_type),
-                puzzle_data.get('puzzle_number', puzzle_number),
-                puzzle_data.get('setter', 'Unknown'),
-                puzzle_data.get('date', datetime.now().strftime('%Y-%m-%d')),
-                'draft'
-            ))
-
-            puzzle_id = cursor.fetchone()[0]
-
-            # Store grid data if available
-            if puzzle_data.get('grid'):
-                cursor.execute('''
-                    UPDATE puzzles
-                    SET grid_data = %s
-                    WHERE id = %s
-                ''', (json.dumps(puzzle_data['grid']), puzzle_id))
-
-            # Store API usage stats
-            api_usage = puzzle_data.get('api_usage', {})
-            if api_usage.get('api_calls', 0) > 0:
-                cursor.execute('''
-                    INSERT INTO api_usage (
-                        puzzle_id, puzzle_number, api_calls,
-                        input_tokens, output_tokens,
-                        estimated_cost_usd, model
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-                ''', (
-                    puzzle_id,
-                    puzzle_data.get('puzzle_number', puzzle_number),
-                    api_usage.get('api_calls', 0),
-                    api_usage.get('input_tokens', 0),
-                    api_usage.get('output_tokens', 0),
-                    api_usage.get('estimated_cost_usd', 0),
-                    api_usage.get('model', ''),
-                ))
-
-            # Insert clues with hints
-            clue_count = 0
-            for clue_data in puzzle_data.get('clues', []):
-                hints = clue_data.get('hints', ['', '', '', ''])
-
-                # Validate data
-                clue_number = str(clue_data.get('clue_number', ''))[:10]
-                direction = str(clue_data.get('direction', 'across'))[:10]
-                clue_text = str(clue_data.get('clue_text', ''))[:500]
-                answer = str(clue_data.get('answer', ''))[:100]
-                enumeration = str(clue_data.get('enumeration', ''))[:20]
-
-                # Truncate hints if too long
-                hint1 = hints[0][:1000] if len(hints) > 0 else ''
-                hint2 = hints[1][:1000] if len(hints) > 1 else ''
-                hint3 = hints[2][:2000] if len(hints) > 2 else ''
-                hint4 = hints[3][:5000] if len(hints) > 3 else ''
-
-                cursor.execute('''
-                    INSERT INTO clues (
-                        puzzle_id, clue_number, direction, clue_text,
-                        answer, enumeration,
-                        hint_level_1, hint_level_2, hint_level_3, hint_level_4,
-                        hint_1_approved, hint_2_approved, hint_3_approved, hint_4_approved
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ''', (
-                    puzzle_id,
-                    clue_number,
-                    direction,
-                    clue_text,
-                    answer,
-                    enumeration,
-                    hint1, hint2, hint3, hint4,
-                    False, False, False, False
-                ))
-                clue_count += 1
-
-            print(f"Inserted {clue_count} clues into database")
-            conn.commit()
-
-        except Exception as db_error:
-            conn.rollback()
-            raise db_error
-        finally:
-            cursor.close()
-            conn.close()
-
-        # Build response message
         message = f"Successfully imported puzzle {puzzle_number}"
         if clues_with_hints == 0:
             message += " (No hints found - you'll need to write hints manually)"
         elif clues_with_hints < len(puzzle_data.get('clues', [])):
             message += f" ({clues_with_hints}/{len(puzzle_data['clues'])} clues have hints)"
-
         api_usage = puzzle_data.get('api_usage', {})
         if api_usage.get('api_calls', 0) > 0:
             message += f" | API cost: ${api_usage['estimated_cost_usd']:.4f}"
 
         task.update({
-            'status': 'complete',
-            'success': True,
+            'status': 'complete', 'success': True,
             'puzzle_id': puzzle_id,
             'puzzle_number': puzzle_data.get('puzzle_number', puzzle_number),
             'setter': puzzle_data.get('setter', 'Unknown'),
-            'clue_count': len(puzzle_data.get('clues', [])),
+            'clue_count': clue_count,
             'hints_found': clues_with_hints,
             'api_usage': api_usage,
             'message': message,
@@ -1613,11 +1599,8 @@ def _run_import_task(task_id, puzzle_number, puzzle_type):
         print(f"Error in import task: {e}")
         error_details = tb_module.format_exc()
         print(error_details)
-        task.update({
-            'status': 'error',
-            'message': str(e),
-            'details': error_details[:500],
-        })
+        task.update({'status': 'error', 'message': str(e),
+                     'details': error_details[:500]})
 
 
 @app.route('/admin/quick-import')
@@ -2285,24 +2268,19 @@ def _auto_import_once(puzzle_type='cryptic'):
     if not latest_num:
         return "Could not determine latest puzzle number from Guardian"
 
-    # Acquire advisory lock to prevent concurrent imports, then check DB
+    # Check if already imported (unique index prevents duplicates even in a race)
     try:
         conn = get_db()
         cursor = conn.cursor()
-        # Advisory lock keyed on puzzle number (prevents two workers importing same puzzle)
-        cursor.execute("SELECT pg_advisory_lock(hashtext(%s))", (f'import-{latest_num}',))
         cursor.execute(
             "SELECT id FROM puzzles WHERE puzzle_number = %s AND puzzle_type = %s",
             (latest_num, puzzle_type),
         )
         existing = cursor.fetchone()
-        if existing:
-            cursor.execute("SELECT pg_advisory_unlock(hashtext(%s))", (f'import-{latest_num}',))
-            cursor.close()
-            conn.close()
-            return f"Puzzle {latest_num} already imported"
         cursor.close()
         conn.close()
+        if existing:
+            return f"Puzzle {latest_num} already imported"
     except Exception as e:
         return f"DB check failed: {e}"
 
@@ -2325,90 +2303,14 @@ def _auto_import_once(puzzle_type='cryptic'):
     if 'error' in puzzle_data:
         return f"Scrape error: {puzzle_data['error']}"
 
-    # Save to database
+    # Save to database with auto-approve
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-
-        cursor.execute('''
-            INSERT INTO puzzles (publication, puzzle_type, puzzle_number, setter, date, status)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING id
-        ''', (
-            puzzle_data.get('publication', 'Guardian'),
-            puzzle_data.get('puzzle_type', puzzle_type),
-            puzzle_data.get('puzzle_number', latest_num),
-            puzzle_data.get('setter', 'Unknown'),
-            puzzle_data.get('date', datetime.now().strftime('%Y-%m-%d')),
-            'draft',
-        ))
-        puzzle_id = cursor.fetchone()[0]
-
-        if puzzle_data.get('grid'):
-            cursor.execute(
-                "UPDATE puzzles SET grid_data = %s WHERE id = %s",
-                (json.dumps(puzzle_data['grid']), puzzle_id),
-            )
-
-        api_usage = puzzle_data.get('api_usage', {})
-        if api_usage.get('api_calls', 0) > 0:
-            cursor.execute('''
-                INSERT INTO api_usage (
-                    puzzle_id, puzzle_number, api_calls,
-                    input_tokens, output_tokens,
-                    estimated_cost_usd, model
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ''', (
-                puzzle_id, latest_num,
-                api_usage.get('api_calls', 0),
-                api_usage.get('input_tokens', 0),
-                api_usage.get('output_tokens', 0),
-                api_usage.get('estimated_cost_usd', 0),
-                api_usage.get('model', ''),
-            ))
-
-        clue_count = 0
-        for clue_d in puzzle_data.get('clues', []):
-            hints = clue_d.get('hints', ['', '', '', ''])
-            cursor.execute('''
-                INSERT INTO clues (
-                    puzzle_id, clue_number, direction, clue_text,
-                    answer, enumeration,
-                    hint_level_1, hint_level_2, hint_level_3, hint_level_4,
-                    hint_1_approved, hint_2_approved, hint_3_approved, hint_4_approved
-                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-            ''', (
-                puzzle_id,
-                str(clue_d.get('clue_number', ''))[:10],
-                str(clue_d.get('direction', 'across'))[:10],
-                str(clue_d.get('clue_text', ''))[:500],
-                str(clue_d.get('answer', ''))[:100],
-                str(clue_d.get('enumeration', ''))[:20],
-                (hints[0][:1000] if len(hints) > 0 else ''),
-                (hints[1][:1000] if len(hints) > 1 else ''),
-                (hints[2][:2000] if len(hints) > 2 else ''),
-                (hints[3][:5000] if len(hints) > 3 else ''),
-                True, True, True, True,  # Auto-approve all hints
-            ))
-            clue_count += 1
-
-        # Release advisory lock now that the puzzle row exists
-        cursor.execute("SELECT pg_advisory_unlock(hashtext(%s))", (f'import-{latest_num}',))
-        conn.commit()
-        cursor.close()
-        conn.close()
+        puzzle_id, clue_count = save_puzzle_to_db(
+            puzzle_data, latest_num, puzzle_type, auto_approve=True)
         print(f"[auto-import] Saved {clue_count} clues")
+    except psycopg2.errors.UniqueViolation:
+        return f"Puzzle {latest_num} already imported (race)"
     except Exception as e:
-        # Release lock on failure too
-        try:
-            unlock_conn = get_db()
-            unlock_cur = unlock_conn.cursor()
-            unlock_cur.execute("SELECT pg_advisory_unlock(hashtext(%s))", (f'import-{latest_num}',))
-            unlock_conn.commit()
-            unlock_cur.close()
-            unlock_conn.close()
-        except Exception:
-            pass
         return f"DB save failed: {e}"
 
     # Publish the puzzle
@@ -2515,6 +2417,7 @@ def auto_import_run_now():
     _import_tasks[task_id] = {
         'status': 'running',
         'step': 'Running auto-import...',
+        '_ts': time.time(),
     }
 
     def _run():
@@ -2554,8 +2457,9 @@ except Exception:
     init_db()
     print("✓ Database initialized successfully!")
 
-# Start the auto-import scheduler
-start_scheduler()
+# Start the auto-import scheduler (skip during tests)
+if not os.environ.get('TESTING'):
+    start_scheduler()
 
 
 if __name__ == '__main__':
