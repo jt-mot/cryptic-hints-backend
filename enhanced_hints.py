@@ -866,17 +866,3 @@ Respond with ONLY a JSON object in this exact format:
             return ' '.join(paragraphs) if paragraphs else "No explanation available."
 
         return " | ".join(parts)
-
-
-# For backward compatibility
-class HintGenerator:
-    """Legacy class that uses enhanced generator"""
-
-    def __init__(self):
-        self.enhanced = EnhancedHintGenerator()
-
-    @staticmethod
-    def generate_hints(hint_paragraphs: List[str]) -> List[str]:
-        """Generate hints using enhanced system"""
-        generator = EnhancedHintGenerator()
-        return generator.generate_hints(hint_paragraphs, author='generic')

@@ -1,10 +1,13 @@
 """Shared test fixtures. Patches the DB before production_app is imported."""
+import os
 import sys
 import json
 from unittest.mock import patch, MagicMock
 
 import pytest
 
+# Prevent the auto-import scheduler from starting during tests
+os.environ['TESTING'] = '1'
 
 # Patch psycopg2.connect at the module level BEFORE production_app is imported,
 # since it runs a DB check on import.
