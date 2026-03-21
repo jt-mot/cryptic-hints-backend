@@ -535,6 +535,12 @@ def guide_page():
     return _serve_html('guide.html')
 
 
+@app.route('/synonyms')
+def synonyms_page():
+    """Serve the public synonym database page"""
+    return send_from_directory('static', 'synonym_database.html')
+
+
 @app.route('/blog')
 def blog_listing():
     """Serve the blog listing page"""
@@ -2395,6 +2401,7 @@ def _auto_import_once(puzzle_type='cryptic'):
     if SMTP_USER and SMTP_PASSWORD:
         notify_subscribers(latest_num, setter_name, puzzle_type)
 
+    api_usage = puzzle_data.get('api_usage', {})
     cost_str = ''
     if api_usage.get('api_calls', 0) > 0:
         cost_str = f", API cost: ${api_usage['estimated_cost_usd']:.4f}"
