@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Times Cryptic Synonym Database</title>
+<title>Guardian Cryptic Synonym Database</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
@@ -11,7 +11,7 @@
   header h1 { font-size: 1.4rem; font-weight: 500; letter-spacing: -0.02em; }
   header p { font-size: 0.85rem; color: #aaa; margin-top: 4px; }
   main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1.5rem; }
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
   .stat { background: #fff; border: 1px solid #e8e8e0; border-radius: 10px; padding: 1rem; }
   .stat-num { font-size: 1.6rem; font-weight: 600; color: #1a1a1a; }
   .stat-label { font-size: 0.75rem; color: #888; margin-top: 2px; }
@@ -26,10 +26,13 @@
   .tab.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
   .tab:hover:not(.active) { background: #f0f0e8; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-  .card { background: #fff; border: 1px solid #e8e8e0; border-radius: 10px; padding: 0.875rem 1rem; }
+  .card { background: #fff; border: 1px solid #e8e8e0; border-radius: 10px; padding: 0.875rem 1rem; position: relative; }
   .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
   .card-key { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+  .card-actions { display: flex; gap: 4px; align-items: center; }
   .cat-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+  .del-btn { width: 20px; height: 20px; border: none; background: none; color: #ccc; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; border-radius: 4px; }
+  .del-btn:hover { color: #e53e3e; background: #fee2e2; }
   .vals { display: flex; flex-wrap: wrap; gap: 5px; }
   .val { font-size: 13px; background: #f5f5f0; border: 1px solid #e8e8e0; padding: 3px 10px; border-radius: 20px; color: #333; }
   .empty { grid-column: 1/-1; text-align: center; padding: 3rem; color: #888; font-size: 14px; }
@@ -58,7 +61,7 @@
   .cat-TIME    { background: #fef3c7; color: #92400e; }
   .cat-MONEY   { background: #dcfce7; color: #166534; }
   @media (max-width: 600px) {
-    .stats { grid-template-columns: repeat(2,1fr); }
+    .stats { grid-template-columns: repeat(3,1fr); }
     header { padding: 1rem; }
     main { padding: 1rem; }
   }
@@ -66,18 +69,17 @@
 </head>
 <body>
 <header>
-  <h1>Times Cryptic — Synonym Database</h1>
+  <h1>Guardian Cryptic &mdash; Synonym Database</h1>
   <p>Common wordplay abbreviations and substitutions</p>
 </header>
 <main>
   <div class="stats">
     <div class="stat"><div class="stat-num" id="s-entries">0</div><div class="stat-label">Entries</div></div>
     <div class="stat"><div class="stat-num" id="s-cats">0</div><div class="stat-label">Categories</div></div>
-    <div class="stat"><div class="stat-num" id="s-keys">0</div><div class="stat-label">Keywords</div></div>
     <div class="stat"><div class="stat-num" id="s-syns">0</div><div class="stat-label">Synonyms</div></div>
   </div>
   <div class="controls">
-    <input type="text" id="search" placeholder="Search keyword or synonym…" oninput="render()">
+    <input type="text" id="search" placeholder="Search keyword or synonym&hellip;" oninput="render()">
     <select id="cat-filter" onchange="syncTab(this.value); render()"><option value="">All categories</option></select>
     <button class="export-btn" onclick="exportCSV()">Export CSV</button>
   </div>
@@ -109,11 +111,8 @@
 
   <div class="panel">
     <h3>Extract from clue explanations</h3>
-    <div class="sub">Paste wordplay breakdowns from timesforthetimes.co.uk — Claude will extract and add synonyms automatically. Requires an Anthropic API key below.</div>
-    <div class="row" style="margin-bottom:8px">
-      <input type="text" id="api-key" placeholder="Anthropic API key (sk-ant-…)" style="flex:2">
-    </div>
-    <textarea id="ai-input" placeholder="e.g. INDUCED – IN (batting) + DUD (failure), containing C (century)…"></textarea>
+    <div class="sub">Paste wordplay breakdowns from fifteensquared.net &mdash; Claude will extract and add synonyms automatically.</div>
+    <textarea id="ai-input" placeholder="e.g. INDUCED &ndash; IN (batting) + DUD (failure), containing C (century)&hellip;"></textarea>
     <button class="btn" style="margin-top:8px" onclick="extractFromText()">Extract synonyms</button>
     <div class="status" id="ai-status"></div>
   </div>
@@ -122,7 +121,7 @@
 <script>
 const CATS = ["CRICKET","WORKERS","LETTERS","NUMBERS","PEOPLE","MUSIC","SPORTS","GEOGRAPHY","TIME","MONEY","MISC"];
 
-let db = [
+const DEFAULT_DB = [
   {key:"worker",vals:["ant","bee","hand","man","emp"],cat:"WORKERS"},
   {key:"workers",vals:["ants","bees","hands","men","staff","crew"],cat:"WORKERS"},
   {key:"insect",vals:["ant","bee","fly","gnat","wasp"],cat:"WORKERS"},
@@ -213,26 +212,38 @@ let db = [
   {key:"coin",vals:["p","d","l","groat"],cat:"MONEY"},
 ];
 
+// Load from localStorage or use defaults
+let db = JSON.parse(localStorage.getItem('synonym_db')) || JSON.parse(JSON.stringify(DEFAULT_DB));
+
+function saveDb() {
+  localStorage.setItem('synonym_db', JSON.stringify(db));
+}
+
 let activeTab = "";
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
 
 function cats() { return ["", ...new Set(db.map(e=>e.cat))].filter((v,i,a)=>a.indexOf(v)===i); }
 
 function updateStats() {
   document.getElementById("s-entries").textContent = db.length;
   document.getElementById("s-cats").textContent = new Set(db.map(e=>e.cat)).size;
-  document.getElementById("s-keys").textContent = db.length;
   document.getElementById("s-syns").textContent = db.reduce((s,e)=>s+e.vals.length,0);
 }
 
 function renderTabs() {
   const all = cats();
   document.getElementById("tabs").innerHTML = all.map(c =>
-    `<div class="tab ${activeTab===c?'active':''}" onclick="setTab('${c}')">${c||"All"}</div>`
+    `<div class="tab ${activeTab===c?'active':''}" onclick="setTab('${esc(c)}')">${esc(c)||"All"}</div>`
   ).join("");
   const sel = document.getElementById("cat-filter");
   const prev = sel.value;
   sel.innerHTML = `<option value="">All categories</option>` +
-    CATS.map(c=>`<option value="${c}" ${prev===c?'selected':''}>${c}</option>`).join("");
+    CATS.map(c=>`<option value="${esc(c)}" ${prev===c?'selected':''}>${esc(c)}</option>`).join("");
 }
 
 function setTab(cat) {
@@ -258,14 +269,20 @@ function render() {
     grid.innerHTML = `<div class="empty">No entries found.</div>`;
     return;
   }
-  grid.innerHTML = filtered.map(e => `
+  grid.innerHTML = filtered.map((e,i) => {
+    const idx = db.indexOf(e);
+    return `
     <div class="card">
       <div class="card-top">
-        <span class="card-key">${e.key}</span>
-        <span class="cat-badge cat-${e.cat}">${e.cat}</span>
+        <span class="card-key">${esc(e.key)}</span>
+        <div class="card-actions">
+          <span class="cat-badge cat-${esc(e.cat)}">${esc(e.cat)}</span>
+          <button class="del-btn" onclick="deleteEntry(${idx})" title="Delete">&times;</button>
+        </div>
       </div>
-      <div class="vals">${e.vals.map(v=>`<span class="val">${v}</span>`).join("")}</div>
-    </div>`).join("");
+      <div class="vals">${e.vals.map(v=>`<span class="val">${esc(v)}</span>`).join("")}</div>
+    </div>`;
+  }).join("");
 }
 
 function addEntry() {
@@ -278,6 +295,14 @@ function addEntry() {
   else db.push({key:k, vals:[v], cat:c});
   document.getElementById("nk").value = "";
   document.getElementById("nv").value = "";
+  saveDb();
+  render();
+}
+
+function deleteEntry(idx) {
+  if (idx < 0 || idx >= db.length) return;
+  db.splice(idx, 1);
+  saveDb();
   render();
 }
 
@@ -292,37 +317,38 @@ function exportCSV() {
 
 async function extractFromText() {
   const text = document.getElementById("ai-input").value.trim();
-  const key  = document.getElementById("api-key").value.trim();
   if (!text) { document.getElementById("ai-status").textContent = "Please paste some clue text first."; return; }
-  if (!key)  { document.getElementById("ai-status").textContent = "Please enter your Anthropic API key."; return; }
   const btn = document.querySelector("#ai-input ~ .btn");
   btn.disabled = true;
-  document.getElementById("ai-status").textContent = "Extracting…";
+  document.getElementById("ai-status").textContent = "Extracting...";
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514", max_tokens:1000,
-        messages:[{role:"user",content:`Extract cryptic crossword wordplay synonyms from this text. Look for patterns like "WORD (clue word)" where clue word is the synonym for WORD in the crossword. Return ONLY a JSON array: [{"key":"clue word","val":"crossword code","cat":"CATEGORY"}] where CATEGORY is one of: CRICKET, WORKERS, LETTERS, NUMBERS, PEOPLE, MUSIC, SPORTS, GEOGRAPHY, TIME, MONEY, MISC. No markdown, no extra text.\n\n${text}`}]
-      })
+    const res = await fetch("/admin/api/synonyms/extract", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      credentials: "same-origin",
+      body: JSON.stringify({ text: text })
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Server error " + res.status);
+    }
     const data = await res.json();
-    const raw = data.content.map(b=>b.text||"").join("").replace(/```json|```/g,"").trim();
-    const items = JSON.parse(raw);
+    const items = data.synonyms || [];
     let added = 0;
     items.forEach(item => {
       if (!item.key||!item.val) return;
       const k=item.key.toLowerCase(), v=item.val.toLowerCase(), c=item.cat||"MISC";
+      if (!CATS.includes(c)) return;
       const ex=db.find(e=>e.key===k&&e.cat===c);
       if (ex) { if (!ex.vals.includes(v)){ex.vals.push(v);added++;} }
       else { db.push({key:k,vals:[v],cat:c}); added++; }
     });
+    saveDb();
     document.getElementById("ai-status").textContent = `Done! Added ${added} new synonym(s).`;
     document.getElementById("ai-input").value = "";
     render();
   } catch(e) {
-    document.getElementById("ai-status").textContent = "Error: " + (e.message||"check API key and text format.");
+    document.getElementById("ai-status").textContent = "Error: " + e.message;
   }
   btn.disabled = false;
 }
