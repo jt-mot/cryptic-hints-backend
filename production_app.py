@@ -2001,6 +2001,67 @@ def admin_subscribers():
 
 
 # ============================================================================
+# SYNONYM DATABASE
+# ============================================================================
+
+@app.route('/admin/synonyms')
+@login_required
+def admin_synonyms():
+    """Admin synonym database page"""
+    return send_from_directory('static', 'synonym_database.html')
+
+
+@app.route('/admin/api/synonyms/extract', methods=['POST'])
+@login_required
+def extract_synonyms():
+    """Proxy endpoint for Claude API to extract synonyms from clue text."""
+    import requests as req
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key:
+        return jsonify({'success': False, 'message': 'ANTHROPIC_API_KEY not configured on server'}), 500
+
+    data = request.get_json()
+    text = (data or {}).get('text', '').strip()
+    if not text:
+        return jsonify({'success': False, 'message': 'No text provided'}), 400
+
+    prompt = (
+        'Extract cryptic crossword wordplay synonyms from this text. '
+        'Look for patterns like "WORD (clue word)" where clue word is the synonym for WORD in the crossword. '
+        'Return ONLY a JSON array: [{"key":"clue word","val":"crossword code","cat":"CATEGORY"}] '
+        'where CATEGORY is one of: CRICKET, WORKERS, LETTERS, NUMBERS, PEOPLE, MUSIC, SPORTS, GEOGRAPHY, TIME, MONEY, MISC. '
+        'No markdown, no extra text.\n\n' + text
+    )
+
+    try:
+        resp = req.post(
+            'https://api.anthropic.com/v1/messages',
+            headers={
+                'Content-Type': 'application/json',
+                'x-api-key': api_key,
+                'anthropic-version': '2023-06-01',
+            },
+            json={
+                'model': 'claude-sonnet-4-6-20250514',
+                'max_tokens': 1000,
+                'messages': [{'role': 'user', 'content': prompt}],
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+        raw = ''.join(b.get('text', '') for b in result.get('content', []))
+        raw = raw.replace('```json', '').replace('```', '').strip()
+        synonyms = json.loads(raw)
+        return jsonify({'success': True, 'synonyms': synonyms})
+    except req.RequestException as e:
+        return jsonify({'success': False, 'message': f'API request failed: {e}'}), 502
+    except (json.JSONDecodeError, KeyError) as e:
+        return jsonify({'success': False, 'message': f'Failed to parse API response: {e}'}), 500
+
+
+# ============================================================================
 # BLOG ADMIN
 # ============================================================================
 
