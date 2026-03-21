@@ -2010,6 +2010,12 @@ def admin_subscribers():
 # SYNONYM DATABASE
 # ============================================================================
 
+@app.route('/synonyms')
+def public_synonyms():
+    """Public read-only synonym database page"""
+    return send_from_directory('static', 'synonym_database.html')
+
+
 @app.route('/admin/synonyms')
 @login_required
 def admin_synonyms():
