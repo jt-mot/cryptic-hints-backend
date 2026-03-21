@@ -90,7 +90,7 @@
   <div class="tabs" id="tabs"></div>
   <div class="grid" id="grid"></div>
 
-  <div class="panel">
+  <div class="panel" id="panel-add" style="display:none">
     <h3>Add an entry</h3>
     <div class="sub">Add a new keyword/synonym pair to the database.</div>
     <div class="row">
@@ -113,7 +113,7 @@
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="panel-extract" style="display:none">
     <h3>Extract from clue explanations</h3>
     <div class="sub">Paste wordplay breakdowns from fifteensquared.net &mdash; Claude will extract and add synonyms automatically.</div>
     <textarea id="ai-input" placeholder="e.g. INDUCED &ndash; IN (batting) + DUD (failure), containing C (century)&hellip;"></textarea>
@@ -123,6 +123,7 @@
 </main>
 
 <script>
+const IS_ADMIN = location.pathname.startsWith('/admin');
 const CATS = ["CRICKET","WORKERS","LETTERS","NUMBERS","PEOPLE","MUSIC","SPORTS","GEOGRAPHY","TIME","MONEY","MISC"];
 
 const DEFAULT_DB = [
@@ -533,10 +534,10 @@ function render() {
         <span class="card-key">${esc(e.key)}</span>
         <div class="card-actions">
           <span class="cat-badge cat-${esc(e.cat)}">${esc(e.cat)}</span>
-          <button class="del-btn" onclick="deleteEntry(${idx})" title="Delete">&times;</button>
+          ${IS_ADMIN?`<button class="del-btn" onclick="deleteEntry(${idx})" title="Delete">&times;</button>`:''}
         </div>
       </div>
-      <div class="vals">${e.vals.map((v,vi)=>`<span class="val">${esc(v)}<button class="val-rm" onclick="removeVal(${idx},${vi})" title="Remove">&times;</button></span>`).join("")}<button class="val-add" onclick="addVal(${idx})" title="Add synonym">+</button></div>
+      <div class="vals">${e.vals.map((v,vi)=>`<span class="val">${esc(v)}${IS_ADMIN?`<button class="val-rm" onclick="removeVal(${idx},${vi})" title="Remove">&times;</button>`:''}</span>`).join("")}${IS_ADMIN?`<button class="val-add" onclick="addVal(${idx})" title="Add synonym">+</button>`:''}</div>
     </div>`;
   }).join("");
 }
@@ -629,6 +630,10 @@ async function extractFromText() {
   btn.disabled = false;
 }
 
+if (IS_ADMIN) {
+  document.getElementById('panel-add').style.display = '';
+  document.getElementById('panel-extract').style.display = '';
+}
 render();
 </script>
 </body>
