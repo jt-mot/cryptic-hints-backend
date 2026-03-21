@@ -33,8 +33,12 @@
   .cat-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
   .del-btn { width: 20px; height: 20px; border: none; background: none; color: #ccc; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; border-radius: 4px; }
   .del-btn:hover { color: #e53e3e; background: #fee2e2; }
-  .vals { display: flex; flex-wrap: wrap; gap: 5px; }
-  .val { font-size: 13px; background: #f5f5f0; border: 1px solid #e8e8e0; padding: 3px 10px; border-radius: 20px; color: #333; }
+  .vals { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .val { font-size: 13px; background: #f5f5f0; border: 1px solid #e8e8e0; padding: 3px 10px; border-radius: 20px; color: #333; display: inline-flex; align-items: center; gap: 4px; }
+  .val-rm { border: none; background: none; color: #bbb; cursor: pointer; font-size: 12px; padding: 0; line-height: 1; border-radius: 50%; }
+  .val-rm:hover { color: #e53e3e; }
+  .val-add { font-size: 18px; width: 24px; height: 24px; border: 1px dashed #ccc; background: none; color: #aaa; cursor: pointer; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+  .val-add:hover { border-color: #888; color: #555; background: #f0f0e8; }
   .empty { grid-column: 1/-1; text-align: center; padding: 3rem; color: #888; font-size: 14px; }
   .panel { background: #fff; border: 1px solid #e8e8e0; border-radius: 12px; padding: 1.25rem; margin-top: 1.5rem; }
   .panel h3 { font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
@@ -532,7 +536,7 @@ function render() {
           <button class="del-btn" onclick="deleteEntry(${idx})" title="Delete">&times;</button>
         </div>
       </div>
-      <div class="vals">${e.vals.map(v=>`<span class="val">${esc(v)}</span>`).join("")}</div>
+      <div class="vals">${e.vals.map((v,vi)=>`<span class="val">${esc(v)}<button class="val-rm" onclick="removeVal(${idx},${vi})" title="Remove">&times;</button></span>`).join("")}<button class="val-add" onclick="addVal(${idx})" title="Add synonym">+</button></div>
     </div>`;
   }).join("");
 }
@@ -554,6 +558,26 @@ function addEntry() {
 function deleteEntry(idx) {
   if (idx < 0 || idx >= db.length) return;
   db.splice(idx, 1);
+  saveDb();
+  render();
+}
+
+function removeVal(entryIdx, valIdx) {
+  const e = db[entryIdx];
+  if (!e || valIdx < 0 || valIdx >= e.vals.length) return;
+  e.vals.splice(valIdx, 1);
+  if (e.vals.length === 0) db.splice(entryIdx, 1);
+  saveDb();
+  render();
+}
+
+function addVal(entryIdx) {
+  const e = db[entryIdx];
+  if (!e) return;
+  const v = prompt(`Add synonym to "${e.key}":`);
+  if (!v || !v.trim()) return;
+  const val = v.trim().toLowerCase();
+  if (!e.vals.includes(val)) e.vals.push(val);
   saveDb();
   render();
 }
