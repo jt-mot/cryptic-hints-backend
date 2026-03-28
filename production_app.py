@@ -30,8 +30,6 @@ import time
 import threading
 import uuid
 import traceback as tb_module
-import requests as ext_requests
-from bs4 import BeautifulSoup
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
@@ -2026,7 +2024,13 @@ def times_checker():
 
 @app.route('/api/check-clue', methods=['POST'])
 def check_clue():
-    """Look up a crossword clue on danword.com and check user's guess without revealing the answer."""
+    """Use Claude to solve a crossword clue and check the user's guess without revealing the answer."""
+    import requests as req
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key:
+        return jsonify({'success': False, 'message': 'ANTHROPIC_API_KEY not configured on server'}), 500
+
     data = request.get_json()
     if not data:
         return jsonify({'success': False, 'message': 'No data provided'}), 400
@@ -2037,84 +2041,67 @@ def check_clue():
     if not clue or not guess:
         return jsonify({'success': False, 'message': 'Clue text and guess are required'}), 400
 
-    # Build danword URL: spaces -> underscores, capitalise first letters
-    clue_slug = '_'.join(w.capitalize() for w in clue.split())
-    # Strip characters that aren't URL-safe (keep letters, digits, underscores)
-    clue_slug = ''.join(c for c in clue_slug if c.isalnum() or c == '_')
-    url = f'https://www.danword.com/crossword/{clue_slug}'
+    guess_len = len(guess)
+
+    prompt = (
+        'You are solving a cryptic crossword clue from The Times. '
+        f'The clue is: "{clue}"\n'
+        f'The answer has {guess_len} letters.\n\n'
+        'Give me your top 3 most likely answers, in order of confidence. '
+        'Return ONLY a JSON array of uppercase strings, no explanation, no markdown.\n'
+        'Example: ["ANSWER", "OTHER", "THIRD"]'
+    )
 
     try:
-        resp = ext_requests.get(url, headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml',
-            'Accept-Language': 'en-GB,en;q=0.9',
-        }, timeout=10)
+        resp = req.post(
+            'https://api.anthropic.com/v1/messages',
+            headers={
+                'Content-Type': 'application/json',
+                'x-api-key': api_key,
+                'anthropic-version': '2023-06-01',
+            },
+            json={
+                'model': 'claude-sonnet-4-6-20250514',
+                'max_tokens': 200,
+                'messages': [{'role': 'user', 'content': prompt}],
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+        raw = ''.join(b.get('text', '') for b in result.get('content', []))
+        raw = raw.replace('```json', '').replace('```', '').strip()
+        candidates = json.loads(raw)
 
-        if resp.status_code == 404:
-            return jsonify({'success': False, 'message': 'Clue not found on danword. Try rewording the clue text.'})
+        if not isinstance(candidates, list):
+            return jsonify({'success': False, 'message': 'Unexpected response format'}), 500
 
-        if resp.status_code != 200:
-            return jsonify({'success': False, 'message': f'danword returned status {resp.status_code}. Try again later.'})
+        # Normalise candidates
+        candidates = [c.upper().replace(' ', '') for c in candidates if isinstance(c, str)]
+        # Filter to correct length
+        candidates = [c for c in candidates if len(c) == guess_len]
 
-        soup = BeautifulSoup(resp.text, 'html.parser')
-
-        # Extract candidate answers from danword page
-        # Danword lists answers typically in bold or in specific elements
-        candidates = set()
-
-        # Look for answer text in various patterns danword uses
-        # They typically show answers in uppercase in links or spans
-        for el in soup.find_all(['a', 'span', 'td', 'strong', 'b']):
-            text = el.get_text(strip=True).upper().replace(' ', '')
-            # Only consider words that are all letters and reasonable length
-            if text.isalpha() and 2 <= len(text) <= 25:
-                candidates.add(text)
-
-        # Also check for any text that matches the guess length
-        guess_len = len(guess)
-        length_matches = {c for c in candidates if len(c) == guess_len}
+        if not candidates:
+            return jsonify({'success': False, 'message': 'Could not determine an answer for this clue. Try including the clue number or pattern.'})
 
         # Check if guess matches any candidate
         if guess in candidates:
             return jsonify({'success': True, 'correct': True})
 
-        # If we found candidates of the right length, give a hint about wrong letters
-        if length_matches:
-            # Find the best match (most common answer of right length on the page)
-            # Use the first one that appears most likely (exact length match)
-            best = None
-            for el in soup.find_all(['a', 'span', 'td', 'strong', 'b']):
-                text = el.get_text(strip=True).upper().replace(' ', '')
-                if text in length_matches:
-                    best = text
-                    break
+        # Not a match — give feedback using the top candidate
+        best = candidates[0]
+        wrong_positions = [i for i in range(guess_len) if i < len(best) and guess[i] != best[i]]
+        return jsonify({
+            'success': True,
+            'correct': False,
+            'wrong_count': len(wrong_positions),
+            'wrong_positions': wrong_positions
+        })
 
-            if best:
-                wrong_positions = [i for i in range(len(guess)) if i < len(best) and guess[i] != best[i]]
-                return jsonify({
-                    'success': True,
-                    'correct': False,
-                    'wrong_count': len(wrong_positions),
-                    'wrong_positions': wrong_positions
-                })
-
-        # We found candidates but none matched
-        if candidates:
-            return jsonify({
-                'success': True,
-                'correct': False,
-                'wrong_count': None,
-                'hint': f'Found answers but none match your {guess_len}-letter guess.'
-            })
-
-        return jsonify({'success': False, 'message': 'Could not extract answers from danword. Try rewording the clue.'})
-
-    except ext_requests.exceptions.Timeout:
-        return jsonify({'success': False, 'message': 'danword took too long to respond. Try again.'})
-    except ext_requests.exceptions.RequestException as e:
-        return jsonify({'success': False, 'message': 'Could not reach danword.com. Check connection.'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': 'Unexpected error looking up clue.'})
+    except req.RequestException as e:
+        return jsonify({'success': False, 'message': 'API request failed. Try again.'}), 502
+    except (json.JSONDecodeError, KeyError):
+        return jsonify({'success': False, 'message': 'Failed to parse solver response. Try again.'}), 500
 
 
 @app.route('/admin/synonyms')
