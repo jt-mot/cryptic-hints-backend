@@ -2010,6 +2010,12 @@ def public_synonyms():
     return send_from_directory('static', 'synonym_database.html')
 
 
+@app.route('/periodic-table')
+def public_periodic_table():
+    """Public periodic table reference page"""
+    return send_from_directory('static', 'periodic-table.html')
+
+
 @app.route('/admin/synonyms')
 @login_required
 def admin_synonyms():
