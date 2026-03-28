@@ -2016,6 +2016,12 @@ def public_periodic_table():
     return send_from_directory('static', 'periodic-table.html')
 
 
+@app.route('/times-checker')
+def times_checker():
+    """Times crossword checker tool"""
+    return send_from_directory('static', 'times-checker.html')
+
+
 @app.route('/admin/synonyms')
 @login_required
 def admin_synonyms():
