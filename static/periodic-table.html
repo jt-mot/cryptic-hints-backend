@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Periodic Table — Cryptic Crossword Reference</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+  header { background: #1a1a1a; color: #fff; padding: 1.5rem 2rem; }
+  header h1 { font-size: 1.4rem; font-weight: 500; letter-spacing: -0.02em; }
+  header p { font-size: 0.85rem; color: #aaa; margin-top: 4px; }
+  main { max-width: 1280px; margin: 0 auto; padding: 1.5rem; }
+
+  /* Search & filter bar */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 1.2rem; flex-wrap: wrap; align-items: center; }
+  .toolbar input[type=text] { flex: 1; min-width: 200px; padding: 9px 14px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 14px; background: #fff; color: #1a1a1a; outline: none; }
+  .toolbar input[type=text]:focus { border-color: #999; }
+  .toolbar .hint { font-size: 12px; color: #888; }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 1.2rem; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.08); }
+
+  /* Periodic table grid: 18 columns */
+  .table-wrap { overflow-x: auto; padding-bottom: 1rem; }
+  .ptable { display: grid; grid-template-columns: repeat(18, minmax(58px, 1fr)); gap: 2px; margin-bottom: 8px; }
+
+  /* Element cell */
+  .el { border-radius: 6px; padding: 4px 5px; cursor: default; transition: transform 0.12s, box-shadow 0.12s; position: relative; border: 1px solid rgba(0,0,0,0.06); min-height: 62px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+  .el:hover { transform: scale(1.15); box-shadow: 0 4px 16px rgba(0,0,0,0.18); z-index: 10; }
+  .el .num { font-size: 9px; color: rgba(0,0,0,0.45); position: absolute; top: 3px; left: 5px; }
+  .el .symbol { font-size: 18px; font-weight: 700; line-height: 1.1; }
+  .el .name { font-size: 8px; color: rgba(0,0,0,0.5); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; }
+  .el .mass { font-size: 7.5px; color: rgba(0,0,0,0.35); }
+  .el.highlight { outline: 2.5px solid #1a1a1a; outline-offset: -1px; }
+  .el.dim { opacity: 0.18; }
+
+  /* Spacer for gaps */
+  .gap { visibility: hidden; }
+
+  /* Lanthanide/actinide label arrows */
+  .la-label { grid-column: 3; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #888; font-weight: 600; letter-spacing: 0.02em; }
+
+  /* Separator row */
+  .sep { grid-column: 1 / -1; height: 12px; }
+
+  /* Category colours — subtle, desaturated palette */
+  .cat-alkali       { background: #fde8e8; }
+  .cat-alkaline     { background: #fef0cd; }
+  .cat-transition   { background: #fff4d6; }
+  .cat-post-trans   { background: #d6eef8; }
+  .cat-metalloid    { background: #d9f0e0; }
+  .cat-nonmetal     { background: #e2f0d9; }
+  .cat-halogen      { background: #e5e0f5; }
+  .cat-noble        { background: #dde8f8; }
+  .cat-lanthanide   { background: #f5e6f0; }
+  .cat-actinide     { background: #f0e0e6; }
+  .cat-unknown      { background: #eee; }
+
+  /* Detail panel */
+  .detail { background: #fff; border: 1px solid #e8e8e0; border-radius: 12px; padding: 1.25rem; margin-top: 1rem; display: none; }
+  .detail.active { display: flex; gap: 2rem; flex-wrap: wrap; align-items: flex-start; }
+  .detail-symbol { font-size: 4rem; font-weight: 800; line-height: 1; min-width: 90px; text-align: center; padding: 10px; border-radius: 10px; }
+  .detail-info { flex: 1; min-width: 200px; }
+  .detail-info h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 4px; }
+  .detail-info .meta { font-size: 13px; color: #666; margin-bottom: 10px; }
+  .detail-info .cryptic { background: #f8f7f2; border: 1px solid #e8e8e0; border-radius: 8px; padding: 10px 14px; font-size: 13px; line-height: 1.6; }
+  .detail-info .cryptic strong { color: #1a1a1a; }
+  .detail-info .cryptic em { color: #888; font-style: normal; }
+
+  /* Crossword-relevant badge */
+  .xw { position: absolute; top: 2px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: #e53e3e; }
+
+  @media (max-width: 700px) {
+    header { padding: 1rem; }
+    main { padding: 0.75rem; }
+    .ptable { grid-template-columns: repeat(18, 38px); gap: 1px; }
+    .el { min-height: 46px; padding: 2px; }
+    .el .symbol { font-size: 14px; }
+    .el .name { display: none; }
+    .el .mass { display: none; }
+    .el .num { font-size: 7px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Guardian Cryptic &mdash; Periodic Table Reference</h1>
+  <p>Chemical symbols commonly used in cryptic crossword wordplay</p>
+</header>
+<main>
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search element, symbol, or crossword clue word&hellip;" oninput="filterTable()">
+    <span class="hint">Red dot = commonly used in cryptic clues</span>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div class="table-wrap">
+    <div class="ptable" id="ptable"></div>
+  </div>
+  <div class="detail" id="detail"></div>
+</main>
+
+<script>
+// Category labels and colours
+const CAT_MAP = {
+  'alkali': ['Alkali Metal', '#fde8e8'],
+  'alkaline': ['Alkaline Earth', '#fef0cd'],
+  'transition': ['Transition Metal', '#fff4d6'],
+  'post-trans': ['Post-Transition', '#d6eef8'],
+  'metalloid': ['Metalloid', '#d9f0e0'],
+  'nonmetal': ['Reactive Nonmetal', '#e2f0d9'],
+  'halogen': ['Halogen', '#e5e0f5'],
+  'noble': ['Noble Gas', '#dde8f8'],
+  'lanthanide': ['Lanthanide', '#f5e6f0'],
+  'actinide': ['Actinide', '#f0e0e6'],
+  'unknown': ['Unknown', '#eee']
+};
+
+// Crossword-relevant clue words for elements commonly seen in cryptics
+const CRYPTIC = {
+  H:  ['hydrogen'],
+  He: ['helium','party gas'],
+  C:  ['carbon','century','cold','about','circa'],
+  N:  ['nitrogen','north','knight','noon','new'],
+  O:  ['oxygen','love','zero','nothing','ring','old','duck'],
+  F:  ['fluorine','loud','forte','friday','fahrenheit'],
+  Na: ['sodium'],
+  Al: ['aluminium','boy\'s name'],
+  Si: ['silicon','yes (Spanish/Italian)'],
+  P:  ['phosphorus','quiet','piano','parking','penny','prince','power'],
+  S:  ['sulphur','south','second','small','shilling','sunday','society'],
+  Cl: ['chlorine'],
+  K:  ['potassium','king','thousand','kelvin'],
+  Ca: ['calcium','about','circa'],
+  Ti: ['titanium'],
+  V:  ['vanadium','five','versus','very'],
+  Cr: ['chromium','crown'],
+  Mn: ['manganese'],
+  Fe: ['iron'],
+  Co: ['cobalt','company'],
+  Ni: ['nickel'],
+  Cu: ['copper','policeman'],
+  Zn: ['zinc'],
+  Ga: ['gallium'],
+  As: ['arsenic'],
+  Se: ['selenium'],
+  Br: ['bromine'],
+  Kr: ['krypton'],
+  Rb: ['rubidium'],
+  Sr: ['strontium'],
+  Mo: ['molybdenum','doctor','moment'],
+  Ag: ['silver'],
+  Sn: ['tin'],
+  Sb: ['antimony'],
+  I:  ['iodine','island','one','me'],
+  Xe: ['xenon'],
+  Ba: ['barium','graduate','sheep sound'],
+  La: ['lanthanum','note','Los Angeles'],
+  W:  ['tungsten','west','with','watt','wicket','wednesday','wife'],
+  Re: ['rhenium','about','concerning','regarding'],
+  Os: ['osmium','outsize'],
+  Ir: ['iridium','Irish'],
+  Pt: ['platinum','point','part'],
+  Au: ['gold'],
+  Hg: ['mercury'],
+  Pb: ['lead'],
+  Bi: ['bismuth','two','bisexual'],
+  Po: ['polonium','river'],
+  At: ['astatine','at'],
+  Ra: ['radium','artist','Royal Academy','sun god'],
+  Th: ['thorium','Thursday'],
+  U:  ['uranium','university','you','upper-class'],
+  Np: ['neptunium'],
+  Pu: ['plutonium'],
+  Am: ['americium','morning'],
+  Cf: ['californium'],
+  Es: ['einsteinium'],
+  Er: ['erbium','queen','hesitation'],
+  Nd: ['neodymium'],
+  Pm: ['promethium','afternoon','Prime Minister'],
+  Ar: ['argon','pirate'],
+  Mg: ['magnesium'],
+  Li: ['lithium','long island'],
+  B:  ['boron','born','bishop','black','bowled','book'],
+  Be: ['beryllium','exist'],
+  Ge: ['germanium'],
+  Nb: ['niobium','note well'],
+  Rn: ['radon','Royal Navy','nurse'],
+  Ac: ['actinium','current','account','before Christ'],
+  Ta: ['tantalum','thanks'],
+  Dy: ['dysprosium'],
+  Ho: ['holmium'],
+  No: ['nobelium','number','refusal'],
+  Md: ['mendelevium','doctor'],
+  Lu: ['lutetium'],
+  Eu: ['europium','European Union'],
+  Gd: ['gadolinium'],
+  Tb: ['terbium'],
+  Yb: ['ytterbium'],
+  Tm: ['thulium'],
+  Pr: ['praseodymium','public relations'],
+  Sm: ['samarium','small'],
+  Ce: ['cerium','Church of England'],
+  Fr: ['francium','Father','French'],
+  Cs: ['caesium'],
+  Sc: ['scandium','Scottish'],
+  Tc: ['technetium'],
+  Ru: ['ruthenium'],
+  Rh: ['rhodium','right hand'],
+  Pd: ['palladium'],
+  Cd: ['cadmium','compact disc'],
+  In: ['indium','batting','home','fashionable'],
+  Te: ['tellurium'],
+  Zr: ['zirconium'],
+  Y:  ['yttrium','unknown','why','yard'],
+  Og: ['oganesson'],
+  Fl: ['flerovium','Florida','floor'],
+  Lv: ['livermorium'],
+  Ts: ['tennessine'],
+  Mc: ['moscovium'],
+  Nh: ['nihonium'],
+  Cn: ['copernicium'],
+  Rg: ['roentgenium'],
+  Ds: ['darmstadtium'],
+  Mt: ['meitnerium','mount','mountain'],
+  Hs: ['hassium'],
+  Bh: ['bohrium'],
+  Sg: ['seaborgium'],
+  Db: ['dubnium'],
+  Rf: ['rutherfordium'],
+  Lr: ['lawrencium'],
+  Fm: ['fermium'],
+  Cf: ['californium'],
+  Bk: ['berkelium'],
+  Cm: ['curium'],
+  Np: ['neptunium']
+};
+
+// Which symbols are commonly seen in cryptic crosswords
+const COMMON_XW = new Set([
+  'H','C','N','O','F','P','S','K','V','Fe','Co','Cu','Ag','Sn','I',
+  'W','Re','Os','Pt','Au','Hg','Pb','Ra','U','B','Na','Al','Bi',
+  'Ba','Mo','Ca','Cr','Ni','Zn','Ar','As','Br','Se','Si','Mg',
+  'Li','Be','Er','Ac','Am','At','No','Ta','La','Po','Mn'
+]);
+
+// All 118 elements: [number, symbol, name, mass, category, row, col]
+const ELEMENTS = [
+  [1,'H','Hydrogen','1.008','nonmetal',1,1],
+  [2,'He','Helium','4.003','noble',1,18],
+  [3,'Li','Lithium','6.941','alkali',2,1],
+  [4,'Be','Beryllium','9.012','alkaline',2,2],
+  [5,'B','Boron','10.81','metalloid',2,13],
+  [6,'C','Carbon','12.01','nonmetal',2,14],
+  [7,'N','Nitrogen','14.01','nonmetal',2,15],
+  [8,'O','Oxygen','16.00','nonmetal',2,16],
+  [9,'F','Fluorine','19.00','halogen',2,17],
+  [10,'Ne','Neon','20.18','noble',2,18],
+  [11,'Na','Sodium','22.99','alkali',3,1],
+  [12,'Mg','Magnesium','24.31','alkaline',3,2],
+  [13,'Al','Aluminium','26.98','post-trans',3,13],
+  [14,'Si','Silicon','28.09','metalloid',3,14],
+  [15,'P','Phosphorus','30.97','nonmetal',3,15],
+  [16,'S','Sulphur','32.07','nonmetal',3,16],
+  [17,'Cl','Chlorine','35.45','halogen',3,17],
+  [18,'Ar','Argon','39.95','noble',3,18],
+  [19,'K','Potassium','39.10','alkali',4,1],
+  [20,'Ca','Calcium','40.08','alkaline',4,2],
+  [21,'Sc','Scandium','44.96','transition',4,3],
+  [22,'Ti','Titanium','47.87','transition',4,4],
+  [23,'V','Vanadium','50.94','transition',4,5],
+  [24,'Cr','Chromium','52.00','transition',4,6],
+  [25,'Mn','Manganese','54.94','transition',4,7],
+  [26,'Fe','Iron','55.85','transition',4,8],
+  [27,'Co','Cobalt','58.93','transition',4,9],
+  [28,'Ni','Nickel','58.69','transition',4,10],
+  [29,'Cu','Copper','63.55','transition',4,11],
+  [30,'Zn','Zinc','65.38','transition',4,12],
+  [31,'Ga','Gallium','69.72','post-trans',4,13],
+  [32,'Ge','Germanium','72.63','metalloid',4,14],
+  [33,'As','Arsenic','74.92','metalloid',4,15],
+  [34,'Se','Selenium','78.97','nonmetal',4,16],
+  [35,'Br','Bromine','79.90','halogen',4,17],
+  [36,'Kr','Krypton','83.80','noble',4,18],
+  [37,'Rb','Rubidium','85.47','alkali',5,1],
+  [38,'Sr','Strontium','87.62','alkaline',5,2],
+  [39,'Y','Yttrium','88.91','transition',5,3],
+  [40,'Zr','Zirconium','91.22','transition',5,4],
+  [41,'Nb','Niobium','92.91','transition',5,5],
+  [42,'Mo','Molybdenum','95.95','transition',5,6],
+  [43,'Tc','Technetium','(98)','transition',5,7],
+  [44,'Ru','Ruthenium','101.1','transition',5,8],
+  [45,'Rh','Rhodium','102.9','transition',5,9],
+  [46,'Pd','Palladium','106.4','transition',5,10],
+  [47,'Ag','Silver','107.9','transition',5,11],
+  [48,'Cd','Cadmium','112.4','transition',5,12],
+  [49,'In','Indium','114.8','post-trans',5,13],
+  [50,'Sn','Tin','118.7','post-trans',5,14],
+  [51,'Sb','Antimony','121.8','metalloid',5,15],
+  [52,'Te','Tellurium','127.6','metalloid',5,16],
+  [53,'I','Iodine','126.9','halogen',5,17],
+  [54,'Xe','Xenon','131.3','noble',5,18],
+  [55,'Cs','Caesium','132.9','alkali',6,1],
+  [56,'Ba','Barium','137.3','alkaline',6,2],
+  // La–Lu in lanthanide row
+  [72,'Hf','Hafnium','178.5','transition',6,4],
+  [73,'Ta','Tantalum','180.9','transition',6,5],
+  [74,'W','Tungsten','183.8','transition',6,6],
+  [75,'Re','Rhenium','186.2','transition',6,7],
+  [76,'Os','Osmium','190.2','transition',6,8],
+  [77,'Ir','Iridium','192.2','transition',6,9],
+  [78,'Pt','Platinum','195.1','transition',6,10],
+  [79,'Au','Gold','197.0','transition',6,11],
+  [80,'Hg','Mercury','200.6','transition',6,12],
+  [81,'Tl','Thallium','204.4','post-trans',6,13],
+  [82,'Pb','Lead','207.2','post-trans',6,14],
+  [83,'Bi','Bismuth','209.0','post-trans',6,15],
+  [84,'Po','Polonium','(209)','post-trans',6,16],
+  [85,'At','Astatine','(210)','halogen',6,17],
+  [86,'Rn','Radon','(222)','noble',6,18],
+  [87,'Fr','Francium','(223)','alkali',7,1],
+  [88,'Ra','Radium','(226)','alkaline',7,2],
+  // Ac–Lr in actinide row
+  [104,'Rf','Rutherfordium','(267)','transition',7,4],
+  [105,'Db','Dubnium','(268)','transition',7,5],
+  [106,'Sg','Seaborgium','(269)','transition',7,6],
+  [107,'Bh','Bohrium','(270)','transition',7,7],
+  [108,'Hs','Hassium','(277)','transition',7,8],
+  [109,'Mt','Meitnerium','(278)','transition',7,9],
+  [110,'Ds','Darmstadtium','(281)','transition',7,10],
+  [111,'Rg','Roentgenium','(282)','transition',7,11],
+  [112,'Cn','Copernicium','(285)','transition',7,12],
+  [113,'Nh','Nihonium','(286)','post-trans',7,13],
+  [114,'Fl','Flerovium','(289)','post-trans',7,14],
+  [115,'Mc','Moscovium','(290)','post-trans',7,15],
+  [116,'Lv','Livermorium','(293)','post-trans',7,16],
+  [117,'Ts','Tennessine','(294)','halogen',7,17],
+  [118,'Og','Oganesson','(294)','noble',7,18]
+];
+
+// Lanthanides (row 9 visually, col 3-17)
+const LANTHANIDES = [
+  [57,'La','Lanthanum','138.9','lanthanide',9,3],
+  [58,'Ce','Cerium','140.1','lanthanide',9,4],
+  [59,'Pr','Praseodymium','140.9','lanthanide',9,5],
+  [60,'Nd','Neodymium','144.2','lanthanide',9,6],
+  [61,'Pm','Promethium','(145)','lanthanide',9,7],
+  [62,'Sm','Samarium','150.4','lanthanide',9,8],
+  [63,'Eu','Europium','152.0','lanthanide',9,9],
+  [64,'Gd','Gadolinium','157.3','lanthanide',9,10],
+  [65,'Tb','Terbium','158.9','lanthanide',9,11],
+  [66,'Dy','Dysprosium','162.5','lanthanide',9,12],
+  [67,'Ho','Holmium','164.9','lanthanide',9,13],
+  [68,'Er','Erbium','167.3','lanthanide',9,14],
+  [69,'Tm','Thulium','168.9','lanthanide',9,15],
+  [70,'Yb','Ytterbium','173.0','lanthanide',9,16],
+  [71,'Lu','Lutetium','175.0','lanthanide',9,17]
+];
+
+// Actinides (row 10 visually, col 3-17)
+const ACTINIDES = [
+  [89,'Ac','Actinium','(227)','actinide',10,3],
+  [90,'Th','Thorium','232.0','actinide',10,4],
+  [91,'Pa','Protactinium','231.0','actinide',10,5],
+  [92,'U','Uranium','238.0','actinide',10,6],
+  [93,'Np','Neptunium','(237)','actinide',10,7],
+  [94,'Pu','Plutonium','(244)','actinide',10,8],
+  [95,'Am','Americium','(243)','actinide',10,9],
+  [96,'Cm','Curium','(247)','actinide',10,10],
+  [97,'Bk','Berkelium','(247)','actinide',10,11],
+  [98,'Cf','Californium','(251)','actinide',10,12],
+  [99,'Es','Einsteinium','(252)','actinide',10,13],
+  [100,'Fm','Fermium','(257)','actinide',10,14],
+  [101,'Md','Mendelevium','(258)','actinide',10,15],
+  [102,'No','Nobelium','(259)','actinide',10,16],
+  [103,'Lr','Lawrencium','(266)','actinide',10,17]
+];
+
+const ALL = [...ELEMENTS, ...LANTHANIDES, ...ACTINIDES];
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function buildLegend() {
+  const el = document.getElementById('legend');
+  el.innerHTML = Object.entries(CAT_MAP).map(([k, [label, color]]) =>
+    `<div class="legend-item"><div class="legend-swatch" style="background:${color}"></div>${label}</div>`
+  ).join('');
+}
+
+function buildTable() {
+  const grid = document.getElementById('ptable');
+  // Create a position map: "row-col" -> element
+  const posMap = {};
+  ALL.forEach(e => { posMap[e[5]+'-'+e[6]] = e; });
+
+  let html = '';
+
+  // Rows 1-7: main table
+  for (let r = 1; r <= 7; r++) {
+    for (let c = 1; c <= 18; c++) {
+      const key = r+'-'+c;
+      if (posMap[key]) {
+        html += cellHTML(posMap[key]);
+      } else if (r === 6 && c === 3) {
+        html += `<div class="la-label">57–71 ▼</div>`;
+      } else if (r === 7 && c === 3) {
+        html += `<div class="la-label">89–103 ▼</div>`;
+      } else {
+        html += `<div class="gap"></div>`;
+      }
+    }
+  }
+
+  // Separator
+  html += `<div class="sep"></div>`;
+
+  // Rows 9-10: Lanthanides & Actinides
+  for (let r = 9; r <= 10; r++) {
+    // Cols 1-2 empty
+    html += `<div class="gap"></div><div class="gap"></div>`;
+    for (let c = 3; c <= 17; c++) {
+      const key = r+'-'+c;
+      if (posMap[key]) {
+        html += cellHTML(posMap[key]);
+      } else {
+        html += `<div class="gap"></div>`;
+      }
+    }
+    // Col 18 empty
+    html += `<div class="gap"></div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function cellHTML(e) {
+  const [num, sym, name, mass, cat] = e;
+  const xw = COMMON_XW.has(sym) ? '<div class="xw"></div>' : '';
+  return `<div class="el cat-${cat}" data-sym="${sym}" data-num="${num}" data-name="${name}" data-mass="${mass}" data-cat="${cat}" onclick="showDetail('${sym}')">
+    <span class="num">${num}</span>${xw}
+    <span class="symbol">${esc(sym)}</span>
+    <span class="name">${esc(name)}</span>
+    <span class="mass">${mass}</span>
+  </div>`;
+}
+
+function showDetail(sym) {
+  const el = ALL.find(e => e[1] === sym);
+  if (!el) return;
+  const [num, s, name, mass, cat] = el;
+  const panel = document.getElementById('detail');
+  const catInfo = CAT_MAP[cat] || ['Unknown','#eee'];
+  const clues = CRYPTIC[sym] || [];
+  const isXw = COMMON_XW.has(sym);
+
+  let crypticHTML = '';
+  if (clues.length) {
+    crypticHTML = `<div class="cryptic">
+      <strong>Cryptic clue words:</strong> ${clues.map(c => esc(c)).join(', ')}<br>
+      ${isXw ? '<em>★ Frequently appears in cryptic crossword wordplay</em>' : '<em>Occasionally seen in cryptics</em>'}
+    </div>`;
+  } else if (isXw) {
+    crypticHTML = `<div class="cryptic"><strong>${esc(sym)}</strong> <em>is the chemical symbol — look for "${esc(name.toLowerCase())}" in clues</em></div>`;
+  } else {
+    crypticHTML = `<div class="cryptic"><em>Rarely seen in cryptic crosswords</em></div>`;
+  }
+
+  panel.className = 'detail active';
+  panel.innerHTML = `
+    <div class="detail-symbol cat-${cat}">${esc(s)}</div>
+    <div class="detail-info">
+      <h2>${esc(name)}</h2>
+      <div class="meta">#${num} &middot; ${mass} &middot; ${catInfo[0]}</div>
+      ${crypticHTML}
+    </div>`;
+}
+
+function filterTable() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const cells = document.querySelectorAll('.el');
+  if (!q) {
+    cells.forEach(c => { c.classList.remove('highlight', 'dim'); });
+    return;
+  }
+  cells.forEach(c => {
+    const sym = c.dataset.sym;
+    const name = c.dataset.name.toLowerCase();
+    const num = c.dataset.num;
+    const clues = (CRYPTIC[sym] || []).join(' ').toLowerCase();
+    const match = sym.toLowerCase().includes(q) || name.includes(q) || num === q || clues.includes(q);
+    c.classList.toggle('highlight', match);
+    c.classList.toggle('dim', !match);
+  });
+}
+
+buildLegend();
+buildTable();
+</script>
+</body>
+</html>
