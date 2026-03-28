@@ -169,14 +169,18 @@ async function checkAnswer() {
       return;
     }
 
+    const conf = data.confidence === 'high' ? ' (verified)' : ' (unverified)';
+    const src = data.sources ? '<br><span style="font-size:11px;color:#888">' + esc(data.sources) + '</span>' : '';
+
     if (data.correct) {
-      showResult('correct', '<span class="icon">\u2713</span> <strong>Correct!</strong> Well done.');
+      showResult('correct', '<span class="icon">\u2713</span> <strong>Correct!</strong> Well done.' + conf + src);
       addHistory(clue, guess, true, null);
     } else {
       let msg = '<span class="icon">\u2717</span> <strong>Not quite.</strong>';
       if (data.wrong_count !== undefined && data.wrong_count !== null) {
         msg += ' ' + data.wrong_count + ' letter' + (data.wrong_count !== 1 ? 's' : '') + ' wrong.';
       }
+      msg += conf + src;
       if (data.hint) {
         msg += ' ' + esc(data.hint);
       }
