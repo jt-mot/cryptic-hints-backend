@@ -80,7 +80,7 @@
 <body>
 <header>
   <h1>The Times Crossword Checker</h1>
-  <p>Check your answers without spoilers &mdash; you never see the solution</p>
+  <p>Check your answers without spoilers &mdash; Claude solves the clue so you never see the answer</p>
 </header>
 <main>
   <div class="intro">
@@ -88,7 +88,7 @@
     <ol>
       <li>Solve The Times crossword on paper as usual</li>
       <li>For any clue you want to check, <strong>type the clue text</strong> and <strong>your answer</strong> below</li>
-      <li>Hit <strong>Check</strong> &mdash; we look it up behind the scenes and tell you right or wrong, <strong>without ever showing the actual answer</strong></li>
+      <li>Hit <strong>Check</strong> &mdash; Claude solves the clue behind the scenes and tells you right or wrong, <strong>without ever showing the actual answer</strong></li>
     </ol>
   </div>
 
@@ -165,7 +165,7 @@ async function checkAnswer() {
     const data = await resp.json();
 
     if (!data.success) {
-      showResult('error', data.message || 'Could not look up this clue. Try rewording it slightly.');
+      showResult('error', data.message || 'Could not solve this clue. Try including the number pattern, e.g. (4,3).');
       return;
     }
 
