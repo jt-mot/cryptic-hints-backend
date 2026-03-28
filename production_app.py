@@ -2028,36 +2028,67 @@ def times_checker():
     return send_from_directory('static', 'times-checker.html')
 
 
-@app.route('/api/check-clue', methods=['POST'])
-def check_clue():
-    """Use Claude to solve a crossword clue and check the user's guess without revealing the answer."""
-    import requests as req
+def _lookup_cryptics_dataset(req, clue, answer_len):
+    """Search the cryptics.georgeho.org dataset (660K+ cryptic clues) for matching answers."""
+    try:
+        # Full-text search on the clue text
+        resp = req.get(
+            'https://cryptics.georgeho.org/data/clues.json',
+            params={'_search': clue, '_size': 20, '_shape': 'array'},
+            headers={'Accept': 'application/json'},
+            timeout=8,
+        )
+        if resp.status_code != 200:
+            return set()
+        rows = resp.json()
+        answers = set()
+        for row in rows:
+            ans = (row.get('answer') or '').upper().replace(' ', '')
+            if ans.isalpha() and len(ans) == answer_len:
+                answers.add(ans)
+        return answers
+    except Exception:
+        return set()
 
-    api_key = os.environ.get('ANTHROPIC_API_KEY')
-    if not api_key:
-        return jsonify({'success': False, 'message': 'ANTHROPIC_API_KEY not configured on server'}), 500
 
-    data = request.get_json()
-    if not data:
-        return jsonify({'success': False, 'message': 'No data provided'}), 400
+def _lookup_danword(req, clue, answer_len):
+    """Try to look up answers on danword.com."""
+    try:
+        from bs4 import BeautifulSoup
+        clue_slug = '_'.join(w.capitalize() for w in clue.split())
+        clue_slug = ''.join(c for c in clue_slug if c.isalnum() or c == '_')
+        resp = req.get(
+            f'https://www.danword.com/crossword/{clue_slug}',
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'text/html',
+            },
+            timeout=8,
+        )
+        if resp.status_code != 200:
+            return set()
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        answers = set()
+        for el in soup.find_all(['a', 'span', 'td', 'strong', 'b']):
+            text = el.get_text(strip=True).upper().replace(' ', '')
+            if text.isalpha() and len(text) == answer_len:
+                answers.add(text)
+        return answers
+    except Exception:
+        return set()
 
-    clue = (data.get('clue') or '').strip()
-    guess = (data.get('guess') or '').strip().upper().replace(' ', '')
 
-    if not clue or not guess:
-        return jsonify({'success': False, 'message': 'Clue text and guess are required'}), 400
-
-    guess_len = len(guess)
-
+def _solve_with_claude(req, api_key, clue, answer_len):
+    """Ask Claude to solve the cryptic clue. Returns a list of candidate answers."""
     prompt = (
-        'You are solving a cryptic crossword clue from The Times. '
-        f'The clue is: "{clue}"\n'
-        f'The answer has {guess_len} letters.\n\n'
-        'Give me your top 3 most likely answers, in order of confidence. '
+        'You are an expert cryptic crossword solver. '
+        f'Solve this cryptic crossword clue: "{clue}"\n'
+        f'The answer has {answer_len} letters.\n\n'
+        'Break down the wordplay mentally, then give your top 3 most likely answers '
+        'in order of confidence. '
         'Return ONLY a JSON array of uppercase strings, no explanation, no markdown.\n'
-        'Example: ["ANSWER", "OTHER", "THIRD"]'
+        'Example: ["FIRST", "SECOND", "THIRD"]'
     )
-
     try:
         resp = req.post(
             'https://api.anthropic.com/v1/messages',
@@ -2078,36 +2109,81 @@ def check_clue():
         raw = ''.join(b.get('text', '') for b in result.get('content', []))
         raw = raw.replace('```json', '').replace('```', '').strip()
         candidates = json.loads(raw)
-
         if not isinstance(candidates, list):
-            return jsonify({'success': False, 'message': 'Unexpected response format'}), 500
-
-        # Normalise candidates
+            return []
         candidates = [c.upper().replace(' ', '') for c in candidates if isinstance(c, str)]
-        # Filter to correct length
-        candidates = [c for c in candidates if len(c) == guess_len]
+        return [c for c in candidates if len(c) == answer_len]
+    except Exception:
+        return []
 
-        if not candidates:
-            return jsonify({'success': False, 'message': 'Could not determine an answer for this clue. Try including the clue number or pattern.'})
 
-        # Check if guess matches any candidate
-        if guess in candidates:
-            return jsonify({'success': True, 'correct': True})
+@app.route('/api/check-clue', methods=['POST'])
+def check_clue():
+    """Solve a crossword clue using Claude + verification sources, then check user's guess."""
+    import requests as req
 
-        # Not a match — give feedback using the top candidate
-        best = candidates[0]
-        wrong_positions = [i for i in range(guess_len) if i < len(best) and guess[i] != best[i]]
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key:
+        return jsonify({'success': False, 'message': 'ANTHROPIC_API_KEY not configured on server'}), 500
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'message': 'No data provided'}), 400
+
+    clue = (data.get('clue') or '').strip()
+    guess = (data.get('guess') or '').strip().upper().replace(' ', '')
+
+    if not clue or not guess:
+        return jsonify({'success': False, 'message': 'Clue text and guess are required'}), 400
+
+    guess_len = len(guess)
+
+    # Step 1: Ask Claude to solve the clue
+    claude_answers = _solve_with_claude(req, api_key, clue, guess_len)
+
+    # Step 2: Look up verification sources in parallel-ish (sequential but fast)
+    dataset_answers = _lookup_cryptics_dataset(req, clue, guess_len)
+    danword_answers = _lookup_danword(req, clue, guess_len)
+
+    # Step 3: Build a scored set of all candidate answers
+    # Answers confirmed by multiple sources get higher confidence
+    all_candidates = {}
+    for ans in claude_answers:
+        all_candidates[ans] = all_candidates.get(ans, 0) + 1
+    for ans in dataset_answers:
+        all_candidates[ans] = all_candidates.get(ans, 0) + 2  # dataset is authoritative
+    for ans in danword_answers:
+        all_candidates[ans] = all_candidates.get(ans, 0) + 2
+
+    if not all_candidates:
+        return jsonify({'success': False, 'message': 'Could not determine an answer. Try including the letter count, e.g. (5).'})
+
+    # Step 4: Check if the user's guess appears in any source
+    if guess in all_candidates:
         return jsonify({
             'success': True,
-            'correct': False,
-            'wrong_count': len(wrong_positions),
-            'wrong_positions': wrong_positions
+            'correct': True,
+            'confidence': 'high' if all_candidates[guess] >= 2 else 'medium'
         })
 
-    except req.RequestException as e:
-        return jsonify({'success': False, 'message': 'API request failed. Try again.'}), 502
-    except (json.JSONDecodeError, KeyError):
-        return jsonify({'success': False, 'message': 'Failed to parse solver response. Try again.'}), 500
+    # Step 5: Find the best answer (highest confidence) to compare against
+    best = max(all_candidates, key=all_candidates.get)
+    confidence = all_candidates[best]
+
+    wrong_positions = [i for i in range(guess_len) if i < len(best) and guess[i] != best[i]]
+
+    return jsonify({
+        'success': True,
+        'correct': False,
+        'wrong_count': len(wrong_positions),
+        'wrong_positions': wrong_positions,
+        'confidence': 'high' if confidence >= 2 else 'medium',
+        'sources': (
+            ('Verified across multiple sources' if confidence >= 3
+             else 'Verified against crossword database' if dataset_answers or danword_answers
+             else 'Based on Claude analysis only')
+        )
+    })
 
 
 @app.route('/admin/synonyms')
