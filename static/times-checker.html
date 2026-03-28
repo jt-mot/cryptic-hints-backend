@@ -10,591 +10,246 @@
   header { background: #1a1a1a; color: #fff; padding: 1.5rem 2rem; }
   header h1 { font-size: 1.4rem; font-weight: 500; letter-spacing: -0.02em; }
   header p { font-size: 0.85rem; color: #aaa; margin-top: 4px; }
-  main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+  main { max-width: 700px; margin: 0 auto; padding: 1.5rem; }
 
-  /* Mode tabs */
-  .mode-bar { display: flex; gap: 6px; margin-bottom: 1.2rem; flex-wrap: wrap; align-items: center; }
-  .mode-btn { padding: 7px 18px; font-size: 13px; border-radius: 20px; border: 1px solid #e0e0d8; background: #fff; color: #666; cursor: pointer; transition: all 0.15s; }
-  .mode-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
-  .mode-btn:hover:not(.active) { background: #f0f0e8; }
-  .mode-info { font-size: 12px; color: #888; margin-left: 8px; }
+  /* How it works */
+  .intro { background: #fff; border: 1px solid #e8e8e0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+  .intro h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .intro ol { font-size: 13px; color: #555; padding-left: 1.2rem; line-height: 1.9; }
+  .intro strong { color: #1a1a1a; }
 
-  /* Layout */
-  .layout { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start; }
-  .grid-col { flex-shrink: 0; }
-  .clues-col { flex: 1; min-width: 280px; }
+  /* Quick check box */
+  .quick-check { background: #fff; border: 1px solid #e8e8e0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+  .quick-check h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; }
+  .field input { width: 100%; padding: 10px 14px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 14px; color: #1a1a1a; outline: none; background: #fff; }
+  .field input:focus { border-color: #999; }
+  .field input::placeholder { color: #bbb; }
+  .answer-row { display: flex; gap: 10px; align-items: flex-end; }
+  .answer-row .field { flex: 1; margin-bottom: 0; }
+  .answer-row .field.guess-field input { text-transform: uppercase; font-weight: 600; font-family: 'SF Mono', 'Fira Code', monospace; letter-spacing: 2px; font-size: 16px; }
+  .check-btn { padding: 10px 24px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; height: 42px; }
+  .check-btn:hover { background: #333; }
+  .check-btn:disabled { background: #ccc; cursor: not-allowed; }
 
-  /* Crossword grid */
-  .grid-wrap { position: relative; display: inline-block; }
-  .grid { display: grid; grid-template-columns: repeat(15, 36px); grid-template-rows: repeat(15, 36px); gap: 1px; background: #1a1a1a; border: 2px solid #1a1a1a; border-radius: 4px; overflow: hidden; }
-  .cell { position: relative; background: #fff; display: flex; align-items: center; justify-content: center; }
-  .cell.black { background: #1a1a1a; }
-  .cell input { width: 100%; height: 100%; border: none; text-align: center; font-size: 16px; font-weight: 600; text-transform: uppercase; outline: none; background: transparent; color: #1a1a1a; caret-color: #1a1a1a; padding: 0; }
-  .cell input:focus { background: #e8f0fe; }
-  .cell .clue-num { position: absolute; top: 1px; left: 2px; font-size: 8px; color: #666; font-weight: 600; pointer-events: none; z-index: 1; }
+  /* Result display */
+  .result { margin-top: 14px; padding: 14px 18px; border-radius: 10px; font-size: 14px; display: none; line-height: 1.5; }
+  .result.active { display: block; }
+  .result.correct { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+  .result.wrong { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+  .result.error { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+  .result .icon { font-size: 18px; margin-right: 6px; vertical-align: middle; }
 
-  /* Setup mode cursor */
-  .mode-setup .cell { cursor: pointer; }
-  .mode-setup .cell:hover:not(.black) { background: #e0e0e0; }
-  .mode-setup .cell.black:hover { background: #555; }
-  .mode-setup .cell input { pointer-events: none; }
+  /* History */
+  .history { background: #fff; border: 1px solid #e8e8e0; border-radius: 12px; padding: 1.25rem; }
+  .history h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .history .sub { font-size: 12px; color: #888; margin-bottom: 12px; }
+  .history-list { list-style: none; }
+  .history-list:empty::after { content: 'No checks yet \2014 results will appear here.'; color: #aaa; font-size: 13px; }
+  .history-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0e8; font-size: 13px; }
+  .history-item:last-child { border-bottom: none; }
+  .history-icon { font-size: 16px; flex-shrink: 0; }
+  .history-clue { flex: 1; color: #555; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-guess { font-family: 'SF Mono', 'Fira Code', monospace; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0; }
+  .history-detail { font-size: 12px; color: #888; flex-shrink: 0; }
+  .history-correct .history-guess { color: #28a745; }
+  .history-wrong .history-guess { color: #dc3545; }
 
-  /* Check result colours */
-  .cell.correct input { background: #d4edda; color: #155724; }
-  .cell.wrong input { background: #f8d7da; color: #721c24; }
-  .cell.unchecked input { background: #fff3cd; color: #856404; }
+  /* Summary stats */
+  .stats { display: flex; gap: 10px; margin-bottom: 12px; }
+  .stat { flex: 1; text-align: center; padding: 8px; background: #f8f8f4; border-radius: 8px; }
+  .stat-num { font-size: 1.4rem; font-weight: 700; }
+  .stat-num.green { color: #28a745; }
+  .stat-num.red { color: #dc3545; }
+  .stat-label { font-size: 11px; color: #888; margin-top: 2px; }
 
-  /* Highlighted active clue */
-  .cell.active-clue { background: #e8f0fe; }
-  .cell.active-cell { background: #bbdefb; }
+  /* Actions */
+  .actions { display: flex; gap: 8px; margin-bottom: 1rem; justify-content: flex-end; }
+  .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 6px; border: 1px solid #e0e0d8; background: #fff; color: #666; cursor: pointer; }
+  .btn-sm:hover { background: #f0f0e8; }
 
-  /* Clue panels */
-  .clue-section { background: #fff; border: 1px solid #e8e8e0; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; }
-  .clue-section h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; color: #1a1a1a; }
-  .clue-list { list-style: none; }
-  .clue-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f0f0e8; font-size: 13px; cursor: pointer; }
-  .clue-item:last-child { border-bottom: none; }
-  .clue-item:hover { background: #fafaf5; }
-  .clue-item.active { background: #e8f0fe; border-radius: 4px; }
-  .clue-num-label { font-weight: 700; min-width: 24px; color: #1a1a1a; }
-  .clue-text { flex: 1; color: #444; min-width: 0; }
-  .clue-text input { width: 100%; border: 1px solid #e0e0d8; border-radius: 4px; padding: 3px 6px; font-size: 12px; color: #1a1a1a; outline: none; }
-  .clue-text input:focus { border-color: #999; }
-  .clue-status { font-size: 16px; min-width: 20px; text-align: center; }
-  .clue-status.correct { color: #28a745; }
-  .clue-status.wrong { color: #dc3545; }
-  .clue-status.partial { color: #fd7e14; }
-
-  /* Answer key input */
-  .answer-key-input { width: 80px; padding: 3px 6px; border: 1px solid #e0e0d8; border-radius: 4px; font-size: 12px; font-family: monospace; letter-spacing: 1px; outline: none; }
-  .answer-key-input:focus { border-color: #999; }
-  .answer-key-input.has-answer { border-color: #28a745; background: #f0fff0; }
-
-  /* Action buttons */
-  .actions { display: flex; gap: 8px; margin-bottom: 1.2rem; flex-wrap: wrap; }
-  .btn { padding: 8px 18px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; }
-  .btn:hover { background: #333; }
-  .btn.outline { background: #fff; color: #1a1a1a; border: 1px solid #e0e0d8; }
-  .btn.outline:hover { background: #f0f0e8; }
-  .btn.danger { background: #dc3545; }
-  .btn.danger:hover { background: #c82333; }
-  .btn.success { background: #28a745; }
-  .btn.success:hover { background: #218838; }
-
-  /* Answer key panel */
-  .answer-panel { background: #fff; border: 1px solid #e8e8e0; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; }
-  .answer-panel h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
-  .answer-panel .sub { font-size: 12px; color: #888; margin-bottom: 10px; }
-  .answer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
-  .answer-row { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 0; }
-  .answer-row label { min-width: 40px; font-weight: 600; color: #555; }
-
-  /* Check results summary */
-  .results-bar { background: #fff; border: 1px solid #e8e8e0; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; display: none; }
-  .results-bar.active { display: block; }
-  .results-bar h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
-  .results-text { font-size: 13px; color: #555; line-height: 1.6; }
-  .results-text .ok { color: #28a745; font-weight: 600; }
-  .results-text .nope { color: #dc3545; font-weight: 600; }
-
-  /* Responsive */
-  @media (max-width: 700px) {
+  @media (max-width: 500px) {
     header { padding: 1rem; }
     main { padding: 0.75rem; }
-    .grid { grid-template-columns: repeat(15, 28px); grid-template-rows: repeat(15, 28px); }
-    .cell input { font-size: 13px; }
-    .cell .clue-num { font-size: 7px; }
-    .layout { flex-direction: column; }
+    .answer-row { flex-direction: column; }
+    .check-btn { width: 100%; height: auto; padding: 12px; }
   }
 </style>
 </head>
 <body>
 <header>
   <h1>The Times Crossword Checker</h1>
-  <p>Fill in your answers, enter the solutions from danword.com (hidden), and check without spoilers</p>
+  <p>Check your answers without spoilers &mdash; you never see the solution</p>
 </header>
 <main>
-  <div class="mode-bar">
-    <button class="mode-btn active" data-mode="setup" onclick="setMode('setup')">1. Setup Grid</button>
-    <button class="mode-btn" data-mode="solve" onclick="setMode('solve')">2. Solve</button>
-    <button class="mode-btn" data-mode="answers" onclick="setMode('answers')">3. Answer Key</button>
-    <button class="mode-btn" data-mode="check" onclick="setMode('check')">4. Check</button>
-    <span class="mode-info" id="mode-info">Click cells to toggle black/white squares</span>
+  <div class="intro">
+    <h3>How it works</h3>
+    <ol>
+      <li>Solve The Times crossword on paper as usual</li>
+      <li>For any clue you want to check, <strong>type the clue text</strong> and <strong>your answer</strong> below</li>
+      <li>Hit <strong>Check</strong> &mdash; we look it up behind the scenes and tell you right or wrong, <strong>without ever showing the actual answer</strong></li>
+    </ol>
   </div>
 
-  <div class="actions">
-    <button class="btn outline" onclick="clearGrid()">Clear Letters</button>
-    <button class="btn outline" onclick="resetGrid()">Reset Grid</button>
-    <button class="btn outline" onclick="saveState()">Save</button>
-    <button class="btn outline" onclick="loadSymmetric()">Toggle Symmetry</button>
+  <div class="quick-check">
+    <h3>Check a clue</h3>
+    <div class="field">
+      <label>Clue text</label>
+      <input type="text" id="clue-input" placeholder="e.g. Quietly creep around new plant (5)" autofocus>
+    </div>
+    <div class="answer-row">
+      <div class="field guess-field">
+        <label>Your answer</label>
+        <input type="text" id="guess-input" placeholder="e.g. PEONY" maxlength="30">
+      </div>
+      <button class="check-btn" id="check-btn" onclick="checkAnswer()">Check</button>
+    </div>
+    <div class="result" id="result"></div>
   </div>
 
-  <div class="results-bar" id="results-bar">
-    <h3>Results</h3>
-    <div class="results-text" id="results-text"></div>
-  </div>
-
-  <div class="layout">
-    <div class="grid-col">
-      <div class="grid-wrap">
-        <div class="grid" id="grid"></div>
+  <div class="history">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 4px;">
+      <div>
+        <h3>Today's session</h3>
+        <div class="sub">Your checked clues for this sitting</div>
+      </div>
+      <div class="actions" style="margin:0">
+        <button class="btn-sm" onclick="clearHistory()">Clear</button>
       </div>
     </div>
-    <div class="clues-col">
-      <div id="answers-panel" class="answer-panel" style="display:none">
-        <h3>Answer Key</h3>
-        <div class="sub">Paste answers from danword.com &mdash; they're masked so you won't see them once entered.</div>
-        <div class="answer-grid" id="answer-grid"></div>
-      </div>
-      <div class="clue-section">
-        <h3>Across</h3>
-        <ul class="clue-list" id="across-clues"></ul>
-      </div>
-      <div class="clue-section">
-        <h3>Down</h3>
-        <ul class="clue-list" id="down-clues"></ul>
-      </div>
+    <div class="stats" id="stats" style="display:none">
+      <div class="stat"><div class="stat-num green" id="stat-correct">0</div><div class="stat-label">Correct</div></div>
+      <div class="stat"><div class="stat-num red" id="stat-wrong">0</div><div class="stat-label">Wrong</div></div>
+      <div class="stat"><div class="stat-num" id="stat-pct">0%</div><div class="stat-label">Accuracy</div></div>
     </div>
+    <ul class="history-list" id="history-list"></ul>
   </div>
 </main>
 
 <script>
-const SIZE = 15;
-let blacks = new Set();      // "r,c" strings for black cells
-let letters = {};            // "r,c" -> letter
-let answers = {};            // "1A" -> "WORD", "2D" -> "WORD"
-let clueTexts = {};          // "1A" -> "Clue text (5)"
-let clueMap = {};            // "1A" -> [{r,c}, {r,c}, ...]
-let mode = 'setup';
-let symmetric = true;
-let activeClue = null;       // e.g. "1A"
-let activeDir = 'A';         // A or D
+let history = JSON.parse(localStorage.getItem('times_checker_history') || '[]');
 
-const STORAGE_KEY = 'times_checker';
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
-// ─── Grid building ──────────────────────────────────────────
-function buildGrid() {
-  const grid = document.getElementById('grid');
-  let html = '';
-  for (let r = 0; r < SIZE; r++) {
-    for (let c = 0; c < SIZE; c++) {
-      const key = r+','+c;
-      const isBlack = blacks.has(key);
-      html += `<div class="cell${isBlack?' black':''}" data-r="${r}" data-c="${c}" id="cell-${r}-${c}">`;
-      if (!isBlack) {
-        html += `<input type="text" maxlength="1" data-r="${r}" data-c="${c}" id="inp-${r}-${c}" autocomplete="off">`;
-      }
-      html += `</div>`;
+// Submit on Enter from either input
+document.getElementById('clue-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('guess-input').focus(); }
+});
+document.getElementById('guess-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); checkAnswer(); }
+});
+
+async function checkAnswer() {
+  const clueInput = document.getElementById('clue-input');
+  const guessInput = document.getElementById('guess-input');
+  const resultEl = document.getElementById('result');
+  const btn = document.getElementById('check-btn');
+
+  const clue = clueInput.value.trim();
+  const guess = guessInput.value.trim().toUpperCase().replace(/[^A-Z]/g, '');
+
+  if (!clue) { showResult('error', 'Please enter the clue text first.'); clueInput.focus(); return; }
+  if (!guess) { showResult('error', 'Please enter your answer.'); guessInput.focus(); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Checking\u2026';
+  resultEl.className = 'result';
+
+  try {
+    const resp = await fetch('/api/check-clue', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ clue, guess })
+    });
+    const data = await resp.json();
+
+    if (!data.success) {
+      showResult('error', data.message || 'Could not look up this clue. Try rewording it slightly.');
+      return;
     }
-  }
-  grid.innerHTML = html;
-  numberCells();
-  restoreLetters();
-  attachGridEvents();
-  updateModeClass();
-}
 
-function numberCells() {
-  // Clear old numbers
-  document.querySelectorAll('.clue-num').forEach(n => n.remove());
-  clueMap = {};
-  let num = 1;
-  for (let r = 0; r < SIZE; r++) {
-    for (let c = 0; c < SIZE; c++) {
-      if (blacks.has(r+','+c)) continue;
-      const startA = (c === 0 || blacks.has(r+','+(c-1))) && c < SIZE-1 && !blacks.has(r+','+(c+1));
-      const startD = (r === 0 || blacks.has((r-1)+','+c)) && r < SIZE-1 && !blacks.has((r+1)+','+c);
-      if (startA || startD) {
-        const cell = document.getElementById('cell-'+r+'-'+c);
-        if (cell) {
-          const span = document.createElement('span');
-          span.className = 'clue-num';
-          span.textContent = num;
-          cell.appendChild(span);
-        }
-        if (startA) {
-          const cells = [];
-          for (let cc = c; cc < SIZE && !blacks.has(r+','+cc); cc++) cells.push({r, c: cc});
-          clueMap[num+'A'] = cells;
-        }
-        if (startD) {
-          const cells = [];
-          for (let rr = r; rr < SIZE && !blacks.has(rr+','+c); rr++) cells.push({r: rr, c});
-          clueMap[num+'D'] = cells;
-        }
-        num++;
+    if (data.correct) {
+      showResult('correct', '<span class="icon">\u2713</span> <strong>Correct!</strong> Well done.');
+      addHistory(clue, guess, true, null);
+    } else {
+      let msg = '<span class="icon">\u2717</span> <strong>Not quite.</strong>';
+      if (data.wrong_count !== undefined && data.wrong_count !== null) {
+        msg += ' ' + data.wrong_count + ' letter' + (data.wrong_count !== 1 ? 's' : '') + ' wrong.';
       }
+      if (data.hint) {
+        msg += ' ' + esc(data.hint);
+      }
+      showResult('wrong', msg);
+      addHistory(clue, guess, false, data.wrong_count);
     }
+
+    // Clear inputs for next clue
+    clueInput.value = '';
+    guessInput.value = '';
+    clueInput.focus();
+  } catch(e) {
+    showResult('error', 'Network error \u2014 check your connection and try again.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Check';
   }
-  buildClueList();
 }
 
-function restoreLetters() {
-  Object.entries(letters).forEach(([key, val]) => {
-    const [r, c] = key.split(',');
-    const inp = document.getElementById('inp-'+r+'-'+c);
-    if (inp) inp.value = val;
-  });
+function showResult(type, html) {
+  const el = document.getElementById('result');
+  el.className = 'result active ' + type;
+  el.innerHTML = html;
 }
 
-// ─── Clue list ──────────────────────────────────────────────
-function buildClueList() {
-  const acrossEl = document.getElementById('across-clues');
-  const downEl = document.getElementById('down-clues');
-  let aHTML = '', dHTML = '';
-
-  Object.keys(clueMap).sort((a,b) => parseInt(a) - parseInt(b)).forEach(id => {
-    const num = parseInt(id);
-    const dir = id.slice(-1);
-    const len = clueMap[id].length;
-    const clueText = clueTexts[id] || '';
-    const li = `<li class="clue-item" data-id="${id}" onclick="selectClue('${id}')">
-      <span class="clue-num-label">${num}</span>
-      <span class="clue-text"><input type="text" placeholder="Clue text (${len})" value="${esc(clueText)}" oninput="clueTexts['${id}']=this.value; saveState();" onclick="event.stopPropagation()"></span>
-      <span class="clue-status" id="status-${id}"></span>
-    </li>`;
-    if (dir === 'A') aHTML += li;
-    else dHTML += li;
-  });
-  acrossEl.innerHTML = aHTML || '<li class="clue-item" style="color:#999">No across clues yet</li>';
-  downEl.innerHTML = dHTML || '<li class="clue-item" style="color:#999">No down clues yet</li>';
-  buildAnswerPanel();
+function addHistory(clue, guess, correct, wrongCount) {
+  history.unshift({ clue, guess, correct, wrongCount, time: Date.now() });
+  localStorage.setItem('times_checker_history', JSON.stringify(history));
+  renderHistory();
 }
 
-function buildAnswerPanel() {
-  const el = document.getElementById('answer-grid');
-  const ids = Object.keys(clueMap).sort((a,b) => parseInt(a) - parseInt(b));
-  el.innerHTML = ids.map(id => {
-    const num = parseInt(id);
-    const dir = id.slice(-1);
-    const len = clueMap[id].length;
-    const hasAns = answers[id] && answers[id].length > 0;
-    return `<div class="answer-row">
-      <label>${num}${dir}</label>
-      <input type="password" class="answer-key-input${hasAns?' has-answer':''}" maxlength="${len}" placeholder="${len} letters"
-        value="${answers[id]||''}" data-id="${id}"
-        oninput="setAnswer('${id}', this)" autocomplete="off">
-    </div>`;
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const statsEl = document.getElementById('stats');
+
+  if (!history.length) {
+    list.innerHTML = '';
+    statsEl.style.display = 'none';
+    return;
+  }
+
+  statsEl.style.display = 'flex';
+  const correct = history.filter(h => h.correct).length;
+  const wrong = history.filter(h => !h.correct).length;
+  const total = correct + wrong;
+  document.getElementById('stat-correct').textContent = correct;
+  document.getElementById('stat-wrong').textContent = wrong;
+  document.getElementById('stat-pct').textContent = total ? Math.round(correct / total * 100) + '%' : '0%';
+
+  list.innerHTML = history.map(h => {
+    const cls = h.correct ? 'history-correct' : 'history-wrong';
+    const icon = h.correct ? '\u2713' : '\u2717';
+    const detail = h.correct ? '' : (h.wrongCount !== null && h.wrongCount !== undefined
+      ? h.wrongCount + ' letter' + (h.wrongCount !== 1 ? 's' : '') + ' wrong'
+      : 'wrong');
+    return '<li class="history-item ' + cls + '">'
+      + '<span class="history-icon">' + icon + '</span>'
+      + '<span class="history-clue" title="' + esc(h.clue) + '">' + esc(h.clue) + '</span>'
+      + '<span class="history-guess">' + esc(h.guess) + '</span>'
+      + (detail ? '<span class="history-detail">' + detail + '</span>' : '')
+      + '</li>';
   }).join('');
 }
 
-function setAnswer(id, input) {
-  answers[id] = input.value.toUpperCase().replace(/[^A-Z]/g, '');
-  input.classList.toggle('has-answer', answers[id].length > 0);
-  saveState();
+function clearHistory() {
+  if (!history.length || !confirm('Clear check history?')) return;
+  history = [];
+  localStorage.setItem('times_checker_history', JSON.stringify(history));
+  renderHistory();
+  document.getElementById('result').className = 'result';
 }
 
-function selectClue(id) {
-  activeClue = id;
-  activeDir = id.slice(-1);
-  highlightClue();
-  // Focus first empty cell of clue
-  const cells = clueMap[id];
-  if (!cells) return;
-  const first = cells.find(({r,c}) => {
-    const inp = document.getElementById('inp-'+r+'-'+c);
-    return inp && !inp.value;
-  }) || cells[0];
-  if (first) {
-    const inp = document.getElementById('inp-'+first.r+'-'+first.c);
-    if (inp) inp.focus();
-  }
-}
-
-function highlightClue() {
-  document.querySelectorAll('.cell').forEach(c => {
-    c.classList.remove('active-clue', 'active-cell');
-  });
-  document.querySelectorAll('.clue-item').forEach(c => c.classList.remove('active'));
-  if (!activeClue || !clueMap[activeClue]) return;
-  clueMap[activeClue].forEach(({r,c}) => {
-    const cell = document.getElementById('cell-'+r+'-'+c);
-    if (cell) cell.classList.add('active-clue');
-  });
-  const li = document.querySelector(`.clue-item[data-id="${activeClue}"]`);
-  if (li) li.classList.add('active');
-}
-
-// ─── Events ─────────────────────────────────────────────────
-function attachGridEvents() {
-  document.querySelectorAll('.cell').forEach(cell => {
-    cell.addEventListener('click', (e) => {
-      if (mode === 'setup') {
-        const r = parseInt(cell.dataset.r), c = parseInt(cell.dataset.c);
-        toggleBlack(r, c);
-      }
-    });
-  });
-  document.querySelectorAll('.cell input').forEach(inp => {
-    inp.addEventListener('input', (e) => {
-      const r = parseInt(inp.dataset.r), c = parseInt(inp.dataset.c);
-      const val = inp.value.toUpperCase().replace(/[^A-Z]/g, '');
-      inp.value = val;
-      if (val) {
-        letters[r+','+c] = val;
-        advanceCursor(r, c);
-      } else {
-        delete letters[r+','+c];
-      }
-      clearCheckResults();
-      saveState();
-    });
-    inp.addEventListener('keydown', (e) => {
-      const r = parseInt(inp.dataset.r), c = parseInt(inp.dataset.c);
-      if (e.key === 'Backspace' && !inp.value) {
-        e.preventDefault();
-        retreatCursor(r, c);
-      } else if (e.key === 'ArrowRight') { e.preventDefault(); moveCursor(r, c, 0, 1); }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); moveCursor(r, c, 0, -1); }
-      else if (e.key === 'ArrowDown') { e.preventDefault(); moveCursor(r, c, 1, 0); }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); moveCursor(r, c, -1, 0); }
-      else if (e.key === 'Tab') {
-        e.preventDefault();
-        advanceClue(e.shiftKey);
-      }
-    });
-    inp.addEventListener('focus', () => {
-      const r = parseInt(inp.dataset.r), c = parseInt(inp.dataset.c);
-      detectActiveClue(r, c);
-    });
-  });
-}
-
-function detectActiveClue(r, c) {
-  // Find which clues this cell belongs to
-  const matching = [];
-  Object.entries(clueMap).forEach(([id, cells]) => {
-    if (cells.some(cell => cell.r === r && cell.c === c)) matching.push(id);
-  });
-  if (!matching.length) { activeClue = null; highlightClue(); return; }
-  // If current active clue includes this cell, keep it; otherwise pick based on dir preference
-  if (activeClue && matching.includes(activeClue)) { highlightClue(); return; }
-  const preferred = matching.find(id => id.endsWith(activeDir)) || matching[0];
-  activeClue = preferred;
-  activeDir = preferred.slice(-1);
-  highlightClue();
-}
-
-function advanceCursor(r, c) {
-  if (activeDir === 'A') moveCursor(r, c, 0, 1);
-  else moveCursor(r, c, 1, 0);
-}
-
-function retreatCursor(r, c) {
-  if (activeDir === 'A') moveCursor(r, c, 0, -1);
-  else moveCursor(r, c, -1, 0);
-}
-
-function moveCursor(r, c, dr, dc) {
-  let nr = r + dr, nc = c + dc;
-  while (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE) {
-    if (!blacks.has(nr+','+nc)) {
-      const inp = document.getElementById('inp-'+nr+'-'+nc);
-      if (inp) { inp.focus(); inp.select(); }
-      return;
-    }
-    nr += dr; nc += dc;
-  }
-}
-
-function advanceClue(backward) {
-  const ids = Object.keys(clueMap).sort((a,b) => {
-    const na = parseInt(a), nb = parseInt(b);
-    if (na !== nb) return na - nb;
-    return a < b ? -1 : 1;
-  });
-  if (!ids.length) return;
-  let idx = ids.indexOf(activeClue);
-  if (backward) idx = idx <= 0 ? ids.length - 1 : idx - 1;
-  else idx = idx >= ids.length - 1 ? 0 : idx + 1;
-  selectClue(ids[idx]);
-}
-
-// ─── Black cell toggle ─────────────────────────────────────
-function toggleBlack(r, c) {
-  const key = r+','+c;
-  if (blacks.has(key)) blacks.delete(key);
-  else blacks.add(key);
-  // Symmetric partner
-  if (symmetric) {
-    const sr = SIZE - 1 - r, sc = SIZE - 1 - c;
-    const skey = sr+','+sc;
-    if (blacks.has(key)) blacks.add(skey);
-    else blacks.delete(skey);
-  }
-  delete letters[key];
-  buildGrid();
-  saveState();
-}
-
-function loadSymmetric() {
-  symmetric = !symmetric;
-  const btn = document.querySelector('[onclick="loadSymmetric()"]');
-  btn.textContent = symmetric ? 'Symmetry: ON' : 'Symmetry: OFF';
-}
-
-// ─── Mode switching ─────────────────────────────────────────
-function setMode(m) {
-  mode = m;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
-  updateModeClass();
-  const info = document.getElementById('mode-info');
-  const answersPanel = document.getElementById('answers-panel');
-
-  answersPanel.style.display = m === 'answers' ? '' : 'none';
-
-  if (m === 'setup') info.textContent = 'Click cells to toggle black/white squares';
-  else if (m === 'solve') info.textContent = 'Type your answers into the grid. Tab to advance between clues.';
-  else if (m === 'answers') info.textContent = 'Enter answers from danword.com — they stay hidden';
-  else if (m === 'check') { info.textContent = 'Results shown below'; checkAnswers(); }
-}
-
-function updateModeClass() {
-  const grid = document.getElementById('grid');
-  grid.classList.remove('mode-setup');
-  if (mode === 'setup') grid.classList.add('mode-setup');
-  // Disable inputs in setup mode
-  document.querySelectorAll('.cell input').forEach(inp => {
-    inp.tabIndex = mode === 'setup' ? -1 : 0;
-  });
-}
-
-// ─── Check answers ──────────────────────────────────────────
-function checkAnswers() {
-  clearCheckResults();
-  let total = 0, correct = 0, wrong = 0, unchecked = 0;
-  const resultsLines = [];
-
-  Object.entries(clueMap).forEach(([id, cells]) => {
-    total++;
-    const answer = answers[id];
-    const statusEl = document.getElementById('status-'+id);
-    if (!statusEl) return;
-
-    // Get user's letters for this clue
-    const userWord = cells.map(({r,c}) => letters[r+','+c] || '').join('');
-
-    if (!answer) {
-      unchecked++;
-      statusEl.textContent = '—';
-      statusEl.className = 'clue-status';
-      return;
-    }
-
-    if (userWord.length < cells.length) {
-      // Incomplete
-      const filled = userWord.replace(/ /g, '').length;
-      statusEl.textContent = '...';
-      statusEl.className = 'clue-status';
-      cells.forEach(({r,c}, i) => {
-        const cell = document.getElementById('cell-'+r+'-'+c);
-        if (!letters[r+','+c]) cell.classList.add('unchecked');
-      });
-      return;
-    }
-
-    // Compare letter by letter
-    let wrongCount = 0;
-    cells.forEach(({r,c}, i) => {
-      const userLetter = (letters[r+','+c] || '').toUpperCase();
-      const correctLetter = (answer[i] || '').toUpperCase();
-      const cell = document.getElementById('cell-'+r+'-'+c);
-      if (userLetter === correctLetter) {
-        cell.classList.add('correct');
-      } else {
-        cell.classList.add('wrong');
-        wrongCount++;
-      }
-    });
-
-    if (wrongCount === 0) {
-      correct++;
-      statusEl.textContent = '\u2713';
-      statusEl.className = 'clue-status correct';
-      resultsLines.push(`<span class="ok">${id}: Correct!</span>`);
-    } else {
-      wrong++;
-      statusEl.textContent = '\u2717';
-      statusEl.className = 'clue-status wrong';
-      resultsLines.push(`<span class="nope">${id}: ${wrongCount} letter${wrongCount>1?'s':''} wrong</span>`);
-    }
-  });
-
-  // Show results bar
-  const bar = document.getElementById('results-bar');
-  const text = document.getElementById('results-text');
-  bar.classList.add('active');
-
-  if (unchecked === total) {
-    text.innerHTML = 'No answer key entered yet. Go to step 3 to enter answers from danword.com.';
-  } else {
-    const pct = total > 0 ? Math.round((correct / (correct + wrong)) * 100) : 0;
-    text.innerHTML = `<strong>${correct}</strong> correct, <strong>${wrong}</strong> wrong` +
-      (unchecked > 0 ? `, <strong>${unchecked}</strong> unchecked` : '') +
-      ` &mdash; ${pct}% accuracy<br><br>` + resultsLines.join('<br>');
-  }
-}
-
-function clearCheckResults() {
-  document.querySelectorAll('.cell').forEach(c => c.classList.remove('correct', 'wrong', 'unchecked'));
-  document.querySelectorAll('.clue-status').forEach(s => { s.textContent = ''; s.className = 'clue-status'; });
-  document.getElementById('results-bar').classList.remove('active');
-}
-
-// ─── Persistence ────────────────────────────────────────────
-function saveState() {
-  const state = {
-    blacks: [...blacks],
-    letters,
-    answers,
-    clueTexts,
-    symmetric
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const state = JSON.parse(raw);
-    blacks = new Set(state.blacks || []);
-    letters = state.letters || {};
-    answers = state.answers || {};
-    clueTexts = state.clueTexts || {};
-    symmetric = state.symmetric !== undefined ? state.symmetric : true;
-  } catch(e) {}
-}
-
-function clearGrid() {
-  if (!confirm('Clear all letters from the grid?')) return;
-  letters = {};
-  answers = {};
-  buildGrid();
-  saveState();
-}
-
-function resetGrid() {
-  if (!confirm('Reset everything? This will clear the grid pattern, all letters, and all answers.')) return;
-  blacks = new Set();
-  letters = {};
-  answers = {};
-  clueTexts = {};
-  localStorage.removeItem(STORAGE_KEY);
-  buildGrid();
-  setMode('setup');
-}
-
-function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = s || '';
-  return d.innerHTML;
-}
-
-// ─── Init ───────────────────────────────────────────────────
-loadState();
-buildGrid();
-if (blacks.size > 0) setMode('solve');
+renderHistory();
 </script>
 </body>
 </html>
