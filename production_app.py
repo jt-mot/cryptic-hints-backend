@@ -541,6 +541,17 @@ def synonyms_page():
     return send_from_directory('static', 'synonym_database.html')
 
 
+GUIDE_PAGES = ['anagrams', 'hidden-words', 'double-definitions', 'reversals', 'containers', 'homophones', 'deletions']
+
+
+@app.route('/guide/<slug>')
+def guide_subpage(slug):
+    """Serve standalone guide pages for each clue type"""
+    if slug not in GUIDE_PAGES:
+        return _serve_html('guide.html')
+    return send_from_directory('static/guide', f'{slug}.html')
+
+
 @app.route('/blog')
 def blog_listing():
     """Serve the blog listing page"""
@@ -758,6 +769,7 @@ def robots_txt():
 Allow: /
 Allow: /puzzle/
 Allow: /guide
+Allow: /guide/
 Allow: /blog
 Allow: /clue/
 Disallow: /admin/
@@ -815,6 +827,12 @@ def sitemap_pages():
     xml += '    <changefreq>monthly</changefreq>\n'
     xml += '    <priority>0.9</priority>\n'
     xml += '  </url>\n'
+    for slug in GUIDE_PAGES:
+        xml += '  <url>\n'
+        xml += f'    <loc>{SITE_URL}/guide/{slug}</loc>\n'
+        xml += '    <changefreq>monthly</changefreq>\n'
+        xml += '    <priority>0.8</priority>\n'
+        xml += '  </url>\n'
     xml += '  <url>\n'
     xml += f'    <loc>{SITE_URL}/blog</loc>\n'
     xml += '    <changefreq>weekly</changefreq>\n'
