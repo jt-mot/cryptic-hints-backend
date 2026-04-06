@@ -248,7 +248,14 @@
 
     <div class="container">
         <div id="postsList">
-            <div class="empty-state"><p>Loading...</p></div>
+            <noscript>
+                <div class="empty-state">
+                    <p>JavaScript is required to load blog posts. Please enable JavaScript or visit our <a href="/guide">Guide to Cryptic Crosswords</a> instead.</p>
+                </div>
+            </noscript>
+            <div class="empty-state" id="loading-state">
+                <p>Loading posts&hellip;</p>
+            </div>
         </div>
     </div>
 
@@ -281,13 +288,15 @@
         }
 
         async function loadPosts() {
+            var container = document.getElementById('postsList');
             try {
-                const resp = await fetch('/api/blog/posts');
-                const posts = await resp.json();
-                const container = document.getElementById('postsList');
+                var resp = await fetch('/api/blog/posts');
+                var posts = await resp.json();
 
                 if (!posts.length) {
-                    container.innerHTML = '<div class="empty-state"><p>No posts yet. Check back soon!</p></div>';
+                    container.innerHTML = '<div class="empty-state">' +
+                        '<p>No posts yet. In the meantime, check out our <a href="/guide">Guide to Cryptic Crosswords</a> ' +
+                        'or browse the <a href="/synonyms">Synonym Database</a>.</p></div>';
                     return;
                 }
 
@@ -299,8 +308,9 @@
                         '</a></div>';
                 }).join('');
             } catch (e) {
-                document.getElementById('postsList').innerHTML =
-                    '<div class="empty-state"><p>Unable to load posts.</p></div>';
+                container.innerHTML =
+                    '<div class="empty-state"><p>Unable to load posts right now. ' +
+                    'Try our <a href="/guide">Guide to Cryptic Crosswords</a> or the <a href="/synonyms">Synonym Database</a> instead.</p></div>';
             }
         }
 
