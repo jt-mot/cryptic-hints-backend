@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hidden Word Clues in Cryptic Crosswords - Complete Guide | Cryptic Hints</title>
+    <meta name="description" content="Learn to solve hidden word clues in cryptic crosswords. The answer is hiding in plain sight within the clue text. Includes worked examples and a complete list of hidden word indicators.">
+    <meta name="keywords" content="hidden word clues cryptic crossword, hidden word indicators, cryptic crossword hidden words guide, solve hidden word clues, concealed word clues">
+    <link rel="canonical" href="__SITE_URL__/guide/hidden-words">
+    <meta property="og:title" content="Hidden Word Clues in Cryptic Crosswords - Complete Guide">
+    <meta property="og:description" content="Learn to solve hidden word clues in cryptic crosswords. The answer hides in plain sight within the clue text.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="__SITE_URL__/guide/hidden-words">
+    <meta property="og:site_name" content="Cryptic Hints">
+    <meta name="twitter:card" content="summary">
+    <link rel="alternate" type="application/rss+xml" title="New Puzzles" href="__SITE_URL__/feed/puzzles">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=__GA_TRACKING_ID__"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '__GA_TRACKING_ID__');
+    </script>
+    <style>
+        :root {
+            --bg: #f5f7fa;
+            --text: #1a1a2e;
+            --text-heading: #1e293b;
+            --text-secondary: #334155;
+            --text-body: #475569;
+            --text-muted: #64748b;
+            --text-faint: #94a3b8;
+            --card-bg: #fff;
+            --card-shadow: rgba(0,0,0,0.06);
+            --card-border: #e2e8f0;
+            --example-bg: #f8fafc;
+            --tag-bg: #f1f5f9;
+            --tag-text: #475569;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --text: #e2e8f0;
+            --text-heading: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-body: #94a3b8;
+            --text-muted: #94a3b8;
+            --text-faint: #64748b;
+            --card-bg: #1e293b;
+            --card-shadow: rgba(0,0,0,0.3);
+            --card-border: #334155;
+            --example-bg: #1e293b;
+            --tag-bg: #334155;
+            --tag-text: #cbd5e1;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 16px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-icon { width: 36px; height: 36px; flex-shrink: 0; }
+        nav { display: flex; gap: 8px; }
+        nav a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        nav a:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .theme-toggle {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.8);
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            transition: all 0.2s;
+        }
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 48px 24px 56px;
+            text-align: center;
+        }
+        .hero h1 {
+            color: #fff;
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+        .hero p {
+            color: rgba(255,255,255,0.75);
+            font-size: 18px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+
+        .breadcrumb {
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        .breadcrumb a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        .guide-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 4px var(--card-shadow);
+        }
+        .guide-section h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--card-border);
+        }
+        .guide-section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin: 20px 0 8px;
+        }
+        .guide-section p {
+            color: var(--text-body);
+            margin-bottom: 12px;
+        }
+
+        .example {
+            background: var(--example-bg);
+            border-left: 4px solid #2563eb;
+            border-radius: 0 8px 8px 0;
+            padding: 16px 20px;
+            margin: 16px 0;
+        }
+        .example .clue {
+            font-weight: 600;
+            color: var(--text-heading);
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+        .example .answer {
+            font-weight: 700;
+            color: #16a34a;
+            display: inline-block;
+            background: #dcfce7;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+        .example .explanation {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .tip {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            border-radius: 0 8px 8px 0;
+            padding: 14px 20px;
+            margin: 16px 0;
+            font-size: 15px;
+            color: #92400e;
+        }
+
+        .glossary-type {
+            margin-bottom: 24px;
+        }
+        .glossary-type h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin-bottom: 8px;
+        }
+        .word-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .word-tag {
+            background: var(--tag-bg);
+            color: var(--tag-text);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .word-tag.hidden { background: #dcfce7; color: #166534; }
+
+        .other-types {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .other-types a {
+            display: inline-block;
+            padding: 8px 16px;
+            background: var(--tag-bg);
+            color: #2563eb;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .other-types a:hover {
+            background: #dbeafe;
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-faint);
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 28px; }
+            .hero p { font-size: 16px; }
+            .guide-section { padding: 24px 20px; }
+            .container { padding: 24px 16px 60px; }
+        }
+    </style>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Hidden Word Clues in Cryptic Crosswords - Complete Guide",
+        "description": "Learn to solve hidden word clues in cryptic crosswords. The answer is hiding in plain sight within the clue text.",
+        "url": "__SITE_URL__/guide/hidden-words",
+        "publisher": {
+            "@type": "Organization",
+            "name": "Cryptic Hints",
+            "url": "__SITE_URL__/"
+        },
+        "mainEntityOfPage": "__SITE_URL__/guide/hidden-words"
+    }
+    </script>
+</head>
+<body>
+    <script>
+        (function() {
+            var saved = localStorage.getItem('theme');
+            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <header>
+        <div class="header-content">
+            <a href="/" class="logo">
+                <svg class="logo-icon" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="36" height="36" rx="8" fill="white" opacity="0.15"/>
+                    <rect x="3" y="3" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="13.5" y="3" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="24" y="3" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="3" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="13.5" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="24" y="13.5" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="3" y="24" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="13.5" y="24" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="24" y="24" width="9" height="9" rx="1.5" fill="white"/>
+                    <text x="18" y="21" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="700" font-family="Arial, sans-serif">?</text>
+                </svg>
+                Cryptic Hints
+            </a>
+            <nav>
+                <a href="/#puzzles">Puzzles</a>
+                <a href="/guide">Guide</a>
+                <a href="/blog">Blog</a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
+                    <span class="theme-icon"></span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <div class="hero">
+        <h1>Hidden Word Clues</h1>
+        <p>The easiest cryptic clue type to spot &mdash; the answer is hiding in plain sight</p>
+    </div>
+
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="/guide">Guide</a> &rsaquo; Hidden Words
+        </div>
+
+        <!-- Introduction -->
+        <div class="guide-section">
+            <h2>What Are Hidden Word Clues?</h2>
+            <p>Hidden word clues are the friendliest clue type for beginners. The answer is literally spelled out inside the clue text, hidden across one or more consecutive words. All you need to do is find the right sequence of letters.</p>
+            <p>The setter signals this clue type with a <strong>hidden word indicator</strong> &mdash; a word or phrase like "in", "some", "part of", "held by", or "concealed". These tell you to look inside the surrounding words for consecutive letters that spell the answer.</p>
+            <p>Because the answer is right there in the clue, hidden word clues are a great place to start when tackling a new puzzle. If you see an indicator like "some" or "part of", scan the nearby words letter by letter &mdash; the answer is waiting for you.</p>
+        </div>
+
+        <!-- Worked Examples -->
+        <div class="guide-section">
+            <h2>Worked Examples</h2>
+
+            <div class="example">
+                <div class="clue">"Part of the festival (4)"</div>
+                <div class="answer">FEST</div>
+                <div class="explanation"><strong>Indicator:</strong> "Part of" tells you the answer is hidden in the clue. <strong>Hidden in:</strong> "the <strong>FEST</strong>ival" &mdash; the letters F-E-S-T appear consecutively inside "festival". <strong>Definition:</strong> This is a slightly unusual clue &mdash; FEST means a festival or gathering, so the whole clue is self-referential.</div>
+            </div>
+
+            <div class="example">
+                <div class="clue">"Observes some atheist areas (6)"</div>
+                <div class="answer">STARES</div>
+                <div class="explanation"><strong>Indicator:</strong> "Some" signals a hidden word. <strong>Hidden in:</strong> "athei<strong>ST ARES</strong>" &mdash; reading across "atheist areas", the letters S-T-A-R-E-S appear consecutively. <strong>Definition:</strong> "Observes" = STARES.</div>
+            </div>
+
+            <div class="example">
+                <div class="clue">"Result held by this core assessment (5)"</div>
+                <div class="answer">SCORE</div>
+                <div class="explanation"><strong>Indicator:</strong> "held by" signals a hidden word. <strong>Hidden in:</strong> "thi<strong>S CORE</strong> assessment" &mdash; reading across "this core", the letters S-C-O-R-E appear consecutively. <strong>Definition:</strong> "Result" = SCORE.</div>
+            </div>
+
+            <div class="example">
+                <div class="clue">"Weapon concealed in words wordsmanship (5)"</div>
+                <div class="answer">SWORD</div>
+                <div class="explanation"><strong>Indicator:</strong> "concealed in" tells you the answer is hidden. <strong>Hidden in:</strong> "word<strong>S WORD</strong>smanship" &mdash; reading across "words wordsmanship", the letters S-W-O-R-D appear consecutively. <strong>Definition:</strong> "Weapon" = SWORD.</div>
+            </div>
+        </div>
+
+        <!-- Indicator Glossary -->
+        <div class="guide-section">
+            <h2>Complete Hidden Word Indicator Glossary</h2>
+            <p>These words and phrases tell you to look for the answer hidden inside the clue text:</p>
+            <div class="glossary-type">
+                <div class="word-list">
+                    <span class="word-tag hidden">among</span>
+                    <span class="word-tag hidden">appearing in</span>
+                    <span class="word-tag hidden">concealed</span>
+                    <span class="word-tag hidden">contained in</span>
+                    <span class="word-tag hidden">found in</span>
+                    <span class="word-tag hidden">held by</span>
+                    <span class="word-tag hidden">hidden in</span>
+                    <span class="word-tag hidden">housed in</span>
+                    <span class="word-tag hidden">in</span>
+                    <span class="word-tag hidden">in part</span>
+                    <span class="word-tag hidden">inside</span>
+                    <span class="word-tag hidden">part of</span>
+                    <span class="word-tag hidden">partially</span>
+                    <span class="word-tag hidden">some</span>
+                    <span class="word-tag hidden">within</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tips -->
+        <div class="guide-section">
+            <h2>Tips for Solving Hidden Word Clues</h2>
+            <h3>1. Scan letter by letter</h3>
+            <p>Once you spot the indicator, look at the remaining words in the clue. Slowly read the consecutive letters across word boundaries. The answer will span across at least two words (otherwise it would be too obvious).</p>
+
+            <h3>2. The answer usually spans a word boundary</h3>
+            <p>Setters almost always hide the answer across two or more words. If you find the whole answer inside a single word, double-check &mdash; that would be unusually easy and most setters avoid it.</p>
+
+            <h3>3. Use the letter count</h3>
+            <p>The number in brackets tells you exactly how many consecutive letters to look for. This makes it much easier to scan through the clue systematically.</p>
+
+            <h3>4. Watch for reversed hidden words</h3>
+            <p>Some clues combine hidden words with reversals. If you see both a hidden word indicator and a reversal indicator (like "returning" or "back"), the answer is hidden backwards in the text.</p>
+
+            <h3>5. Start with these clues</h3>
+            <p>Hidden word clues are the quickest to solve. In a new puzzle, look for indicators like "some", "part of", or "in" first &mdash; solving these gives you crossing letters to help with harder clues.</p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="guide-section">
+            <h2>Explore Other Clue Types</h2>
+            <p>Now that you know hidden words, explore the other cryptic clue types.</p>
+            <div class="other-types">
+                <a href="/guide/anagrams">Anagrams</a>
+                <a href="/guide/double-definitions">Double Definitions</a>
+                <a href="/guide/reversals">Reversals</a>
+                <a href="/guide/containers">Containers</a>
+                <a href="/guide/homophones">Homophones</a>
+                <a href="/guide/deletions">Deletions</a>
+            </div>
+            <div style="margin-top: 20px;">
+                <a href="/guide" style="color: #2563eb; text-decoration: none; font-weight: 500;">&larr; Back to the Complete Guide</a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Cryptic Hints &mdash; Guardian crosswords with progressive hints</p>
+        <p style="margin-top: 6px; font-size: 13px;"><a href="/feed/puzzles" style="color: var(--text-faint); text-decoration: none;">Puzzle RSS</a> &middot; <a href="/feed/blog" style="color: var(--text-faint); text-decoration: none;">Blog RSS</a></p>
+    </footer>
+    <script>
+        function toggleTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const newTheme = isDark ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.querySelectorAll('.theme-icon').forEach(function(el) {
+                el.textContent = isDark ? '\u2600\uFE0F' : '\uD83C\uDF19';
+            });
+        }
+        updateThemeIcon();
+    </script>
+</body>
+</html>
