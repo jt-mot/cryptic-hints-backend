@@ -8,6 +8,7 @@ Uses Claude API for intelligent hint generation with regex fallback
 import re
 import os
 import json
+import time
 from typing import List, Dict, Optional, Tuple
 
 # Try to import requests for API calls
@@ -193,7 +194,7 @@ class EnhancedHintGenerator:
 
     def generate_hints(self, hint_paragraphs: List[str], author: str = 'generic',
                        definitions: List[str] = None, clue_text: str = None,
-                       answer: str = None) -> List[str]:
+                       answer: str = None, puzzle_type: str = 'cryptic') -> List[str]:
         """
         Generate 4-level progressive hints using Claude AI with regex fallback
 
@@ -209,6 +210,7 @@ class EnhancedHintGenerator:
             definitions: Extracted HTML definitions (underlined/italicized text)
             clue_text: The original clue text (optional, improves hint quality)
             answer: The answer (optional, improves hint quality)
+            puzzle_type: 'cryptic' or 'quiptic'
 
         Returns:
             List of 4 hints, progressively more revealing
@@ -228,7 +230,7 @@ class EnhancedHintGenerator:
         # Try Claude API first if enabled and available
         if self.use_claude and self.api_key and REQUESTS_AVAILABLE:
             claude_hints = self._generate_hints_with_claude(
-                full_text, definitions, clue_text, answer
+                full_text, definitions, clue_text, answer, puzzle_type
             )
             if claude_hints:
                 print(f"      Claude API: Generated hints successfully")
@@ -244,10 +246,12 @@ class EnhancedHintGenerator:
                 print(f"      Claude API: requests library not available")
 
         # Fallback to regex-based hint generation
-        return self._generate_hints_with_regex(full_text, hint_paragraphs, definitions, author)
+        return self._generate_hints_with_regex(full_text, hint_paragraphs, definitions, author,
+                                               clue_text=clue_text, answer=answer)
 
     def _generate_hints_with_claude(self, explanation: str, definitions: List[str],
-                                     clue_text: str = None, answer: str = None) -> Optional[List[str]]:
+                                     clue_text: str = None, answer: str = None,
+                                     puzzle_type: str = 'cryptic') -> Optional[List[str]]:
         """
         Use Claude API to generate intelligent progressive hints
 
@@ -257,10 +261,16 @@ class EnhancedHintGenerator:
             # Build the prompt with all available context
             definition_text = definitions[0] if definitions else "unknown"
 
+            # Quiptic-specific guidance
+            quiptic_note = ""
+            if puzzle_type == 'quiptic':
+                quiptic_note = """
+NOTE: This is a QUIPTIC clue (an easier cryptic crossword aimed at beginners). Quiptics still use standard cryptic devices (anagrams, charades, hidden words, double definitions, etc.) but the wordplay is more straightforward and the indicators are more obvious. Keep your explanations simple and clear. Do NOT overcomplicate the parsing - if the wordplay is simple, say so plainly."""
+
             prompt = f"""You are helping create progressive hints for a cryptic crossword clue. Your goal is to help solvers learn how cryptic clues work by guiding them step-by-step toward the answer.
 
-IMPORTANT: Work out the full parsing internally BEFORE writing your response. Each hint must be clean, polished, and final. Never include self-corrections, backtracking, or thinking-aloud phrases like "wait", "actually", "no", "hmm", "let me reconsider", or "that's wrong". If the expert explanation contains errors, silently correct them.
-
+IMPORTANT: Work out the full parsing internally BEFORE writing your response. Each hint must be clean, polished, and final. Never include self-corrections, backtracking, or thinking-aloud phrases like "wait", "actually", "no", "hmm", "let me reconsider", or "that's wrong".
+{quiptic_note}
 CONTEXT:
 - Definition (the "straight" part that means the answer): {definition_text}
 - Clue text: {clue_text if clue_text else "not provided"}
@@ -287,66 +297,148 @@ Example: "'wild' is the anagram indicator - rearrange the letters of 'PIRATES'"
 Example: "'reportedly' signals a homophone - think of a word for 'holy man' that sounds like..."
 
 HINT 4 - FULL ANSWER:
-Give the complete answer and a concise, correct explanation of how the wordplay works. State the answer, then walk through the parsing cleanly in one pass.
+Give the complete answer and a concise explanation of how the wordplay works. State the answer, then walk through the parsing cleanly in one pass.
+CRITICAL: When an expert explanation is provided above, base your answer on it. The expert explanation is from a trusted cryptic crossword blog and its wordplay parsing is almost always correct. You may rephrase it for clarity or add helpful context, but do NOT contradict or re-derive the core logic. Only analyse independently if no expert explanation is provided.
 Example: "Answer: TRAPPIST | 'Reportedly' indicates homophone - sounds like 'trapeze artist' = TRAPPIST (type of monk)"
 
 Respond with ONLY a JSON object in this exact format:
 {{"hint1": "...", "hint2": "...", "hint3": "...", "hint4": "..."}}"""
 
-            response = requests.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "Content-Type": "application/json",
-                    "x-api-key": self.api_key,
-                    "anthropic-version": "2023-06-01"
-                },
-                json={
-                    "model": "claude-sonnet-4-20250514",
-                    "max_tokens": 1000,
-                    "messages": [{"role": "user", "content": prompt}]
-                },
-                timeout=15
-            )
+            request_body = {
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 1000,
+                "messages": [{"role": "user", "content": prompt}]
+            }
+            request_headers = {
+                "Content-Type": "application/json",
+                "x-api-key": self.api_key,
+                "anthropic-version": "2023-06-01"
+            }
 
-            if response.status_code == 200:
-                data = response.json()
+            # Retry up to 3 times with backoff for transient failures
+            last_error = None
+            for attempt in range(3):
+                try:
+                    response = requests.post(
+                        "https://api.anthropic.com/v1/messages",
+                        headers=request_headers,
+                        json=request_body,
+                        timeout=30
+                    )
 
-                # Track token usage from API response
-                usage = data.get('usage', {})
-                input_tokens = usage.get('input_tokens', 0)
-                output_tokens = usage.get('output_tokens', 0)
-                self.total_api_calls += 1
-                self.total_input_tokens += input_tokens
-                self.total_output_tokens += output_tokens
-                self.model_used = data.get('model', 'claude-sonnet-4-20250514')
+                    if response.status_code == 200:
+                        data = response.json()
 
-                if data.get('content') and len(data['content']) > 0:
-                    text = data['content'][0].get('text', '')
+                        # Track token usage from API response
+                        usage = data.get('usage', {})
+                        input_tokens = usage.get('input_tokens', 0)
+                        output_tokens = usage.get('output_tokens', 0)
+                        self.total_api_calls += 1
+                        self.total_input_tokens += input_tokens
+                        self.total_output_tokens += output_tokens
+                        self.model_used = data.get('model', 'claude-sonnet-4-20250514')
 
-                    # Parse JSON from response
-                    # Handle case where response might have markdown code blocks
-                    if '```json' in text:
-                        text = text.split('```json')[1].split('```')[0]
-                    elif '```' in text:
-                        text = text.split('```')[1].split('```')[0]
+                        if data.get('content') and len(data['content']) > 0:
+                            text = data['content'][0].get('text', '')
 
-                    hints_data = json.loads(text.strip())
+                            # Parse JSON from response - try multiple extraction strategies
+                            hints_data = self._parse_hints_json(text)
+                            if hints_data:
+                                return [
+                                    hints_data.get('hint1', ''),
+                                    hints_data.get('hint2', ''),
+                                    hints_data.get('hint3', ''),
+                                    hints_data.get('hint4', '')
+                                ]
 
-                    return [
-                        hints_data.get('hint1', ''),
-                        hints_data.get('hint2', ''),
-                        hints_data.get('hint3', ''),
-                        hints_data.get('hint4', '')
-                    ]
-            else:
-                print(f"      Claude API error: Status {response.status_code} - {response.text[:200]}")
+                            # JSON parsing failed - log the raw response for debugging
+                            preview = text[:150] if text else '(empty)'
+                            raise json.JSONDecodeError(
+                                f"Could not extract JSON from response: {preview}", text or '', 0
+                            )
 
-        except requests.exceptions.Timeout:
-            print("      Claude API timeout - falling back to regex")
-        except json.JSONDecodeError as e:
-            print(f"      Claude API JSON parse error: {e} - falling back to regex")
+                    # Retry on rate limit (429) or server errors (5xx)
+                    if response.status_code in (429, 500, 502, 503, 529):
+                        wait = 2 ** attempt
+                        print(f"      Claude API: Status {response.status_code}, retrying in {wait}s...")
+                        time.sleep(wait)
+                        continue
+
+                    # Non-retryable error
+                    print(f"      Claude API error: Status {response.status_code} - {response.text[:200]}")
+                    return None
+
+                except requests.exceptions.Timeout:
+                    wait = 2 ** attempt
+                    print(f"      Claude API timeout (attempt {attempt + 1}/3), retrying in {wait}s...")
+                    time.sleep(wait)
+                    last_error = "timeout"
+                except json.JSONDecodeError as e:
+                    print(f"      Claude API JSON parse error: {e} - retrying...")
+                    last_error = str(e)
+                    time.sleep(1)
+
+            if last_error:
+                print(f"      Claude API failed after 3 attempts ({last_error}) - falling back to regex")
+
         except Exception as e:
             print(f"      Claude API error: {e} - falling back to regex")
+
+        return None
+
+    @staticmethod
+    def _parse_hints_json(text: str) -> Optional[Dict]:
+        """Extract and parse the hints JSON from Claude's response text.
+
+        Tries multiple strategies:
+        1. Direct JSON parse
+        2. Extract from markdown code blocks
+        3. Find JSON object with regex (handles surrounding text)
+        """
+        if not text or not text.strip():
+            return None
+
+        text = text.strip()
+
+        # Strategy 1: Direct parse
+        try:
+            data = json.loads(text)
+            if isinstance(data, dict) and 'hint1' in data:
+                return data
+        except json.JSONDecodeError:
+            pass
+
+        # Strategy 2: Markdown code blocks
+        if '```' in text:
+            try:
+                if '```json' in text:
+                    block = text.split('```json')[1].split('```')[0]
+                else:
+                    block = text.split('```')[1].split('```')[0]
+                data = json.loads(block.strip())
+                if isinstance(data, dict) and 'hint1' in data:
+                    return data
+            except (json.JSONDecodeError, IndexError):
+                pass
+
+        # Strategy 3: Find JSON object by matching braces
+        start = text.find('{')
+        if start != -1:
+            # Find the matching closing brace
+            depth = 0
+            for i in range(start, len(text)):
+                if text[i] == '{':
+                    depth += 1
+                elif text[i] == '}':
+                    depth -= 1
+                    if depth == 0:
+                        try:
+                            data = json.loads(text[start:i + 1])
+                            if isinstance(data, dict) and 'hint1' in data:
+                                return data
+                        except json.JSONDecodeError:
+                            pass
+                        break
 
         return None
 
@@ -371,7 +463,8 @@ Respond with ONLY a JSON object in this exact format:
         self.model_used = None
 
     def _generate_hints_with_regex(self, full_text: str, hint_paragraphs: List[str],
-                                    definitions: List[str], author: str) -> List[str]:
+                                    definitions: List[str], author: str,
+                                    clue_text: str = None, answer: str = None) -> List[str]:
         """
         Fallback regex-based hint generation when Claude is unavailable
         """
@@ -380,7 +473,8 @@ Respond with ONLY a JSON object in this exact format:
         hint_2 = self._generate_technique_hint(full_text, paragraphs=hint_paragraphs)
         hint_3 = self._generate_structural_hint(full_text, paragraphs=hint_paragraphs,
                                                  definitions=definitions)
-        hint_4 = self._generate_full_explanation(hint_paragraphs, definitions)
+        hint_4 = self._generate_full_explanation(hint_paragraphs, definitions,
+                                                  answer=answer)
 
         return [hint_1, hint_2, hint_3, hint_4]
 
@@ -714,7 +808,8 @@ Respond with ONLY a JSON object in this exact format:
         return None
 
     def _generate_full_explanation(self, paragraphs: List[str],
-                                    definitions: List[str]) -> str:
+                                    definitions: List[str],
+                                    answer: str = None) -> str:
         """
         Level 4: Complete explanation
 
@@ -725,15 +820,17 @@ Respond with ONLY a JSON object in this exact format:
         parts = []
 
         # Extract the answer (longest ALL CAPS word, usually the answer)
+        extracted_answer = None
         caps_words = re.findall(r'\b[A-Z]{2,}\b', full_text)
         if caps_words:
-            # The answer is typically the longest caps word, or appears at the end
-            # Filter out common non-answer caps like "I", "A", abbreviations
             answer_candidates = [w for w in caps_words if len(w) >= 3]
             if answer_candidates:
-                # Prefer the longest one, or the last one if tied
-                answer = max(answer_candidates, key=len)
-                parts.append(f"Answer: {answer}")
+                extracted_answer = max(answer_candidates, key=len)
+
+        # Use passed-in answer if extraction failed
+        display_answer = extracted_answer or answer
+        if display_answer:
+            parts.append(f"Answer: {display_answer.upper()}")
 
         # Definition section
         if definitions:
@@ -769,17 +866,3 @@ Respond with ONLY a JSON object in this exact format:
             return ' '.join(paragraphs) if paragraphs else "No explanation available."
 
         return " | ".join(parts)
-
-
-# For backward compatibility
-class HintGenerator:
-    """Legacy class that uses enhanced generator"""
-
-    def __init__(self):
-        self.enhanced = EnhancedHintGenerator()
-
-    @staticmethod
-    def generate_hints(hint_paragraphs: List[str]) -> List[str]:
-        """Generate hints using enhanced system"""
-        generator = EnhancedHintGenerator()
-        return generator.generate_hints(hint_paragraphs, author='generic')

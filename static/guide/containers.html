@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Container &amp; Insertion Clues in Cryptic Crosswords - Complete Guide | Cryptic Hints</title>
+    <meta name="description" content="Master container and insertion clues in cryptic crosswords. One word goes inside another to form the answer. Includes worked examples and a complete list of container indicator words.">
+    <meta name="keywords" content="container clues cryptic crossword, insertion clues, container indicators, cryptic crossword container guide, how to solve container clues">
+    <link rel="canonical" href="__SITE_URL__/guide/containers">
+    <meta property="og:title" content="Container &amp; Insertion Clues in Cryptic Crosswords - Complete Guide">
+    <meta property="og:description" content="Master container and insertion clues. One word goes inside another to form the answer.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="__SITE_URL__/guide/containers">
+    <meta property="og:site_name" content="Cryptic Hints">
+    <meta name="twitter:card" content="summary">
+    <link rel="alternate" type="application/rss+xml" title="New Puzzles" href="__SITE_URL__/feed/puzzles">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=__GA_TRACKING_ID__"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '__GA_TRACKING_ID__');
+    </script>
+    <style>
+        :root {
+            --bg: #f5f7fa;
+            --text: #1a1a2e;
+            --text-heading: #1e293b;
+            --text-secondary: #334155;
+            --text-body: #475569;
+            --text-muted: #64748b;
+            --text-faint: #94a3b8;
+            --card-bg: #fff;
+            --card-shadow: rgba(0,0,0,0.06);
+            --card-border: #e2e8f0;
+            --example-bg: #f8fafc;
+            --tag-bg: #f1f5f9;
+            --tag-text: #475569;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --text: #e2e8f0;
+            --text-heading: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-body: #94a3b8;
+            --text-muted: #94a3b8;
+            --text-faint: #64748b;
+            --card-bg: #1e293b;
+            --card-shadow: rgba(0,0,0,0.3);
+            --card-border: #334155;
+            --example-bg: #1e293b;
+            --tag-bg: #334155;
+            --tag-text: #cbd5e1;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 16px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-icon { width: 36px; height: 36px; flex-shrink: 0; }
+        nav { display: flex; gap: 8px; }
+        nav a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        nav a:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .theme-toggle {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.8);
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            transition: all 0.2s;
+        }
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 48px 24px 56px;
+            text-align: center;
+        }
+        .hero h1 {
+            color: #fff;
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+        .hero p {
+            color: rgba(255,255,255,0.75);
+            font-size: 18px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+
+        .breadcrumb {
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        .breadcrumb a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        .guide-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 4px var(--card-shadow);
+        }
+        .guide-section h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--card-border);
+        }
+        .guide-section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin: 20px 0 8px;
+        }
+        .guide-section p {
+            color: var(--text-body);
+            margin-bottom: 12px;
+        }
+
+        .example {
+            background: var(--example-bg);
+            border-left: 4px solid #2563eb;
+            border-radius: 0 8px 8px 0;
+            padding: 16px 20px;
+            margin: 16px 0;
+        }
+        .example .clue {
+            font-weight: 600;
+            color: var(--text-heading);
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+        .example .answer {
+            font-weight: 700;
+            color: #16a34a;
+            display: inline-block;
+            background: #dcfce7;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+        .example .explanation {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .tip {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            border-radius: 0 8px 8px 0;
+            padding: 14px 20px;
+            margin: 16px 0;
+            font-size: 15px;
+            color: #92400e;
+        }
+
+        .glossary-type {
+            margin-bottom: 24px;
+        }
+        .glossary-type h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin-bottom: 8px;
+        }
+        .word-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .word-tag {
+            background: var(--tag-bg);
+            color: var(--tag-text);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .word-tag.container { background: #fef3c7; color: #92400e; }
+
+        .other-types {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .other-types a {
+            display: inline-block;
+            padding: 8px 16px;
+            background: var(--tag-bg);
+            color: #2563eb;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .other-types a:hover {
+            background: #dbeafe;
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-faint);
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 28px; }
+            .hero p { font-size: 16px; }
+            .guide-section { padding: 24px 20px; }
+            .container { padding: 24px 16px 60px; }
+        }
+    </style>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Container and Insertion Clues in Cryptic Crosswords - Complete Guide",
+        "description": "Master container and insertion clues in cryptic crosswords. One word goes inside another to form the answer.",
+        "url": "__SITE_URL__/guide/containers",
+        "publisher": {
+            "@type": "Organization",
+            "name": "Cryptic Hints",
+            "url": "__SITE_URL__/"
+        },
+        "mainEntityOfPage": "__SITE_URL__/guide/containers"
+    }
+    </script>
+</head>
+<body>
+    <script>
+        (function() {
+            var saved = localStorage.getItem('theme');
+            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <header>
+        <div class="header-content">
+            <a href="/" class="logo">
+                <svg class="logo-icon" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="36" height="36" rx="8" fill="white" opacity="0.15"/>
+                    <rect x="3" y="3" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="13.5" y="3" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="24" y="3" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="3" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="13.5" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="24" y="13.5" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="3" y="24" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="13.5" y="24" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="24" y="24" width="9" height="9" rx="1.5" fill="white"/>
+                    <text x="18" y="21" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="700" font-family="Arial, sans-serif">?</text>
+                </svg>
+                Cryptic Hints
+            </a>
+            <nav>
+                <a href="/#puzzles">Puzzles</a>
+                <a href="/guide">Guide</a>
+                <a href="/blog">Blog</a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
+                    <span class="theme-icon"></span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <div class="hero">
+        <h1>Container &amp; Insertion Clues</h1>
+        <p>One word goes inside another to build the answer from the inside out</p>
+    </div>
+
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="/guide">Guide</a> &rsaquo; Containers &amp; Insertions
+        </div>
+
+        <!-- Introduction -->
+        <div class="guide-section">
+            <h2>What Are Container Clues?</h2>
+            <p>In a container clue (also called an insertion clue), one set of letters is placed <strong>inside</strong> another to form the answer. Think of it as one word "swallowing" or "holding" another. The setter signals this with a container indicator like "around", "holding", "swallowing", "embracing", or "inside".</p>
+            <p>Container clues work in two directions. Either the outer word <strong>contains</strong> the inner word (signalled by "holding", "swallowing", "embracing"), or the inner word <strong>enters</strong> the outer word (signalled by "in", "inside", "entering"). The result is the same &mdash; one set of letters nested inside another.</p>
+            <p>To solve these, you need to identify which letters go outside and which go inside, then picture how they fit together. Writing it out with brackets can help: if FAST holds E, you get F(E)AST = FEAST.</p>
+        </div>
+
+        <!-- Worked Examples -->
+        <div class="guide-section">
+            <h2>Worked Examples</h2>
+
+            <div class="example">
+                <div class="clue">"Host swallowing energy is a banquet (5)"</div>
+                <div class="answer">FEAST</div>
+                <div class="explanation"><strong>Indicator:</strong> "swallowing" &mdash; the host contains the energy. <strong>Outer word:</strong> "Host" = FAST (to fast means to go without food). <strong>Inner letter:</strong> "energy" = E (standard abbreviation). <strong>Construction:</strong> E goes inside FAST: F-<strong>E</strong>-A-S-T = FEAST. <strong>Definition:</strong> "banquet" = FEAST. Check: F + E + AST = FEAST.</div>
+            </div>
+
+            <div class="example">
+                <div class="clue">"Cooking vessel around fifty is a scheme (4)"</div>
+                <div class="answer">PLAN</div>
+                <div class="explanation"><strong>Indicator:</strong> "around" &mdash; the vessel goes around the number. <strong>Outer word:</strong> "Cooking vessel" = PAN. <strong>Inner letter:</strong> "fifty" = L (Roman numeral). <strong>Construction:</strong> L goes inside PAN: P-<strong>L</strong>-A-N = PLAN. <strong>Definition:</strong> "scheme" = PLAN. Check: P + L + AN = PLAN.</div>
+            </div>
+
+            <div class="example">
+                <div class="clue">"Music group embracing right is a make (5)"</div>
+                <div class="answer">BRAND</div>
+                <div class="explanation"><strong>Indicator:</strong> "embracing" &mdash; the group holds the letter. <strong>Outer word:</strong> "Music group" = BAND. <strong>Inner letter:</strong> "right" = R (standard abbreviation). <strong>Construction:</strong> R goes inside BAND: B-<strong>R</strong>-A-N-D = BRAND. <strong>Definition:</strong> "make" (as in brand/make of a product) = BRAND. Check: B + R + AND = BRAND.</div>
+            </div>
+
+            <div class="example">
+                <div class="clue">"Small piece clutching right is a citizen (4)"</div>
+                <div class="answer">BRIT</div>
+                <div class="explanation"><strong>Indicator:</strong> "clutching" &mdash; the small piece holds the letter. <strong>Outer word:</strong> "Small piece" = BIT. <strong>Inner letter:</strong> "right" = R (standard abbreviation). <strong>Construction:</strong> R goes inside BIT: B-<strong>R</strong>-I-T = BRIT. <strong>Definition:</strong> "citizen" = BRIT (short for British citizen). Check: B + R + IT = BRIT.</div>
+            </div>
+        </div>
+
+        <!-- Indicator Glossary -->
+        <div class="guide-section">
+            <h2>Complete Container Indicator Glossary</h2>
+            <p>These words signal that one set of letters should be placed inside another:</p>
+            <div class="glossary-type">
+                <div class="word-list">
+                    <span class="word-tag container">around</span>
+                    <span class="word-tag container">clutching</span>
+                    <span class="word-tag container">consuming</span>
+                    <span class="word-tag container">containing</span>
+                    <span class="word-tag container">covering</span>
+                    <span class="word-tag container">eating</span>
+                    <span class="word-tag container">embracing</span>
+                    <span class="word-tag container">holding</span>
+                    <span class="word-tag container">housing</span>
+                    <span class="word-tag container">in</span>
+                    <span class="word-tag container">inside</span>
+                    <span class="word-tag container">into</span>
+                    <span class="word-tag container">outside</span>
+                    <span class="word-tag container">surrounding</span>
+                    <span class="word-tag container">swallowing</span>
+                    <span class="word-tag container">within</span>
+                    <span class="word-tag container">wrapping</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tips -->
+        <div class="guide-section">
+            <h2>Tips for Solving Container Clues</h2>
+            <h3>1. Identify which part goes inside which</h3>
+            <p>The indicator word tells you the direction. "Swallowing" and "embracing" mean the first word wraps around the second. "Inside" and "entering" mean the first word goes into the second. Read the indicator carefully.</p>
+
+            <h3>2. Use bracket notation</h3>
+            <p>Write out the construction with brackets: F(E)AST, B(R)AND, P(L)AN. This makes it easy to see whether the letters combine correctly to spell the answer.</p>
+
+            <h3>3. Look for common short insertions</h3>
+            <p>The inserted element is often a single letter from a standard abbreviation: E (energy), R (right), L (left), N (new), O (love/nothing). This keeps the clue concise.</p>
+
+            <h3>4. The outer word splits at a natural point</h3>
+            <p>The inserted letters always go between existing letters of the outer word. Try different split points in the outer word to see where the insertion makes a real word.</p>
+
+            <div class="tip">Container clues are really satisfying once you get the hang of them. The key insight is that the answer is always longer than either component alone &mdash; it is the combination of both parts nested together.</div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="guide-section">
+            <h2>Explore Other Clue Types</h2>
+            <p>Containers are one of several wordplay techniques used in cryptic crosswords.</p>
+            <div class="other-types">
+                <a href="/guide/anagrams">Anagrams</a>
+                <a href="/guide/hidden-words">Hidden Words</a>
+                <a href="/guide/double-definitions">Double Definitions</a>
+                <a href="/guide/reversals">Reversals</a>
+                <a href="/guide/homophones">Homophones</a>
+                <a href="/guide/deletions">Deletions</a>
+            </div>
+            <div style="margin-top: 20px;">
+                <a href="/guide" style="color: #2563eb; text-decoration: none; font-weight: 500;">&larr; Back to the Complete Guide</a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Cryptic Hints &mdash; Guardian crosswords with progressive hints</p>
+        <p style="margin-top: 6px; font-size: 13px;"><a href="/feed/puzzles" style="color: var(--text-faint); text-decoration: none;">Puzzle RSS</a> &middot; <a href="/feed/blog" style="color: var(--text-faint); text-decoration: none;">Blog RSS</a></p>
+    </footer>
+    <script>
+        function toggleTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const newTheme = isDark ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.querySelectorAll('.theme-icon').forEach(function(el) {
+                el.textContent = isDark ? '\u2600\uFE0F' : '\uD83C\uDF19';
+            });
+        }
+        updateThemeIcon();
+    </script>
+</body>
+</html>

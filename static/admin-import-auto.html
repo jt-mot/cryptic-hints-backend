@@ -256,6 +256,8 @@
             }
         });
 
+        let pollTimer = null;
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -267,23 +269,18 @@
                 return;
             }
 
-            // Disable button
             importBtn.disabled = true;
-
             const typeLabel = puzzleType === 'quiptic' ? 'Quiptic' : 'Cryptic';
 
-            // Show loading
             showStatus('loading', `
                 <div class="spinner"></div>
-                Fetching ${typeLabel} ${puzzleNumber} from Guardian & fifteensquared.net...
+                Starting ${typeLabel} ${puzzleNumber} import...
             `);
 
             try {
                 const response = await fetch('/admin/api/scrape-and-import', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
                     body: JSON.stringify({
                         puzzle_number: puzzleNumber,
@@ -291,37 +288,72 @@
                     })
                 });
 
+                const contentType = response.headers.get('content-type') || '';
+                if (!contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`Server returned ${response.status}: ${text.substring(0, 200)}`);
+                }
+
                 const data = await response.json();
 
-                if (data.success) {
-                    let costLine = '';
-                    if (data.api_usage && data.api_usage.api_calls > 0) {
-                        const u = data.api_usage;
-                        costLine = `<br><span style="color:#6d28d9">📊 API: ${u.api_calls} calls, ${(u.input_tokens + u.output_tokens).toLocaleString()} tokens, $${u.estimated_cost_usd.toFixed(4)}</span>`;
-                    }
-                    showStatus('success', `
-                        ✓ Successfully imported puzzle ${puzzleNumber}!<br>
-                        <strong>${data.clue_count} clues</strong> imported from <strong>${data.setter}</strong>${costLine}<br>
-                        <button class="btn-primary" style="margin-top: 1rem;" onclick="window.location.href='/admin/review'">
-                            Review Hints →
-                        </button>
-                    `);
-                    
-                    // Clear form
-                    form.reset();
-                } else {
-                    showStatus('error', `
-                        ✗ Import failed: ${data.message || 'Unknown error'}<br>
-                        ${data.details || ''}
-                    `);
+                if (!data.success || !data.task_id) {
+                    throw new Error(data.message || 'Failed to start import');
                 }
+
+                // Poll for status
+                const taskId = data.task_id;
+                let elapsed = 0;
+                pollTimer = setInterval(async () => {
+                    elapsed += 3;
+                    try {
+                        const statusResp = await fetch(`/admin/api/import-status/${taskId}`, {
+                            credentials: 'same-origin'
+                        });
+                        const status = await statusResp.json();
+
+                        if (status.status === 'running') {
+                            const step = status.step || 'Processing...';
+                            showStatus('loading', `
+                                <div class="spinner"></div>
+                                ${step} (${elapsed}s)
+                            `);
+                        } else if (status.status === 'complete') {
+                            clearInterval(pollTimer);
+                            pollTimer = null;
+                            let costLine = '';
+                            if (status.api_usage && status.api_usage.api_calls > 0) {
+                                const u = status.api_usage;
+                                costLine = `<br><span style="color:#6d28d9">📊 API: ${u.api_calls} calls, ${(u.input_tokens + u.output_tokens).toLocaleString()} tokens, $${u.estimated_cost_usd.toFixed(4)}</span>`;
+                            }
+                            showStatus('success', `
+                                ✓ Successfully imported puzzle ${puzzleNumber}!<br>
+                                <strong>${status.clue_count} clues</strong> imported from <strong>${status.setter}</strong>${costLine}<br>
+                                <button class="btn-primary" style="margin-top: 1rem;" onclick="window.location.href='/admin/review'">
+                                    Review Hints →
+                                </button>
+                            `);
+                            form.reset();
+                            importBtn.disabled = false;
+                        } else if (status.status === 'error') {
+                            clearInterval(pollTimer);
+                            pollTimer = null;
+                            showStatus('error', `
+                                ✗ Import failed: ${status.message || 'Unknown error'}<br>
+                                ${status.details || ''}
+                            `);
+                            importBtn.disabled = false;
+                        }
+                    } catch (pollErr) {
+                        // Network hiccup during poll - keep trying
+                        console.warn('Poll error:', pollErr);
+                    }
+                }, 3000);
 
             } catch (error) {
                 showStatus('error', `
                     ✗ Error: ${error.message}<br>
                     <small>Check that the puzzle exists on fifteensquared.net</small>
                 `);
-            } finally {
                 importBtn.disabled = false;
             }
         });

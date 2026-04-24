@@ -18,14 +18,18 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
 import psycopg2.errors
 from psycopg2.extras import RealDictCursor
+import html as html_module
 import json
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import os
 import secrets
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import time
 import threading
+import uuid
+import traceback as tb_module
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
@@ -35,6 +39,18 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 CORS(app)
+
+# In-memory store for background import tasks
+_import_tasks = {}
+
+# Auto-import scheduler state
+_scheduler_state = {
+    'enabled': os.environ.get('AUTO_IMPORT_ENABLED', 'true').lower() == 'true',
+    'running': False,
+    'last_check': None,
+    'last_result': None,
+    'next_check': None,
+}
 
 DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://localhost/crosswords_dev')
 SITE_URL = os.environ.get('SITE_URL', 'https://www.cryptic-hints.com').rstrip('/')
@@ -134,6 +150,88 @@ def get_db():
     return conn
 
 
+def save_puzzle_to_db(puzzle_data, puzzle_number, puzzle_type, auto_approve=False):
+    """Save scraped puzzle data to the database.
+
+    Returns (puzzle_id, clue_count) on success.
+    Raises on failure (caller should handle).
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            INSERT INTO puzzles (publication, puzzle_type, puzzle_number, setter, date, status)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+        ''', (
+            puzzle_data.get('publication', 'Guardian'),
+            puzzle_data.get('puzzle_type', puzzle_type),
+            puzzle_data.get('puzzle_number', puzzle_number),
+            puzzle_data.get('setter', 'Unknown'),
+            puzzle_data.get('date', datetime.now().strftime('%Y-%m-%d')),
+            'draft',
+        ))
+        puzzle_id = cursor.fetchone()[0]
+
+        if puzzle_data.get('grid'):
+            cursor.execute(
+                "UPDATE puzzles SET grid_data = %s WHERE id = %s",
+                (json.dumps(puzzle_data['grid']), puzzle_id),
+            )
+
+        api_usage = puzzle_data.get('api_usage', {})
+        if api_usage.get('api_calls', 0) > 0:
+            cursor.execute('''
+                INSERT INTO api_usage (
+                    puzzle_id, puzzle_number, api_calls,
+                    input_tokens, output_tokens,
+                    estimated_cost_usd, model
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ''', (
+                puzzle_id,
+                puzzle_data.get('puzzle_number', puzzle_number),
+                api_usage.get('api_calls', 0),
+                api_usage.get('input_tokens', 0),
+                api_usage.get('output_tokens', 0),
+                api_usage.get('estimated_cost_usd', 0),
+                api_usage.get('model', ''),
+            ))
+
+        clue_count = 0
+        for clue_d in puzzle_data.get('clues', []):
+            hints = clue_d.get('hints', ['', '', '', ''])
+            cursor.execute('''
+                INSERT INTO clues (
+                    puzzle_id, clue_number, direction, clue_text,
+                    answer, enumeration,
+                    hint_level_1, hint_level_2, hint_level_3, hint_level_4,
+                    hint_1_approved, hint_2_approved, hint_3_approved, hint_4_approved
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ''', (
+                puzzle_id,
+                str(clue_d.get('clue_number', ''))[:10],
+                str(clue_d.get('direction', 'across'))[:10],
+                str(clue_d.get('clue_text', ''))[:500],
+                str(clue_d.get('answer', ''))[:100],
+                str(clue_d.get('enumeration', ''))[:20],
+                (hints[0][:1000] if len(hints) > 0 else ''),
+                (hints[1][:1000] if len(hints) > 1 else ''),
+                (hints[2][:2000] if len(hints) > 2 else ''),
+                (hints[3][:5000] if len(hints) > 3 else ''),
+                auto_approve, auto_approve, auto_approve, auto_approve,
+            ))
+            clue_count += 1
+
+        conn.commit()
+        return puzzle_id, clue_count
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
+
+
 def init_db():
     """Initialize database with schema"""
     conn = get_db()
@@ -218,6 +316,12 @@ def init_db():
         )
     ''')
 
+    # Prevent duplicate puzzles (safe to run repeatedly - IF NOT EXISTS)
+    cursor.execute('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_puzzles_number_type
+        ON puzzles (puzzle_number, puzzle_type)
+    ''')
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS subscribers (
             id SERIAL PRIMARY KEY,
@@ -254,6 +358,7 @@ def init_db():
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_date ON puzzles(date)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_puzzle_status ON puzzles(status)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_clue_puzzle ON clues(puzzle_id)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_clue_lookup ON clues(puzzle_id, clue_number, direction)')
     cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriber_email ON subscribers(email)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_comments_puzzle ON comments(puzzle_number)')
     cursor.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_blog_slug ON blog_posts(slug)')
@@ -307,7 +412,7 @@ def login_required(f):
 # PUBLIC ROUTES (Frontend)
 # ============================================================================
 
-def _serve_html(filename, extra=None):
+def _serve_html(filename, extra=None, status=200):
     """Read an HTML file from static/ and inject config values."""
     filepath = os.path.join(app.static_folder, filename)
     with open(filepath, 'r') as f:
@@ -317,7 +422,7 @@ def _serve_html(filename, extra=None):
     if extra:
         for key, value in extra.items():
             html = html.replace(key, value)
-    return Response(html, mimetype='text/html')
+    return Response(html, status=status, mimetype='text/html')
 
 
 @app.route('/')
@@ -369,14 +474,109 @@ def homepage():
 
 @app.route('/puzzle/<puzzle_number>')
 def puzzle_page(puzzle_number):
-    """Serve the puzzle solving page"""
-    return _serve_html('puzzle.html', extra={'__PUZZLE_NUMBER__': str(puzzle_number)})
+    """Serve the puzzle solving page with server-side rendered clue list for SEO."""
+    esc = html_module.escape
+    puzzle_number = str(puzzle_number)
+
+    # Default values
+    ssr_content = ''
+    puzzle_info = 'Loading...'
+    page_title = f'Guardian Cryptic #{esc(puzzle_number)} - Hints &amp; Solutions | Cryptic Hints'
+    page_desc = (f'Solve Guardian cryptic crossword #{esc(puzzle_number)} with progressive hints. '
+                 'Get help from definition only to full explanation.')
+    status = 200
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+        cursor.execute('''
+            SELECT id, puzzle_type, puzzle_number, setter, date
+            FROM puzzles WHERE puzzle_number = %s AND status = 'published' LIMIT 1
+        ''', (puzzle_number,))
+        puzzle = cursor.fetchone()
+
+        if puzzle:
+            cursor.execute('''
+                SELECT clue_number, direction, clue_text, enumeration
+                FROM clues WHERE puzzle_id = %s
+                ORDER BY CASE WHEN direction = 'across' THEN 0 ELSE 1 END,
+                         CAST(clue_number AS INTEGER)
+            ''', (puzzle['id'],))
+            clues = cursor.fetchall()
+
+            ptype = 'Quiptic' if puzzle.get('puzzle_type') == 'quiptic' else 'Cryptic'
+            setter = esc(puzzle['setter']) if puzzle.get('setter') else 'Unknown'
+            puzzle_info = f'#{esc(puzzle_number)} by {setter} | {puzzle["date"]}'
+
+            page_title = (f'Guardian {ptype} #{esc(puzzle_number)} by {setter} '
+                          f'- Hints &amp; Solutions | Cryptic Hints')
+            page_desc = (f'Solve Guardian {ptype.lower()} crossword #{esc(puzzle_number)} '
+                         f'by {setter} with four levels of progressive hints.')
+
+            # Build SSR clue list
+            across_html = ''
+            down_html = ''
+            for clue in clues:
+                enum = f' ({esc(clue["enumeration"])})' if clue.get('enumeration') else ''
+                clue_html = (f'<p><strong>{esc(clue["clue_number"])}.</strong> '
+                             f'{esc(clue["clue_text"])}{enum} '
+                             f'<a href="/clue/{esc(puzzle_number)}/{esc(clue["clue_number"])}'
+                             f'-{esc(clue["direction"])}">Hints</a></p>')
+                if clue['direction'] == 'across':
+                    across_html += clue_html
+                else:
+                    down_html += clue_html
+
+            ssr_content = (
+                '<div class="direction-section">'
+                '<h2 class="direction-title">Across</h2>'
+                f'{across_html}'
+                '</div>'
+                '<div class="direction-section">'
+                '<h2 class="direction-title">Down</h2>'
+                f'{down_html}'
+                '</div>'
+            )
+        else:
+            ssr_content = '<p>Puzzle not found.</p>'
+            status = 404
+
+        cursor.close()
+        conn.close()
+    except Exception:
+        pass  # Fall back to empty SSR content
+
+    return _serve_html('puzzle.html', extra={
+        '__PUZZLE_NUMBER__': puzzle_number,
+        '__PUZZLE_SSR_CONTENT__': ssr_content,
+        '__PUZZLE_INFO__': puzzle_info,
+        '__PUZZLE_PAGE_TITLE__': page_title,
+        '__PUZZLE_PAGE_DESC__': page_desc,
+    }, status=status)
 
 
 @app.route('/guide')
 def guide_page():
     """Serve the how-to-solve-cryptics guide"""
     return _serve_html('guide.html')
+
+
+@app.route('/synonyms')
+def synonyms_page():
+    """Serve the public synonym database page"""
+    return send_from_directory('static', 'synonym_database.html')
+
+
+GUIDE_PAGES = ['anagrams', 'hidden-words', 'double-definitions', 'reversals', 'containers', 'homophones', 'deletions']
+
+
+@app.route('/guide/<slug>')
+def guide_subpage(slug):
+    """Serve standalone guide pages for each clue type"""
+    if slug not in GUIDE_PAGES:
+        return _serve_html('guide.html')
+    return send_from_directory('static/guide', f'{slug}.html')
 
 
 @app.route('/blog')
@@ -389,6 +589,156 @@ def blog_listing():
 def blog_post_page(slug):
     """Serve an individual blog post page"""
     return _serve_html('blog-post.html', extra={'__BLOG_SLUG__': slug})
+
+
+@app.route('/clue/<puzzle_number>/<clue_ref>')
+def clue_page(puzzle_number, clue_ref):
+    """Serve an individual clue page with server-side rendered content for SEO."""
+    esc = html_module.escape
+    puzzle_number = str(puzzle_number)
+    clue_ref = str(clue_ref)
+
+    # Default SSR values (used if DB query fails)
+    ssr_content = '<div class="loading-state">Loading clue...</div>'
+    page_title = f'Clue {esc(clue_ref)} - Guardian Cryptic #{esc(puzzle_number)} | Cryptic Hints'
+    page_desc = (f'Hints for clue {esc(clue_ref)} from Guardian cryptic crossword '
+                 f'#{esc(puzzle_number)}. Progressive hints from gentle nudge to full explanation.')
+    clue_label = clue_ref
+    status = 200
+
+    # Try to fetch clue data from DB for server-side rendering
+    parts = clue_ref.rsplit('-', 1)
+    if len(parts) == 2 and parts[1] in ('across', 'down'):
+        clue_number, direction = parts
+        try:
+            conn = get_db()
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute('''
+                SELECT p.puzzle_number, p.setter, p.date, p.puzzle_type,
+                       c.clue_number, c.direction, c.clue_text, c.enumeration,
+                       c.hint_level_1, c.hint_level_2, c.hint_level_3, c.hint_level_4
+                FROM clues c
+                JOIN puzzles p ON c.puzzle_id = p.id
+                WHERE p.puzzle_number = %s AND p.status = 'published'
+                      AND c.clue_number = %s AND c.direction = %s
+                LIMIT 1
+            ''', (puzzle_number, clue_number, direction))
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+
+            if row:
+                dir_label = direction.capitalize()
+                label = f'{row["clue_number"]} {dir_label}'
+                clue_label = label
+                ptype = 'Quiptic' if row.get('puzzle_type') == 'quiptic' else 'Cryptic'
+                setter_html = (f' by {esc(row["setter"])}' if row.get('setter')
+                               and row['setter'] != 'Unknown' else '')
+                enum_html = (f'<span class="clue-enum">({esc(row["enumeration"])})</span>'
+                             if row.get('enumeration') else '')
+
+                hints = [
+                    row['hint_level_1'] or '',
+                    row['hint_level_2'] or '',
+                    row['hint_level_3'] or '',
+                    row['hint_level_4'] or '',
+                ]
+                hint_labels = [
+                    'Hint 1: Gentle nudge', 'Hint 2: More specific',
+                    'Hint 3: Strong hint', 'Hint 4: Full explanation',
+                ]
+                hints_html = ''
+                for i, hint in enumerate(hints):
+                    if not hint:
+                        continue
+                    hints_html += (f'<button class="hint-btn" id="hint-btn-{i}" '
+                                   f'onclick="toggleHint({i})">{hint_labels[i]}</button>')
+                    hints_html += f'<div class="hint-text" id="hint-{i}">{esc(hint)}</div>'
+
+                ssr_content = (
+                    '<div class="clue-card">'
+                    '<div class="clue-header">'
+                    f'<span class="clue-number">{esc(label)}</span>'
+                    f'{enum_html}'
+                    '</div>'
+                    f'<div class="clue-text">{esc(row["clue_text"])}</div>'
+                    f'<div class="clue-meta">Guardian {ptype} #{esc(puzzle_number)}{setter_html}'
+                    f' &middot; <a href="/puzzle/{esc(puzzle_number)}">View full puzzle</a></div>'
+                    '<div class="hints-section">'
+                    '<h2>Progressive Hints</h2>'
+                    f'{hints_html}'
+                    '</div>'
+                    '</div>'
+                    f'<a href="/puzzle/{esc(puzzle_number)}" class="full-puzzle-link">'
+                    'Solve the full puzzle &rarr;</a>'
+                )
+                page_title = f'{label} - Guardian {ptype} #{puzzle_number} | Cryptic Hints'
+                page_desc = (f'Hints for {label} from Guardian {ptype.lower()} '
+                             f'#{puzzle_number}: \u201c{esc(row["clue_text"])}\u201d')
+            else:
+                ssr_content = (f'<div class="error-state">Clue not found. '
+                               f'<a href="/puzzle/{esc(puzzle_number)}">View full puzzle</a></div>')
+                status = 404
+        except Exception:
+            pass  # Fall back to default "Loading clue..." content
+
+    return _serve_html('clue.html', extra={
+        '__PUZZLE_NUMBER__': puzzle_number,
+        '__CLUE_REF__': clue_ref,
+        '__CLUE_SSR_CONTENT__': ssr_content,
+        '__CLUE_PAGE_TITLE__': page_title,
+        '__CLUE_PAGE_DESC__': page_desc,
+        '__CLUE_LABEL__': clue_label,
+    }, status=status)
+
+
+@app.route('/api/clue/<puzzle_number>/<clue_ref>')
+def get_clue_by_ref(puzzle_number, clue_ref):
+    """Get a single clue by puzzle number and clue reference (e.g. 3-across)."""
+    parts = clue_ref.rsplit('-', 1)
+    if len(parts) != 2 or parts[1] not in ('across', 'down'):
+        return jsonify({'error': 'Invalid clue reference. Use format: 3-across'}), 400
+
+    clue_number, direction = parts
+
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    cursor.execute('''
+        SELECT p.puzzle_number, p.setter, p.date, p.puzzle_type,
+               c.id, c.clue_number, c.direction, c.clue_text, c.enumeration, c.answer,
+               c.hint_level_1, c.hint_level_2, c.hint_level_3, c.hint_level_4
+        FROM clues c
+        JOIN puzzles p ON c.puzzle_id = p.id
+        WHERE p.puzzle_number = %s AND p.status = 'published'
+              AND c.clue_number = %s AND c.direction = %s
+        LIMIT 1
+    ''', (puzzle_number, clue_number, direction))
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not row:
+        return jsonify({'error': 'Clue not found'}), 404
+
+    return jsonify({
+        'puzzle_number': row['puzzle_number'],
+        'setter': row['setter'],
+        'date': str(row['date']),
+        'puzzle_type': row.get('puzzle_type', 'cryptic'),
+        'clue_id': row['id'],
+        'clue_number': row['clue_number'],
+        'direction': row['direction'],
+        'clue_text': row['clue_text'],
+        'enumeration': row['enumeration'],
+        'answer': row['answer'],
+        'hints': [
+            row['hint_level_1'] or '',
+            row['hint_level_2'] or '',
+            row['hint_level_3'] or '',
+            row['hint_level_4'] or '',
+        ]
+    })
 
 
 @app.route('/api/blog/posts')
@@ -446,7 +796,9 @@ def robots_txt():
 Allow: /
 Allow: /puzzle/
 Allow: /guide
+Allow: /guide/
 Allow: /blog
+Allow: /clue/
 Disallow: /admin/
 Disallow: /api/
 
@@ -455,11 +807,72 @@ Sitemap: {SITE_URL}/sitemap.xml
     return Response(content, mimetype='text/plain')
 
 
+def _sitemap_lastmod(pub_date):
+    """Format a date for sitemap <lastmod>."""
+    if not pub_date:
+        return ''
+    try:
+        if hasattr(pub_date, 'strftime'):
+            return f'    <lastmod>{pub_date.strftime("%Y-%m-%d")}</lastmod>\n'
+        return f'    <lastmod>{str(pub_date)[:10]}</lastmod>\n'
+    except Exception:
+        return ''
+
+
+def _xml_response(xml):
+    """Return an XML response."""
+    response = make_response(xml)
+    response.headers['Content-Type'] = 'application/xml'
+    return response
+
+
 @app.route('/sitemap.xml')
-def sitemap_xml():
-    """Generate dynamic sitemap with all published puzzles"""
+def sitemap_index():
+    """Sitemap index pointing to sub-sitemaps for better crawlability."""
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for name in ['pages', 'puzzles', 'blog', 'clues']:
+        xml += '  <sitemap>\n'
+        xml += f'    <loc>{SITE_URL}/sitemap-{name}.xml</loc>\n'
+        xml += '  </sitemap>\n'
+    xml += '</sitemapindex>'
+    return _xml_response(xml)
+
+
+@app.route('/sitemap-pages.xml')
+def sitemap_pages():
+    """Static pages sitemap."""
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    xml += '  <url>\n'
+    xml += f'    <loc>{SITE_URL}/</loc>\n'
+    xml += '    <changefreq>daily</changefreq>\n'
+    xml += '    <priority>1.0</priority>\n'
+    xml += '  </url>\n'
+    xml += '  <url>\n'
+    xml += f'    <loc>{SITE_URL}/guide</loc>\n'
+    xml += '    <changefreq>monthly</changefreq>\n'
+    xml += '    <priority>0.9</priority>\n'
+    xml += '  </url>\n'
+    for slug in GUIDE_PAGES:
+        xml += '  <url>\n'
+        xml += f'    <loc>{SITE_URL}/guide/{slug}</loc>\n'
+        xml += '    <changefreq>monthly</changefreq>\n'
+        xml += '    <priority>0.8</priority>\n'
+        xml += '  </url>\n'
+    xml += '  <url>\n'
+    xml += f'    <loc>{SITE_URL}/blog</loc>\n'
+    xml += '    <changefreq>weekly</changefreq>\n'
+    xml += '    <priority>0.8</priority>\n'
+    xml += '  </url>\n'
+    xml += '</urlset>'
+    return _xml_response(xml)
+
+
+@app.route('/sitemap-puzzles.xml')
+def sitemap_puzzles():
+    """Puzzle pages sitemap."""
     puzzles = []
-    blog_posts = []
     try:
         conn = get_db()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -470,6 +883,29 @@ def sitemap_xml():
             ORDER BY published_at DESC
         """)
         puzzles = cursor.fetchall()
+    except Exception:
+        app.logger.exception("Failed to query puzzles for sitemap")
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for puzzle in puzzles:
+        xml += '  <url>\n'
+        xml += f'    <loc>{SITE_URL}/puzzle/{puzzle["puzzle_number"]}</loc>\n'
+        xml += _sitemap_lastmod(puzzle.get('published_at'))
+        xml += '    <changefreq>monthly</changefreq>\n'
+        xml += '    <priority>0.8</priority>\n'
+        xml += '  </url>\n'
+    xml += '</urlset>'
+    return _xml_response(xml)
+
+
+@app.route('/sitemap-blog.xml')
+def sitemap_blog():
+    """Blog posts sitemap."""
+    blog_posts = []
+    try:
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute("""
             SELECT slug, published_at
             FROM blog_posts
@@ -478,74 +914,148 @@ def sitemap_xml():
         """)
         blog_posts = cursor.fetchall()
     except Exception:
-        app.logger.exception("Failed to query data for sitemap")
+        app.logger.exception("Failed to query blog posts for sitemap")
 
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-
-    # Homepage
-    xml += '  <url>\n'
-    xml += f'    <loc>{SITE_URL}/</loc>\n'
-    xml += '    <changefreq>daily</changefreq>\n'
-    xml += '    <priority>1.0</priority>\n'
-    xml += '  </url>\n'
-
-    # Guide page
-    xml += '  <url>\n'
-    xml += f'    <loc>{SITE_URL}/guide</loc>\n'
-    xml += '    <changefreq>monthly</changefreq>\n'
-    xml += '    <priority>0.9</priority>\n'
-    xml += '  </url>\n'
-
-    # Blog listing
-    xml += '  <url>\n'
-    xml += f'    <loc>{SITE_URL}/blog</loc>\n'
-    xml += '    <changefreq>weekly</changefreq>\n'
-    xml += '    <priority>0.8</priority>\n'
-    xml += '  </url>\n'
-
-    # Individual puzzle pages
-    for puzzle in puzzles:
-        lastmod = ''
-        pub_date = puzzle.get('published_at')
-        if pub_date:
-            try:
-                if hasattr(pub_date, 'strftime'):
-                    lastmod = f'    <lastmod>{pub_date.strftime("%Y-%m-%d")}</lastmod>\n'
-                else:
-                    lastmod = f'    <lastmod>{str(pub_date)[:10]}</lastmod>\n'
-            except Exception:
-                pass
-        xml += '  <url>\n'
-        xml += f'    <loc>{SITE_URL}/puzzle/{puzzle["puzzle_number"]}</loc>\n'
-        xml += lastmod
-        xml += '    <changefreq>monthly</changefreq>\n'
-        xml += '    <priority>0.8</priority>\n'
-        xml += '  </url>\n'
-
-    # Blog posts
     for post in blog_posts:
-        lastmod = ''
-        pub_date = post.get('published_at')
-        if pub_date:
-            try:
-                if hasattr(pub_date, 'strftime'):
-                    lastmod = f'    <lastmod>{pub_date.strftime("%Y-%m-%d")}</lastmod>\n'
-                else:
-                    lastmod = f'    <lastmod>{str(pub_date)[:10]}</lastmod>\n'
-            except Exception:
-                pass
         xml += '  <url>\n'
         xml += f'    <loc>{SITE_URL}/blog/{post["slug"]}</loc>\n'
-        xml += lastmod
+        xml += _sitemap_lastmod(post.get('published_at'))
         xml += '    <changefreq>monthly</changefreq>\n'
         xml += '    <priority>0.7</priority>\n'
         xml += '  </url>\n'
-
     xml += '</urlset>'
+    return _xml_response(xml)
 
+
+@app.route('/sitemap-clues.xml')
+def sitemap_clues():
+    """Individual clue pages sitemap."""
+    clues = []
+    try:
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("""
+            SELECT p.puzzle_number, c.clue_number, c.direction, p.published_at
+            FROM clues c
+            JOIN puzzles p ON c.puzzle_id = p.id
+            WHERE p.status = 'published'
+            ORDER BY p.puzzle_number DESC, c.direction, CAST(c.clue_number AS INTEGER)
+        """)
+        clues = cursor.fetchall()
+    except Exception:
+        app.logger.exception("Failed to query clues for sitemap")
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for clue in clues:
+        ref = f'{clue["clue_number"]}-{clue["direction"]}'
+        xml += '  <url>\n'
+        xml += f'    <loc>{SITE_URL}/clue/{clue["puzzle_number"]}/{ref}</loc>\n'
+        xml += _sitemap_lastmod(clue.get('published_at'))
+        xml += '    <changefreq>monthly</changefreq>\n'
+        xml += '    <priority>0.5</priority>\n'
+        xml += '  </url>\n'
+    xml += '</urlset>'
+    return _xml_response(xml)
+
+
+def _rss_date(dt):
+    """Format a datetime for RSS <pubDate> (RFC 822)."""
+    if dt is None:
+        return ''
+    if hasattr(dt, 'strftime'):
+        return dt.strftime('%a, %d %b %Y %H:%M:%S +0000')
+    return str(dt)
+
+
+@app.route('/feed/puzzles')
+def rss_puzzles():
+    """RSS feed of published puzzles."""
+    try:
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("""
+            SELECT puzzle_number, setter, puzzle_type, published_at
+            FROM puzzles
+            WHERE status = 'published'
+            ORDER BY published_at DESC
+            LIMIT 30
+        """)
+        puzzles = cursor.fetchall()
+        cursor.close()
+        conn.close()
+    except Exception:
+        puzzles = []
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n'
+    xml += '<channel>\n'
+    xml += f'  <title>Cryptic Hints - New Puzzles</title>\n'
+    xml += f'  <link>{SITE_URL}/</link>\n'
+    xml += f'  <description>Latest Guardian cryptic crosswords with progressive hints</description>\n'
+    xml += f'  <atom:link href="{SITE_URL}/feed/puzzles" rel="self" type="application/rss+xml"/>\n'
+
+    for p in puzzles:
+        ptype = 'Quiptic' if p.get('puzzle_type') == 'quiptic' else 'Cryptic'
+        setter_str = f' by {p["setter"]}' if p.get('setter') and p['setter'] != 'Unknown' else ''
+        xml += '  <item>\n'
+        xml += f'    <title>Guardian {ptype} #{p["puzzle_number"]}{setter_str}</title>\n'
+        xml += f'    <link>{SITE_URL}/puzzle/{p["puzzle_number"]}</link>\n'
+        xml += f'    <guid>{SITE_URL}/puzzle/{p["puzzle_number"]}</guid>\n'
+        xml += f'    <description>Solve Guardian {ptype} #{p["puzzle_number"]}{setter_str} with four levels of progressive hints.</description>\n'
+        if p.get('published_at'):
+            xml += f'    <pubDate>{_rss_date(p["published_at"])}</pubDate>\n'
+        xml += '  </item>\n'
+
+    xml += '</channel>\n</rss>'
     response = make_response(xml)
-    response.headers['Content-Type'] = 'application/xml'
+    response.headers['Content-Type'] = 'application/rss+xml'
+    return response
+
+
+@app.route('/feed/blog')
+def rss_blog():
+    """RSS feed of published blog posts."""
+    try:
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("""
+            SELECT slug, title, meta_description, published_at
+            FROM blog_posts
+            WHERE status = 'published'
+            ORDER BY published_at DESC
+            LIMIT 30
+        """)
+        posts = cursor.fetchall()
+        cursor.close()
+        conn.close()
+    except Exception:
+        posts = []
+
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n'
+    xml += '<channel>\n'
+    xml += f'  <title>Cryptic Hints Blog</title>\n'
+    xml += f'  <link>{SITE_URL}/blog</link>\n'
+    xml += f'  <description>Tips, guides, and insights about cryptic crosswords</description>\n'
+    xml += f'  <atom:link href="{SITE_URL}/feed/blog" rel="self" type="application/rss+xml"/>\n'
+
+    for p in posts:
+        xml += '  <item>\n'
+        xml += f'    <title>{p["title"]}</title>\n'
+        xml += f'    <link>{SITE_URL}/blog/{p["slug"]}</link>\n'
+        xml += f'    <guid>{SITE_URL}/blog/{p["slug"]}</guid>\n'
+        if p.get('meta_description'):
+            xml += f'    <description>{p["meta_description"]}</description>\n'
+        if p.get('published_at'):
+            xml += f'    <pubDate>{_rss_date(p["published_at"])}</pubDate>\n'
+        xml += '  </item>\n'
+
+    xml += '</channel>\n</rss>'
+    response = make_response(xml)
+    response.headers['Content-Type'] = 'application/rss+xml'
     return response
 
 
@@ -1042,7 +1552,7 @@ def admin_review():
 @app.route('/admin/api/scrape-and-import', methods=['POST'])
 @login_required
 def scrape_and_import():
-    """Scrape puzzle from Guardian and fifteensquared, then import"""
+    """Start async puzzle import - returns task_id for polling"""
     data = request.json
     puzzle_number = data.get('puzzle_number')
     puzzle_type = data.get('puzzle_type', 'cryptic')  # 'cryptic' or 'quiptic'
@@ -1053,162 +1563,95 @@ def scrape_and_import():
     if puzzle_type not in ('cryptic', 'quiptic'):
         return jsonify({'success': False, 'message': 'Invalid puzzle type'})
 
+    task_id = str(uuid.uuid4())
+    _import_tasks[task_id] = {
+        'status': 'running',
+        'step': 'Starting import...',
+        'puzzle_number': puzzle_number,
+        'puzzle_type': puzzle_type,
+        '_ts': time.time(),
+    }
+
+    thread = threading.Thread(
+        target=_run_import_task,
+        args=(task_id, puzzle_number, puzzle_type),
+        daemon=True,
+    )
+    thread.start()
+
+    return jsonify({'success': True, 'task_id': task_id})
+
+
+@app.route('/admin/api/import-status/<task_id>')
+@login_required
+def import_status(task_id):
+    """Poll import task status"""
+    # Evict finished tasks older than 1 hour to prevent memory leak
+    now = time.time()
+    stale = [k for k, v in _import_tasks.items()
+             if v.get('status') != 'running' and now - v.get('_ts', now) > 3600]
+    for k in stale:
+        _import_tasks.pop(k, None)
+
+    task = _import_tasks.get(task_id)
+    if not task:
+        return jsonify({'status': 'not_found'}), 404
+    return jsonify(task)
+
+
+def _run_import_task(task_id, puzzle_number, puzzle_type):
+    """Background worker that scrapes and imports a puzzle"""
+    task = _import_tasks[task_id]
     try:
-        # Import the scraper
         from puzzle_scraper import PuzzleScraper
 
-        # Scrape the puzzle
+        task['step'] = 'Fetching puzzle from Guardian...'
         scraper = PuzzleScraper()
 
         try:
             puzzle_data = scraper.scrape_puzzle(puzzle_number, puzzle_type)
         except Exception as scrape_error:
             print(f"Scraping error: {scrape_error}")
-            import traceback
-            traceback.print_exc()
-            return jsonify({
-                'success': False,
-                'message': f'Scraping failed: {str(scrape_error)}',
-                'details': 'Error while fetching puzzle data'
-            })
-        
-        if 'error' in puzzle_data:
-            return jsonify({
-                'success': False, 
-                'message': puzzle_data['error'],
-                'details': 'Could not fetch puzzle from Guardian'
-            })
-        
-        # Check hint coverage
-        clues_with_hints = len([c for c in puzzle_data.get('clues', []) if any(c.get('hints', []))])
-        
-        # Import into database
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        try:
-            # Insert puzzle
-            cursor.execute('''
-                INSERT INTO puzzles (publication, puzzle_type, puzzle_number, setter, date, status)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                RETURNING id
-            ''', (
-                puzzle_data.get('publication', 'Guardian'),
-                puzzle_data.get('puzzle_type', puzzle_type),
-                puzzle_data.get('puzzle_number', puzzle_number),
-                puzzle_data.get('setter', 'Unknown'),
-                puzzle_data.get('date', datetime.now().strftime('%Y-%m-%d')),
-                'draft'
-            ))
-            
-            puzzle_id = cursor.fetchone()[0]
-            
-            # Store grid data if available
-            if puzzle_data.get('grid'):
-                cursor.execute('''
-                    UPDATE puzzles
-                    SET grid_data = %s
-                    WHERE id = %s
-                ''', (json.dumps(puzzle_data['grid']), puzzle_id))
+            tb_module.print_exc()
+            task.update({'status': 'error', 'message': f'Scraping failed: {scrape_error}',
+                         'details': 'Error while fetching puzzle data'})
+            return
 
-            # Store API usage stats
-            api_usage = puzzle_data.get('api_usage', {})
-            if api_usage.get('api_calls', 0) > 0:
-                cursor.execute('''
-                    INSERT INTO api_usage (
-                        puzzle_id, puzzle_number, api_calls,
-                        input_tokens, output_tokens,
-                        estimated_cost_usd, model
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-                ''', (
-                    puzzle_id,
-                    puzzle_data.get('puzzle_number', puzzle_number),
-                    api_usage.get('api_calls', 0),
-                    api_usage.get('input_tokens', 0),
-                    api_usage.get('output_tokens', 0),
-                    api_usage.get('estimated_cost_usd', 0),
-                    api_usage.get('model', ''),
-                ))
-            
-            # Insert clues with hints
-            clue_count = 0
-            for clue_data in puzzle_data.get('clues', []):
-                hints = clue_data.get('hints', ['', '', '', ''])
-                
-                # Validate data
-                clue_number = str(clue_data.get('clue_number', ''))[:10]
-                direction = str(clue_data.get('direction', 'across'))[:10]
-                clue_text = str(clue_data.get('clue_text', ''))[:500]
-                answer = str(clue_data.get('answer', ''))[:100]
-                enumeration = str(clue_data.get('enumeration', ''))[:20]
-                
-                # Truncate hints if too long
-                hint1 = hints[0][:1000] if len(hints) > 0 else ''
-                hint2 = hints[1][:1000] if len(hints) > 1 else ''
-                hint3 = hints[2][:2000] if len(hints) > 2 else ''
-                hint4 = hints[3][:5000] if len(hints) > 3 else ''
-                
-                cursor.execute('''
-                    INSERT INTO clues (
-                        puzzle_id, clue_number, direction, clue_text, 
-                        answer, enumeration,
-                        hint_level_1, hint_level_2, hint_level_3, hint_level_4,
-                        hint_1_approved, hint_2_approved, hint_3_approved, hint_4_approved
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ''', (
-                    puzzle_id,
-                    clue_number,
-                    direction,
-                    clue_text,
-                    answer,
-                    enumeration,
-                    hint1, hint2, hint3, hint4,
-                    False, False, False, False
-                ))
-                clue_count += 1
-            
-            print(f"Inserted {clue_count} clues into database")
-            conn.commit()
-            
-        except Exception as db_error:
-            conn.rollback()
-            raise db_error
-        finally:
-            cursor.close()
-            conn.close()
-        
-        # Build response message
+        if 'error' in puzzle_data:
+            task.update({'status': 'error', 'message': puzzle_data['error'],
+                         'details': 'Could not fetch puzzle from Guardian'})
+            return
+
+        task['step'] = 'Saving to database...'
+        puzzle_id, clue_count = save_puzzle_to_db(puzzle_data, puzzle_number, puzzle_type)
+
+        clues_with_hints = len([c for c in puzzle_data.get('clues', []) if any(c.get('hints', []))])
         message = f"Successfully imported puzzle {puzzle_number}"
         if clues_with_hints == 0:
             message += " (No hints found - you'll need to write hints manually)"
         elif clues_with_hints < len(puzzle_data.get('clues', [])):
             message += f" ({clues_with_hints}/{len(puzzle_data['clues'])} clues have hints)"
-
         api_usage = puzzle_data.get('api_usage', {})
         if api_usage.get('api_calls', 0) > 0:
             message += f" | API cost: ${api_usage['estimated_cost_usd']:.4f}"
 
-        return jsonify({
-            'success': True,
+        task.update({
+            'status': 'complete', 'success': True,
             'puzzle_id': puzzle_id,
             'puzzle_number': puzzle_data.get('puzzle_number', puzzle_number),
             'setter': puzzle_data.get('setter', 'Unknown'),
-            'clue_count': len(puzzle_data.get('clues', [])),
+            'clue_count': clue_count,
             'hints_found': clues_with_hints,
             'api_usage': api_usage,
-            'message': message
+            'message': message,
         })
-        
+
     except Exception as e:
-        print(f"Error in scrape_and_import: {e}")
-        import traceback
-        error_details = traceback.format_exc()
+        print(f"Error in import task: {e}")
+        error_details = tb_module.format_exc()
         print(error_details)
-        return jsonify({
-            'success': False, 
-            'message': str(e),
-            'details': error_details[:500]  # First 500 chars of traceback
-        })
+        task.update({'status': 'error', 'message': str(e),
+                     'details': error_details[:500]})
 
 
 @app.route('/admin/quick-import')
@@ -1609,6 +2052,243 @@ def admin_subscribers():
 
 
 # ============================================================================
+# SYNONYM DATABASE
+# ============================================================================
+
+@app.route('/synonyms')
+def public_synonyms():
+    """Public read-only synonym database page"""
+    return send_from_directory('static', 'synonym_database.html')
+
+
+@app.route('/periodic-table')
+def public_periodic_table():
+    """Public periodic table reference page"""
+    return send_from_directory('static', 'periodic-table.html')
+
+
+@app.route('/times-checker')
+def times_checker():
+    """Times crossword checker tool"""
+    return send_from_directory('static', 'times-checker.html')
+
+
+def _lookup_cryptics_dataset(req, clue, answer_len):
+    """Search the cryptics.georgeho.org dataset (660K+ cryptic clues) for matching answers."""
+    try:
+        # Full-text search on the clue text
+        resp = req.get(
+            'https://cryptics.georgeho.org/data/clues.json',
+            params={'_search': clue, '_size': 20, '_shape': 'array'},
+            headers={'Accept': 'application/json'},
+            timeout=8,
+        )
+        if resp.status_code != 200:
+            return set()
+        rows = resp.json()
+        answers = set()
+        for row in rows:
+            ans = (row.get('answer') or '').upper().replace(' ', '')
+            if ans.isalpha() and len(ans) == answer_len:
+                answers.add(ans)
+        return answers
+    except Exception:
+        return set()
+
+
+def _lookup_danword(req, clue, answer_len):
+    """Try to look up answers on danword.com."""
+    try:
+        from bs4 import BeautifulSoup
+        clue_slug = '_'.join(w.capitalize() for w in clue.split())
+        clue_slug = ''.join(c for c in clue_slug if c.isalnum() or c == '_')
+        resp = req.get(
+            f'https://www.danword.com/crossword/{clue_slug}',
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'text/html',
+            },
+            timeout=8,
+        )
+        if resp.status_code != 200:
+            return set()
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        answers = set()
+        for el in soup.find_all(['a', 'span', 'td', 'strong', 'b']):
+            text = el.get_text(strip=True).upper().replace(' ', '')
+            if text.isalpha() and len(text) == answer_len:
+                answers.add(text)
+        return answers
+    except Exception:
+        return set()
+
+
+def _solve_with_claude(req, api_key, clue, answer_len):
+    """Ask Claude to solve the cryptic clue. Returns a list of candidate answers."""
+    prompt = (
+        'You are an expert cryptic crossword solver. '
+        f'Solve this cryptic crossword clue: "{clue}"\n'
+        f'The answer has {answer_len} letters.\n\n'
+        'Break down the wordplay mentally, then give your top 3 most likely answers '
+        'in order of confidence. '
+        'Return ONLY a JSON array of uppercase strings, no explanation, no markdown.\n'
+        'Example: ["FIRST", "SECOND", "THIRD"]'
+    )
+    try:
+        resp = req.post(
+            'https://api.anthropic.com/v1/messages',
+            headers={
+                'Content-Type': 'application/json',
+                'x-api-key': api_key,
+                'anthropic-version': '2023-06-01',
+            },
+            json={
+                'model': 'claude-sonnet-4-6-20250514',
+                'max_tokens': 200,
+                'messages': [{'role': 'user', 'content': prompt}],
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+        raw = ''.join(b.get('text', '') for b in result.get('content', []))
+        raw = raw.replace('```json', '').replace('```', '').strip()
+        candidates = json.loads(raw)
+        if not isinstance(candidates, list):
+            return []
+        candidates = [c.upper().replace(' ', '') for c in candidates if isinstance(c, str)]
+        return [c for c in candidates if len(c) == answer_len]
+    except Exception:
+        return []
+
+
+@app.route('/api/check-clue', methods=['POST'])
+def check_clue():
+    """Solve a crossword clue using Claude + verification sources, then check user's guess."""
+    import requests as req
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key:
+        return jsonify({'success': False, 'message': 'ANTHROPIC_API_KEY not configured on server'}), 500
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'message': 'No data provided'}), 400
+
+    clue = (data.get('clue') or '').strip()
+    guess = (data.get('guess') or '').strip().upper().replace(' ', '')
+
+    if not clue or not guess:
+        return jsonify({'success': False, 'message': 'Clue text and guess are required'}), 400
+
+    guess_len = len(guess)
+
+    # Step 1: Ask Claude to solve the clue
+    claude_answers = _solve_with_claude(req, api_key, clue, guess_len)
+
+    # Step 2: Look up verification sources in parallel-ish (sequential but fast)
+    dataset_answers = _lookup_cryptics_dataset(req, clue, guess_len)
+    danword_answers = _lookup_danword(req, clue, guess_len)
+
+    # Step 3: Build a scored set of all candidate answers
+    # Answers confirmed by multiple sources get higher confidence
+    all_candidates = {}
+    for ans in claude_answers:
+        all_candidates[ans] = all_candidates.get(ans, 0) + 1
+    for ans in dataset_answers:
+        all_candidates[ans] = all_candidates.get(ans, 0) + 2  # dataset is authoritative
+    for ans in danword_answers:
+        all_candidates[ans] = all_candidates.get(ans, 0) + 2
+
+    if not all_candidates:
+        return jsonify({'success': False, 'message': 'Could not determine an answer. Try including the letter count, e.g. (5).'})
+
+    # Step 4: Check if the user's guess appears in any source
+    if guess in all_candidates:
+        return jsonify({
+            'success': True,
+            'correct': True,
+            'confidence': 'high' if all_candidates[guess] >= 2 else 'medium'
+        })
+
+    # Step 5: Find the best answer (highest confidence) to compare against
+    best = max(all_candidates, key=all_candidates.get)
+    confidence = all_candidates[best]
+
+    wrong_positions = [i for i in range(guess_len) if i < len(best) and guess[i] != best[i]]
+
+    return jsonify({
+        'success': True,
+        'correct': False,
+        'wrong_count': len(wrong_positions),
+        'wrong_positions': wrong_positions,
+        'confidence': 'high' if confidence >= 2 else 'medium',
+        'sources': (
+            ('Verified across multiple sources' if confidence >= 3
+             else 'Verified against crossword database' if dataset_answers or danword_answers
+             else 'Based on Claude analysis only')
+        )
+    })
+
+
+@app.route('/admin/synonyms')
+@login_required
+def admin_synonyms():
+    """Admin synonym database page"""
+    return send_from_directory('static', 'synonym_database.html')
+
+
+@app.route('/admin/api/synonyms/extract', methods=['POST'])
+@login_required
+def extract_synonyms():
+    """Proxy endpoint for Claude API to extract synonyms from clue text."""
+    import requests as req
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key:
+        return jsonify({'success': False, 'message': 'ANTHROPIC_API_KEY not configured on server'}), 500
+
+    data = request.get_json()
+    text = (data or {}).get('text', '').strip()
+    if not text:
+        return jsonify({'success': False, 'message': 'No text provided'}), 400
+
+    prompt = (
+        'Extract cryptic crossword wordplay synonyms from this text. '
+        'Look for patterns like "WORD (clue word)" where clue word is the synonym for WORD in the crossword. '
+        'Return ONLY a JSON array: [{"key":"clue word","val":"crossword code","cat":"CATEGORY"}] '
+        'where CATEGORY is one of: CRICKET, WORKERS, LETTERS, NUMBERS, PEOPLE, MUSIC, SPORTS, GEOGRAPHY, TIME, MONEY, MISC. '
+        'No markdown, no extra text.\n\n' + text
+    )
+
+    try:
+        resp = req.post(
+            'https://api.anthropic.com/v1/messages',
+            headers={
+                'Content-Type': 'application/json',
+                'x-api-key': api_key,
+                'anthropic-version': '2023-06-01',
+            },
+            json={
+                'model': 'claude-sonnet-4-6-20250514',
+                'max_tokens': 1000,
+                'messages': [{'role': 'user', 'content': prompt}],
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+        raw = ''.join(b.get('text', '') for b in result.get('content', []))
+        raw = raw.replace('```json', '').replace('```', '').strip()
+        synonyms = json.loads(raw)
+        return jsonify({'success': True, 'synonyms': synonyms})
+    except req.RequestException as e:
+        return jsonify({'success': False, 'message': f'API request failed: {e}'}), 502
+    except (json.JSONDecodeError, KeyError) as e:
+        return jsonify({'success': False, 'message': f'Failed to parse API response: {e}'}), 500
+
+
+# ============================================================================
 # BLOG ADMIN
 # ============================================================================
 
@@ -1843,6 +2523,217 @@ def import_puzzle():
     })
 
 
+# ---------------------------------------------------------------------------
+# Auto-import scheduler
+# ---------------------------------------------------------------------------
+
+def _discover_latest_puzzle_number(puzzle_type='cryptic'):
+    """Fetch the Guardian crosswords series page and find the latest puzzle number."""
+    import requests as req
+    series = 'quiptic' if puzzle_type == 'quiptic' else 'cryptic'
+    url = f'https://www.theguardian.com/crosswords/series/{series}'
+    try:
+        resp = req.get(url, timeout=30, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+        resp.raise_for_status()
+        # Links look like /crosswords/cryptic/29940
+        import re as _re
+        pattern = rf'/crosswords/{series}/(\d+)'
+        numbers = [int(m) for m in _re.findall(pattern, resp.text)]
+        if numbers:
+            return str(max(numbers))
+    except Exception as e:
+        print(f"[auto-import] Failed to discover latest puzzle number: {e}")
+    return None
+
+
+def _auto_import_once(puzzle_type='cryptic'):
+    """Run one auto-import cycle. Returns a status message string."""
+
+    # Discover the latest puzzle number from Guardian
+    latest_num = _discover_latest_puzzle_number(puzzle_type)
+    if not latest_num:
+        return "Could not determine latest puzzle number from Guardian"
+
+    # Check if already imported (unique index prevents duplicates even in a race)
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id FROM puzzles WHERE puzzle_number = %s AND puzzle_type = %s",
+            (latest_num, puzzle_type),
+        )
+        existing = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        if existing:
+            return f"Puzzle {latest_num} already imported"
+    except Exception as e:
+        return f"DB check failed: {e}"
+
+    # Check if fifteensquared has the analysis yet
+    from puzzle_scraper import FifteensquaredScraper
+    fs = FifteensquaredScraper()
+    post_url = fs.find_puzzle_post(latest_num, puzzle_type)
+    if not post_url:
+        return f"Puzzle {latest_num} not on fifteensquared yet"
+
+    # Run the full import
+    print(f"[auto-import] Importing puzzle {latest_num}...")
+    from puzzle_scraper import PuzzleScraper
+    scraper = PuzzleScraper()
+    try:
+        puzzle_data = scraper.scrape_puzzle(latest_num, puzzle_type)
+    except Exception as e:
+        return f"Scrape failed: {e}"
+
+    if 'error' in puzzle_data:
+        return f"Scrape error: {puzzle_data['error']}"
+
+    # Save to database with auto-approve
+    try:
+        puzzle_id, clue_count = save_puzzle_to_db(
+            puzzle_data, latest_num, puzzle_type, auto_approve=True)
+        print(f"[auto-import] Saved {clue_count} clues")
+    except psycopg2.errors.UniqueViolation:
+        return f"Puzzle {latest_num} already imported (race)"
+    except Exception as e:
+        return f"DB save failed: {e}"
+
+    # Publish the puzzle
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE puzzles
+            SET status = 'published', published_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+        ''', (puzzle_id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print(f"[auto-import] Published puzzle {latest_num}")
+    except Exception as e:
+        return f"Publish failed: {e}"
+
+    # Notify subscribers in background
+    setter_name = puzzle_data.get('setter', 'Unknown')
+    if SMTP_USER and SMTP_PASSWORD:
+        notify_subscribers(latest_num, setter_name, puzzle_type)
+
+    api_usage = puzzle_data.get('api_usage', {})
+    cost_str = ''
+    if api_usage.get('api_calls', 0) > 0:
+        cost_str = f", API cost: ${api_usage['estimated_cost_usd']:.4f}"
+    return f"Imported, approved, and published puzzle {latest_num} by {setter_name} ({clue_count} clues{cost_str})"
+
+
+def _scheduler_loop():
+    """Background loop: check hourly 9am-6pm Mon-Fri (UK time)."""
+    import time as _time
+    try:
+        from zoneinfo import ZoneInfo
+    except ImportError:
+        from backports.zoneinfo import ZoneInfo
+    uk_tz = ZoneInfo('Europe/London')
+
+    while True:
+        try:
+            now = datetime.now(uk_tz)
+            _scheduler_state['next_check'] = None
+
+            # Only Mon(0)-Fri(4), 9am-6pm UK time
+            if _scheduler_state['enabled'] and now.weekday() < 5 and 9 <= now.hour < 18:
+                _scheduler_state['running'] = True
+                _scheduler_state['last_check'] = now.isoformat()
+                print(f"\n[auto-import] Running check at {now.strftime('%Y-%m-%d %H:%M')} UK")
+                result = _auto_import_once('cryptic')
+                _scheduler_state['last_result'] = result
+                _scheduler_state['running'] = False
+                print(f"[auto-import] Result: {result}")
+            else:
+                _scheduler_state['running'] = False
+
+            # Sleep until the next hour boundary + 5 minutes
+            now2 = datetime.now(uk_tz)
+            minutes_to_next = 60 - now2.minute + 5
+            _scheduler_state['next_check'] = (
+                now2.replace(second=0, microsecond=0)
+                + timedelta(minutes=minutes_to_next)
+            ).isoformat()
+            _time.sleep(minutes_to_next * 60)
+
+        except Exception as e:
+            print(f"[auto-import] Scheduler error: {e}")
+            _scheduler_state['running'] = False
+            _scheduler_state['last_result'] = f"Error: {e}"
+            _time.sleep(300)  # Retry in 5 minutes on error
+
+
+def start_scheduler():
+    """Start the auto-import scheduler in a background thread."""
+    t = threading.Thread(target=_scheduler_loop, daemon=True, name='auto-import')
+    t.start()
+    print("[auto-import] Scheduler started (Mon-Fri 9am-6pm UK, hourly)")
+
+
+@app.route('/admin/api/auto-import/status')
+@login_required
+def auto_import_status():
+    """Get auto-import scheduler status"""
+    return jsonify(_scheduler_state)
+
+
+@app.route('/admin/api/auto-import/toggle', methods=['POST'])
+@login_required
+def auto_import_toggle():
+    """Enable or disable the auto-import scheduler"""
+    _scheduler_state['enabled'] = not _scheduler_state['enabled']
+    status = 'enabled' if _scheduler_state['enabled'] else 'disabled'
+    print(f"[auto-import] Scheduler {status}")
+    return jsonify({'success': True, 'enabled': _scheduler_state['enabled']})
+
+
+@app.route('/admin/api/auto-import/run-now', methods=['POST'])
+@login_required
+def auto_import_run_now():
+    """Trigger an immediate auto-import check"""
+    if _scheduler_state['running']:
+        return jsonify({'success': False, 'message': 'Import already running'})
+
+    task_id = str(uuid.uuid4())
+    _import_tasks[task_id] = {
+        'status': 'running',
+        'step': 'Running auto-import...',
+        '_ts': time.time(),
+    }
+
+    def _run():
+        try:
+            _scheduler_state['running'] = True
+            _scheduler_state['last_check'] = datetime.now().isoformat()
+            result = _auto_import_once('cryptic')
+            _scheduler_state['last_result'] = result
+            _scheduler_state['running'] = False
+
+            is_success = result.startswith('Imported')
+            _import_tasks[task_id].update({
+                'status': 'complete' if is_success else 'error',
+                'message': result,
+                'success': is_success,
+            })
+        except Exception as e:
+            _scheduler_state['running'] = False
+            _import_tasks[task_id].update({
+                'status': 'error',
+                'message': str(e),
+            })
+
+    threading.Thread(target=_run, daemon=True).start()
+    return jsonify({'success': True, 'task_id': task_id})
+
+
 # Initialize database when running with gunicorn (production)
 # This runs on module import, before any requests
 try:
@@ -1854,6 +2745,10 @@ except Exception:
     print("Database tables don't exist, initializing...")
     init_db()
     print("✓ Database initialized successfully!")
+
+# Start the auto-import scheduler (skip during tests)
+if not os.environ.get('TESTING'):
+    start_scheduler()
 
 
 if __name__ == '__main__':

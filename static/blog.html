@@ -12,6 +12,7 @@
     <meta property="og:url" content="__SITE_URL__/blog">
     <meta property="og:site_name" content="Cryptic Hints">
     <meta name="twitter:card" content="summary">
+    <link rel="alternate" type="application/rss+xml" title="Blog" href="__SITE_URL__/feed/blog">
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=__GA_TRACKING_ID__"></script>
     <script>
@@ -231,6 +232,7 @@
             <nav>
                 <a href="/#puzzles">Puzzles</a>
                 <a href="/guide">Guide</a>
+                <a href="/synonyms">Synonyms</a>
                 <a href="/blog">Blog</a>
                 <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
                     <span class="theme-icon"></span>
@@ -246,12 +248,20 @@
 
     <div class="container">
         <div id="postsList">
-            <div class="empty-state"><p>Loading...</p></div>
+            <noscript>
+                <div class="empty-state">
+                    <p>JavaScript is required to load blog posts. Please enable JavaScript or visit our <a href="/guide">Guide to Cryptic Crosswords</a> instead.</p>
+                </div>
+            </noscript>
+            <div class="empty-state" id="loading-state">
+                <p>Loading posts&hellip;</p>
+            </div>
         </div>
     </div>
 
     <footer>
         <p>Cryptic Hints &mdash; Guardian crosswords with progressive hints</p>
+        <p style="margin-top: 6px; font-size: 13px;"><a href="/feed/puzzles" style="color: var(--text-faint); text-decoration: none;">Puzzle RSS</a> &middot; <a href="/feed/blog" style="color: var(--text-faint); text-decoration: none;">Blog RSS</a></p>
     </footer>
 
     <script>
@@ -278,13 +288,15 @@
         }
 
         async function loadPosts() {
+            var container = document.getElementById('postsList');
             try {
-                const resp = await fetch('/api/blog/posts');
-                const posts = await resp.json();
-                const container = document.getElementById('postsList');
+                var resp = await fetch('/api/blog/posts');
+                var posts = await resp.json();
 
                 if (!posts.length) {
-                    container.innerHTML = '<div class="empty-state"><p>No posts yet. Check back soon!</p></div>';
+                    container.innerHTML = '<div class="empty-state">' +
+                        '<p>No posts yet. In the meantime, check out our <a href="/guide">Guide to Cryptic Crosswords</a> ' +
+                        'or browse the <a href="/synonyms">Synonym Database</a>.</p></div>';
                     return;
                 }
 
@@ -296,8 +308,9 @@
                         '</a></div>';
                 }).join('');
             } catch (e) {
-                document.getElementById('postsList').innerHTML =
-                    '<div class="empty-state"><p>Unable to load posts.</p></div>';
+                container.innerHTML =
+                    '<div class="empty-state"><p>Unable to load posts right now. ' +
+                    'Try our <a href="/guide">Guide to Cryptic Crosswords</a> or the <a href="/synonyms">Synonym Database</a> instead.</p></div>';
             }
         }
 

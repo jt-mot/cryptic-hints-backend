@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cryptic Crossword Synonym Database | Cryptic Hints</title>
+<meta name="description" content="Common cryptic crossword wordplay abbreviations and substitutions. Browse synonyms used in Guardian cryptic and quiptic crosswords by category.">
+<link rel="canonical" href="__SITE_URL__/synonyms">
+<style>
+  .site-nav { background: #1a365d; padding: 12px 0; }
+  .site-nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; }
+  .site-nav a.logo { color: #fff; text-decoration: none; font-weight: 700; font-size: 18px; }
+  .site-nav nav { display: flex; gap: 20px; }
+  .site-nav nav a { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 14px; }
+  .site-nav nav a:hover { color: #fff; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+  header { background: #1a1a1a; color: #fff; padding: 1.5rem 2rem; }
+  header h1 { font-size: 1.4rem; font-weight: 500; letter-spacing: -0.02em; }
+  header p { font-size: 0.85rem; color: #aaa; margin-top: 4px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1.5rem; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .stat { background: #fff; border: 1px solid #e8e8e0; border-radius: 10px; padding: 1rem; }
+  .stat-num { font-size: 1.6rem; font-weight: 600; color: #1a1a1a; }
+  .stat-label { font-size: 0.75rem; color: #888; margin-top: 2px; }
+  .controls { display: flex; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .controls input[type=text] { flex: 1; min-width: 200px; padding: 9px 14px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 14px; background: #fff; color: #1a1a1a; outline: none; }
+  .controls input[type=text]:focus { border-color: #aaa; }
+  .controls select { padding: 9px 14px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 14px; background: #fff; color: #1a1a1a; outline: none; cursor: pointer; }
+  .export-btn { padding: 9px 18px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .export-btn:hover { background: #333; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.2rem; }
+  .tab { padding: 5px 14px; font-size: 13px; border-radius: 20px; border: 1px solid #e0e0d8; background: #fff; color: #666; cursor: pointer; transition: all 0.15s; }
+  .tab.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .tab:hover:not(.active) { background: #f0f0e8; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+  .card { background: #fff; border: 1px solid #e8e8e0; border-radius: 10px; padding: 0.875rem 1rem; position: relative; }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .card-key { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+  .card-actions { display: flex; gap: 4px; align-items: center; }
+  .cat-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+  .del-btn { width: 20px; height: 20px; border: none; background: none; color: #ccc; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; border-radius: 4px; }
+  .del-btn:hover { color: #e53e3e; background: #fee2e2; }
+  .vals { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .val { font-size: 13px; background: #f5f5f0; border: 1px solid #e8e8e0; padding: 3px 10px; border-radius: 20px; color: #333; display: inline-flex; align-items: center; gap: 4px; }
+  .val-rm { border: none; background: none; color: #bbb; cursor: pointer; font-size: 12px; padding: 0; line-height: 1; border-radius: 50%; }
+  .val-rm:hover { color: #e53e3e; }
+  .val-add { font-size: 18px; width: 24px; height: 24px; border: 1px dashed #ccc; background: none; color: #aaa; cursor: pointer; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+  .val-add:hover { border-color: #888; color: #555; background: #f0f0e8; }
+  .empty { grid-column: 1/-1; text-align: center; padding: 3rem; color: #888; font-size: 14px; }
+  .panel { background: #fff; border: 1px solid #e8e8e0; border-radius: 12px; padding: 1.25rem; margin-top: 1.5rem; }
+  .panel h3 { font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
+  .panel .sub { font-size: 12px; color: #888; margin-bottom: 12px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .row input[type=text] { flex: 1; min-width: 130px; padding: 8px 12px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 13px; color: #1a1a1a; background: #fff; outline: none; }
+  .row input[type=text]:focus { border-color: #aaa; }
+  .row select { padding: 8px 12px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 13px; background: #fff; color: #1a1a1a; cursor: pointer; outline: none; }
+  .btn { padding: 8px 18px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; }
+  .btn:hover { background: #333; }
+  .btn:disabled { background: #ccc; cursor: not-allowed; }
+  textarea { width: 100%; padding: 10px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 13px; resize: vertical; min-height: 90px; color: #1a1a1a; background: #fff; outline: none; font-family: inherit; }
+  textarea:focus { border-color: #aaa; }
+  .status { font-size: 13px; color: #888; margin-top: 8px; min-height: 20px; }
+  .cat-CRICKET { background: #dcf5e7; color: #1a6b3a; }
+  .cat-WORKERS { background: #ede9fe; color: #5b21b6; }
+  .cat-LETTERS { background: #dbeafe; color: #1d4ed8; }
+  .cat-NUMBERS { background: #fef3c7; color: #92400e; }
+  .cat-PEOPLE  { background: #fee2e2; color: #991b1b; }
+  .cat-MISC    { background: #f1f5f9; color: #475569; }
+  .cat-MUSIC   { background: #fce7f3; color: #9d174d; }
+  .cat-SPORTS  { background: #dcf5e7; color: #1a6b3a; }
+  .cat-GEOGRAPHY { background: #ccfbf1; color: #0f766e; }
+  .cat-TIME    { background: #fef3c7; color: #92400e; }
+  .cat-MONEY   { background: #dcfce7; color: #166534; }
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(3,1fr); }
+    header { padding: 1rem; }
+    main { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="site-nav">
+  <div class="site-nav-inner">
+    <a href="/" class="logo">Cryptic Hints</a>
+    <nav>
+      <a href="/#puzzles">Puzzles</a>
+      <a href="/guide">Guide</a>
+      <a href="/synonyms">Synonyms</a>
+      <a href="/blog">Blog</a>
+    </nav>
+  </div>
+</div>
+<header>
+  <h1>Synonym Database</h1>
+  <p>Common wordplay abbreviations and substitutions used in Guardian cryptic crosswords</p>
+</header>
+<main>
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="s-entries">0</div><div class="stat-label">Entries</div></div>
+    <div class="stat"><div class="stat-num" id="s-cats">0</div><div class="stat-label">Categories</div></div>
+    <div class="stat"><div class="stat-num" id="s-syns">0</div><div class="stat-label">Synonyms</div></div>
+  </div>
+  <div class="controls">
+    <input type="text" id="search" placeholder="Search keyword or synonym&hellip;" oninput="render()">
+    <select id="cat-filter" onchange="syncTab(this.value); render()"><option value="">All categories</option></select>
+    <button class="export-btn" onclick="exportCSV()">Export CSV</button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="grid" id="grid"></div>
+
+  <div class="panel" id="panel-add" style="display:none">
+    <h3>Add an entry</h3>
+    <div class="sub">Add a new keyword/synonym pair to the database.</div>
+    <div class="row">
+      <input type="text" id="nk" placeholder="Keyword (e.g. worker)">
+      <input type="text" id="nv" placeholder="Synonym (e.g. ant)">
+      <select id="nc">
+        <option value="MISC">Misc</option>
+        <option value="WORKERS">Workers</option>
+        <option value="CRICKET">Cricket</option>
+        <option value="LETTERS">Letters/Abbrev</option>
+        <option value="NUMBERS">Numbers</option>
+        <option value="PEOPLE">People/Roles</option>
+        <option value="MUSIC">Music</option>
+        <option value="SPORTS">Sports</option>
+        <option value="GEOGRAPHY">Geography</option>
+        <option value="TIME">Time</option>
+        <option value="MONEY">Money</option>
+      </select>
+      <button class="btn" onclick="addEntry()">Add</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-extract" style="display:none">
+    <h3>Extract from clue explanations</h3>
+    <div class="sub">Paste wordplay breakdowns from fifteensquared.net &mdash; Claude will extract and add synonyms automatically.</div>
+    <textarea id="ai-input" placeholder="e.g. INDUCED &ndash; IN (batting) + DUD (failure), containing C (century)&hellip;"></textarea>
+    <button class="btn" style="margin-top:8px" onclick="extractFromText()">Extract synonyms</button>
+    <div class="status" id="ai-status"></div>
+  </div>
+</main>
+
+<script>
+const IS_ADMIN = location.pathname.startsWith('/admin');
+const CATS = ["CRICKET","WORKERS","LETTERS","NUMBERS","PEOPLE","MUSIC","SPORTS","GEOGRAPHY","TIME","MONEY","MISC"];
+
+const DEFAULT_DB = [
+  {key:"worker",vals:["ant","bee","hand","man","emp"],cat:"WORKERS"},
+  {key:"workers",vals:["ants","bees","hands","men","staff","crew"],cat:"WORKERS"},
+  {key:"insect",vals:["ant","bee","fly","gnat","wasp"],cat:"WORKERS"},
+  {key:"batting",vals:["in"],cat:"CRICKET"},
+  {key:"not batting",vals:["out"],cat:"CRICKET"},
+  {key:"dismissed",vals:["out"],cat:"CRICKET"},
+  {key:"duck",vals:["0","o","nought","nil"],cat:"CRICKET"},
+  {key:"century",vals:["c","ton","100"],cat:"CRICKET"},
+  {key:"cricket failure",vals:["duck","nought","0"],cat:"CRICKET"},
+  {key:"innings",vals:["in","bat"],cat:"CRICKET"},
+  {key:"prisoner",vals:["con","lag"],cat:"PEOPLE"},
+  {key:"criminal",vals:["con","lag","felon","lifer"],cat:"PEOPLE"},
+  {key:"sailor",vals:["ab","tar","hand","jack","rating"],cat:"PEOPLE"},
+  {key:"soldier",vals:["gi","tommy","re","ra","sapper"],cat:"PEOPLE"},
+  {key:"doctor",vals:["dr","mo","doc","gp","md"],cat:"PEOPLE"},
+  {key:"engineer",vals:["re","ce","sapper"],cat:"PEOPLE"},
+  {key:"artist",vals:["ra","ae"],cat:"PEOPLE"},
+  {key:"graduate",vals:["ba","ma","bsc","phd"],cat:"PEOPLE"},
+  {key:"bishop",vals:["b","bp"],cat:"PEOPLE"},
+  {key:"king",vals:["r","k","er","gr"],cat:"PEOPLE"},
+  {key:"queen",vals:["er","qe","r","hm","q"],cat:"PEOPLE"},
+  {key:"lad",vals:["boy","son","youth"],cat:"PEOPLE"},
+  {key:"girl",vals:["lass","gal","miss"],cat:"PEOPLE"},
+  {key:"judge",vals:["j","ref","ump","jp"],cat:"PEOPLE"},
+  {key:"saint",vals:["st","ss"],cat:"PEOPLE"},
+  {key:"quiet",vals:["p","sh","mum","piano","hush"],cat:"MUSIC"},
+  {key:"loud",vals:["f","forte","ff"],cat:"MUSIC"},
+  {key:"note",vals:["a","b","c","d","e","f","g","la","re","mi","fa","sol","ti"],cat:"MUSIC"},
+  {key:"key",vals:["a","b","c","d","e","f","g"],cat:"MUSIC"},
+  {key:"river",vals:["r","ee","exe","po","nile","ouse"],cat:"GEOGRAPHY"},
+  {key:"road",vals:["rd","st","ave","lane","way","dr"],cat:"GEOGRAPHY"},
+  {key:"mountain",vals:["ben","mt","alp","tor","fell"],cat:"GEOGRAPHY"},
+  {key:"island",vals:["i","isle","io"],cat:"GEOGRAPHY"},
+  {key:"east",vals:["e"],cat:"GEOGRAPHY"},
+  {key:"west",vals:["w"],cat:"GEOGRAPHY"},
+  {key:"north",vals:["n"],cat:"GEOGRAPHY"},
+  {key:"south",vals:["s"],cat:"GEOGRAPHY"},
+  {key:"poles",vals:["n","s","ns","sn"],cat:"GEOGRAPHY"},
+  {key:"european",vals:["e","eu"],cat:"GEOGRAPHY"},
+  {key:"english",vals:["e","eng"],cat:"GEOGRAPHY"},
+  {key:"french",vals:["f","fr"],cat:"GEOGRAPHY"},
+  {key:"american",vals:["a","us","yank"],cat:"GEOGRAPHY"},
+  {key:"flat",vals:["fen","moor","plain","mere"],cat:"GEOGRAPHY"},
+  {key:"sink",vals:["mire","bog","fen","swamp","slough"],cat:"GEOGRAPHY"},
+  {key:"capital",vals:["rio","la","ny","delhi","lima"],cat:"GEOGRAPHY"},
+  {key:"one",vals:["i","a","an","ace","unit"],cat:"NUMBERS"},
+  {key:"two",vals:["ii","bi","pair","duo","brace"],cat:"NUMBERS"},
+  {key:"three",vals:["iii","trio"],cat:"NUMBERS"},
+  {key:"five",vals:["v","e","cinq"],cat:"NUMBERS"},
+  {key:"ten",vals:["x","dec"],cat:"NUMBERS"},
+  {key:"fifty",vals:["l"],cat:"NUMBERS"},
+  {key:"hundred",vals:["c","ton"],cat:"NUMBERS"},
+  {key:"thousand",vals:["k","m","grand"],cat:"NUMBERS"},
+  {key:"million",vals:["m","meg"],cat:"NUMBERS"},
+  {key:"first",vals:["a","1st","top","head","initial"],cat:"LETTERS"},
+  {key:"diameter",vals:["d"],cat:"LETTERS"},
+  {key:"medium",vals:["m"],cat:"LETTERS"},
+  {key:"article",vals:["a","an","the"],cat:"LETTERS"},
+  {key:"french article",vals:["le","la","les","un","une"],cat:"LETTERS"},
+  {key:"minute",vals:["min","m","mo"],cat:"TIME"},
+  {key:"second",vals:["s","mo","tick","b"],cat:"TIME"},
+  {key:"hour",vals:["h","hr"],cat:"TIME"},
+  {key:"morning",vals:["am","morn","dawn"],cat:"TIME"},
+  {key:"afternoon",vals:["pm"],cat:"TIME"},
+  {key:"monday",vals:["mon","m"],cat:"TIME"},
+  {key:"parking",vals:["p"],cat:"MISC"},
+  {key:"advertisement",vals:["ad"],cat:"MISC"},
+  {key:"plug",vals:["ad"],cat:"MISC"},
+  {key:"old",vals:["o","ex","late"],cat:"MISC"},
+  {key:"vase",vals:["urn","pot"],cat:"MISC"},
+  {key:"wood",vals:["ash","elm","oak","yew","pine"],cat:"MISC"},
+  {key:"tree",vals:["ash","elm","oak","yew","pine","lime","bay"],cat:"MISC"},
+  {key:"couple",vals:["two","pair","ii","brace","duo"],cat:"MISC"},
+  {key:"head",vals:["nut","nob","top","h"],cat:"MISC"},
+  {key:"cat",vals:["moggy","mog","puss","tab"],cat:"MISC"},
+  {key:"hit",vals:["slap","smash","belt","bat","rap"],cat:"MISC"},
+  {key:"vessel",vals:["ss","mv","urn","cup","boat"],cat:"MISC"},
+  {key:"ship",vals:["ss","mv","hms","boat"],cat:"MISC"},
+  {key:"church",vals:["ce","c","ch","ely"],cat:"MISC"},
+  {key:"book",vals:["ot","nt","b","vol","tome"],cat:"MISC"},
+  {key:"university",vals:["u","ox","cam","uni"],cat:"MISC"},
+  {key:"plane",vals:["skim","flat","level"],cat:"MISC"},
+  {key:"opener",vals:["first letter","initial"],cat:"MISC"},
+  {key:"pound",vals:["lb","l","quid"],cat:"MONEY"},
+  {key:"penny",vals:["p","d","cent"],cat:"MONEY"},
+  {key:"shilling",vals:["s"],cat:"MONEY"},
+  {key:"gold",vals:["or","au"],cat:"MONEY"},
+  {key:"coin",vals:["p","d","l","groat"],cat:"MONEY"},
+
+  // === BULK ADDITIONS ===
+
+  // PEOPLE / ROLES
+  {key:"boy",vals:["lad","son","nipper","ted"],cat:"PEOPLE"},
+  {key:"man",vals:["he","him","chap","bloke","fellow"],cat:"PEOPLE"},
+  {key:"woman",vals:["she","her","lady","dame","lass"],cat:"PEOPLE"},
+  {key:"father",vals:["pa","da","dad","sire","pop","fr"],cat:"PEOPLE"},
+  {key:"mother",vals:["ma","mum","dam","mom"],cat:"PEOPLE"},
+  {key:"child",vals:["son","daughter","kid","tot","minor"],cat:"PEOPLE"},
+  {key:"wife",vals:["w","bride","mate","partner"],cat:"PEOPLE"},
+  {key:"husband",vals:["h","man","mate","partner"],cat:"PEOPLE"},
+  {key:"sir",vals:["s","knight"],cat:"PEOPLE"},
+  {key:"knight",vals:["n","sir","k"],cat:"PEOPLE"},
+  {key:"nurse",vals:["rn","en","sister","tend"],cat:"PEOPLE"},
+  {key:"spy",vals:["mole","agent","plant"],cat:"PEOPLE"},
+  {key:"fool",vals:["ass","nit","mug","clot","dolt","goose","sap"],cat:"PEOPLE"},
+  {key:"rogue",vals:["imp","scamp","knave","cad"],cat:"PEOPLE"},
+  {key:"servant",vals:["man","maid","page","valet"],cat:"PEOPLE"},
+  {key:"teacher",vals:["sir","miss","master","don","prof"],cat:"PEOPLE"},
+  {key:"pupil",vals:["l","learner","student"],cat:"PEOPLE"},
+  {key:"learner",vals:["l","pupil","novice","tyro"],cat:"PEOPLE"},
+  {key:"novice",vals:["l","learner","tyro","rookie"],cat:"PEOPLE"},
+  {key:"politician",vals:["mp","pm","whip","tory","lab"],cat:"PEOPLE"},
+  {key:"leader",vals:["head","chief","boss","no 1"],cat:"PEOPLE"},
+  {key:"duke",vals:["d"],cat:"PEOPLE"},
+  {key:"earl",vals:["e"],cat:"PEOPLE"},
+  {key:"prince",vals:["p","hal"],cat:"PEOPLE"},
+  {key:"princess",vals:["di","anne"],cat:"PEOPLE"},
+  {key:"lord",vals:["peer","earl","baron"],cat:"PEOPLE"},
+  {key:"mate",vals:["pal","chum","oppo","mucker"],cat:"PEOPLE"},
+  {key:"scotsman",vals:["mac","ian","jock"],cat:"PEOPLE"},
+  {key:"irishman",vals:["pat","paddy"],cat:"PEOPLE"},
+  {key:"welshman",vals:["dai","taffy"],cat:"PEOPLE"},
+  {key:"detective",vals:["di","dc","pi","tec"],cat:"PEOPLE"},
+  {key:"copper",vals:["cu","pc","d","bobby","pig"],cat:"PEOPLE"},
+  {key:"monarch",vals:["er","r","king","queen","rex"],cat:"PEOPLE"},
+
+  // WORKERS (additional)
+  {key:"employee",vals:["hand","worker","man","staff"],cat:"WORKERS"},
+  {key:"assistant",vals:["aide","pa","hand","help"],cat:"WORKERS"},
+  {key:"spy",vals:["ant","mole","plant","bug"],cat:"WORKERS"},
+
+  // CRICKET (additional)
+  {key:"bowled",vals:["b"],cat:"CRICKET"},
+  {key:"caught",vals:["c","ct"],cat:"CRICKET"},
+  {key:"run",vals:["r"],cat:"CRICKET"},
+  {key:"runs",vals:["r","score","total"],cat:"CRICKET"},
+  {key:"over",vals:["o"],cat:"CRICKET"},
+  {key:"wicket",vals:["w","gate","stumps"],cat:"CRICKET"},
+  {key:"not out",vals:["no","unbeaten"],cat:"CRICKET"},
+  {key:"leg before wicket",vals:["lbw"],cat:"CRICKET"},
+  {key:"stumped",vals:["st"],cat:"CRICKET"},
+  {key:"maiden",vals:["m","over","girl"],cat:"CRICKET"},
+  {key:"test",vals:["match","cap","trial"],cat:"CRICKET"},
+  {key:"side",vals:["xi","eleven","team"],cat:"CRICKET"},
+  {key:"team",vals:["xi","eleven","side"],cat:"CRICKET"},
+  {key:"extra",vals:["bye","wide","no ball","leg bye"],cat:"CRICKET"},
+
+  // MUSIC (additional)
+  {key:"softly",vals:["p","pp","piano"],cat:"MUSIC"},
+  {key:"very loud",vals:["ff","fortissimo"],cat:"MUSIC"},
+  {key:"very quiet",vals:["pp","pianissimo"],cat:"MUSIC"},
+  {key:"sharp",vals:["keen","acute","flat opposite"],cat:"MUSIC"},
+  {key:"song",vals:["air","aria","lay","number","hymn","tune"],cat:"MUSIC"},
+  {key:"singer",vals:["alto","bass","tenor","soprano","diva"],cat:"MUSIC"},
+  {key:"band",vals:["ring","strip","combo","group","set"],cat:"MUSIC"},
+  {key:"instrument",vals:["oboe","tuba","lute","sax","horn","fife"],cat:"MUSIC"},
+  {key:"dance",vals:["reel","jig","hop","ball","waltz","polka"],cat:"MUSIC"},
+  {key:"opera",vals:["aida","tosca","carmen"],cat:"MUSIC"},
+
+  // GEOGRAPHY (additional)
+  {key:"city",vals:["ec","ny","la","rome","ely","bath"],cat:"GEOGRAPHY"},
+  {key:"country",vals:["land","state","nation","realm"],cat:"GEOGRAPHY"},
+  {key:"german",vals:["g","d","ger"],cat:"GEOGRAPHY"},
+  {key:"spanish",vals:["sp","el","don"],cat:"GEOGRAPHY"},
+  {key:"italian",vals:["it","i"],cat:"GEOGRAPHY"},
+  {key:"scottish",vals:["sc","s"],cat:"GEOGRAPHY"},
+  {key:"irish",vals:["ir","ire"],cat:"GEOGRAPHY"},
+  {key:"lake",vals:["l","loch","mere","tarn","pool"],cat:"GEOGRAPHY"},
+  {key:"sea",vals:["med","main","deep","red"],cat:"GEOGRAPHY"},
+  {key:"street",vals:["st","rd","way","ave"],cat:"GEOGRAPHY"},
+  {key:"cape",vals:["c","ness","headland","cloak"],cat:"GEOGRAPHY"},
+  {key:"channel",vals:["strait","sound","bbc","itv"],cat:"GEOGRAPHY"},
+  {key:"port",vals:["l","harbour","left","red"],cat:"GEOGRAPHY"},
+  {key:"bridge",vals:["span","arch","link"],cat:"GEOGRAPHY"},
+  {key:"oriental",vals:["e","eastern","chinese"],cat:"GEOGRAPHY"},
+  {key:"state",vals:["say","utter","cal","ny","ohio"],cat:"GEOGRAPHY"},
+
+  // NUMBERS (additional)
+  {key:"four",vals:["iv"],cat:"NUMBERS"},
+  {key:"six",vals:["vi","hex"],cat:"NUMBERS"},
+  {key:"seven",vals:["vii"],cat:"NUMBERS"},
+  {key:"eight",vals:["viii","oct"],cat:"NUMBERS"},
+  {key:"nine",vals:["ix","nine","team"],cat:"NUMBERS"},
+  {key:"eleven",vals:["xi","side","team"],cat:"NUMBERS"},
+  {key:"twelve",vals:["xii","dozen"],cat:"NUMBERS"},
+  {key:"zero",vals:["o","nil","none","love","nought","duck"],cat:"NUMBERS"},
+  {key:"nothing",vals:["o","nil","zero","none","nix","love","nought"],cat:"NUMBERS"},
+  {key:"love",vals:["o","nil","zero"],cat:"NUMBERS"},
+  {key:"half",vals:["semi","demi","hemi"],cat:"NUMBERS"},
+  {key:"number",vals:["no","num","anaesthetic"],cat:"NUMBERS"},
+
+  // LETTERS / ABBREVIATIONS (additional)
+  {key:"the spanish",vals:["el"],cat:"LETTERS"},
+  {key:"the french",vals:["le","la","les"],cat:"LETTERS"},
+  {key:"the german",vals:["der","die","das"],cat:"LETTERS"},
+  {key:"a french",vals:["un","une"],cat:"LETTERS"},
+  {key:"and french",vals:["et"],cat:"LETTERS"},
+  {key:"in french",vals:["en","dans"],cat:"LETTERS"},
+  {key:"of french",vals:["de"],cat:"LETTERS"},
+  {key:"with french",vals:["avec"],cat:"LETTERS"},
+  {key:"nothing",vals:["o","nil","zero"],cat:"LETTERS"},
+  {key:"point",vals:["n","s","e","w","dot","nib","tip"],cat:"LETTERS"},
+  {key:"direction",vals:["n","s","e","w","ne","se","nw","sw"],cat:"LETTERS"},
+  {key:"right",vals:["r","rt","correct","just"],cat:"LETTERS"},
+  {key:"left",vals:["l","port","gone","over"],cat:"LETTERS"},
+  {key:"about",vals:["c","ca","re","circa"],cat:"LETTERS"},
+  {key:"good",vals:["g","pi"],cat:"LETTERS"},
+  {key:"bad",vals:["off","ill","evil","dire"],cat:"LETTERS"},
+  {key:"energy",vals:["e"],cat:"LETTERS"},
+  {key:"power",vals:["p","w","watt"],cat:"LETTERS"},
+  {key:"resistance",vals:["r","ohm"],cat:"LETTERS"},
+  {key:"current",vals:["i","ac","dc","amp"],cat:"LETTERS"},
+  {key:"pressure",vals:["p"],cat:"LETTERS"},
+  {key:"temperature",vals:["t"],cat:"LETTERS"},
+  {key:"volume",vals:["v","vol","cc","loud"],cat:"LETTERS"},
+  {key:"weight",vals:["w","oz","lb","st","kg","ton","g"],cat:"LETTERS"},
+  {key:"large",vals:["l","os","big"],cat:"LETTERS"},
+  {key:"small",vals:["s","wee","mini"],cat:"LETTERS"},
+  {key:"square",vals:["t","s","sq"],cat:"LETTERS"},
+  {key:"unknown",vals:["x","y","z","n"],cat:"LETTERS"},
+  {key:"mark",vals:["x","tick","scar","brand","cross"],cat:"LETTERS"},
+  {key:"cross",vals:["x","t","angry","irate"],cat:"LETTERS"},
+  {key:"love",vals:["o","nil","zero","amore"],cat:"LETTERS"},
+  {key:"model",vals:["t","poser","sitter"],cat:"LETTERS"},
+  {key:"vitamin",vals:["a","b","c","d","e","k"],cat:"LETTERS"},
+  {key:"line",vals:["l","row","mark","rope","queue"],cat:"LETTERS"},
+  {key:"area",vals:["a"],cat:"LETTERS"},
+  {key:"degree",vals:["d","ba","ma","phd"],cat:"LETTERS"},
+  {key:"society",vals:["s","soc","club"],cat:"LETTERS"},
+  {key:"company",vals:["co","firm","cia","plc"],cat:"LETTERS"},
+  {key:"hospital",vals:["h","rh"],cat:"LETTERS"},
+  {key:"hotel",vals:["h","inn","ritz"],cat:"LETTERS"},
+
+  // TIME (additional)
+  {key:"tuesday",vals:["tue","t"],cat:"TIME"},
+  {key:"wednesday",vals:["wed","w"],cat:"TIME"},
+  {key:"thursday",vals:["thu","th"],cat:"TIME"},
+  {key:"friday",vals:["fri","f"],cat:"TIME"},
+  {key:"saturday",vals:["sat","s"],cat:"TIME"},
+  {key:"sunday",vals:["sun","s"],cat:"TIME"},
+  {key:"day",vals:["d","date","mon","tue","wed"],cat:"TIME"},
+  {key:"week",vals:["wk","w","seven days"],cat:"TIME"},
+  {key:"month",vals:["mo","jan","feb","mar"],cat:"TIME"},
+  {key:"year",vals:["y","yr","pa"],cat:"TIME"},
+  {key:"age",vals:["era","eon","aeon","epoch","time"],cat:"TIME"},
+  {key:"time",vals:["t","hr","age","era","spell"],cat:"TIME"},
+  {key:"date",vals:["day","tryst"],cat:"TIME"},
+  {key:"spring",vals:["well","leap","coil","march"],cat:"TIME"},
+  {key:"evening",vals:["eve","pm","e","een"],cat:"TIME"},
+  {key:"night",vals:["n","pm","dark"],cat:"TIME"},
+  {key:"noon",vals:["n","12","midday"],cat:"TIME"},
+  {key:"dawn",vals:["am","sunrise","aurora"],cat:"TIME"},
+
+  // MONEY (additional)
+  {key:"money",vals:["l","p","d","bread","lolly","dosh"],cat:"MONEY"},
+  {key:"silver",vals:["ag"],cat:"MONEY"},
+  {key:"copper",vals:["cu"],cat:"MONEY"},
+  {key:"iron",vals:["fe"],cat:"MONEY"},
+  {key:"tin",vals:["sn","can"],cat:"MONEY"},
+  {key:"lead",vals:["pb","star","head","first"],cat:"MONEY"},
+  {key:"platinum",vals:["pt"],cat:"MONEY"},
+  {key:"dollar",vals:["$","buck","greenback"],cat:"MONEY"},
+  {key:"crown",vals:["cr","cap","top"],cat:"MONEY"},
+  {key:"bob",vals:["s","shilling","robert"],cat:"MONEY"},
+  {key:"guinea",vals:["gn","g"],cat:"MONEY"},
+  {key:"farthing",vals:["f","quarter"],cat:"MONEY"},
+
+  // SPORTS (additional)
+  {key:"ace",vals:["a","one","card","serve","star"],cat:"SPORTS"},
+  {key:"goal",vals:["g","aim","net","score","end"],cat:"SPORTS"},
+  {key:"game",vals:["match","set","play","rubber","sport"],cat:"SPORTS"},
+  {key:"race",vals:["tt","gp","run","dash","sprint"],cat:"SPORTS"},
+  {key:"draw",vals:["tie","attract","sketch","pull"],cat:"SPORTS"},
+  {key:"match",vals:["game","tie","equal","vesta","pair"],cat:"SPORTS"},
+  {key:"club",vals:["bat","iron","driver","wedge","wood"],cat:"SPORTS"},
+  {key:"card",vals:["ace","king","queen","jack","ten"],cat:"SPORTS"},
+  {key:"boxing",vals:["ring","bout","spar"],cat:"SPORTS"},
+  {key:"golf",vals:["links","round","drive"],cat:"SPORTS"},
+
+  // MISC (additional)
+  {key:"flower",vals:["rose","lily","iris","daisy","poppy","river"],cat:"MISC"},
+  {key:"animal",vals:["ass","cat","dog","gnu","yak","ape","cow"],cat:"MISC"},
+  {key:"bird",vals:[
+    "hen","owl","emu","jay","robin","wren","tit","rook","crow","dove","swan","lark",
+    "kite","tern","ibis","rail","ruff","smew","skua","rhea","hawk","dodo","coot",
+    "daw","moa","pipit","ouzel","swift","stork","crane","heron","eagle","egret",
+    "finch","grebe","macaw","merle","mynah","quail","raven","snipe","stilt","vireo",
+    "wader","auk","gannet","linnet","magpie","martin","osprey","parrot","pigeon",
+    "plover","puffin","siskin","thrush","toucan","turkey","avocet","bittern",
+    "bunting","bustard","buzzard","chough","condor","cuckoo","curlew","dipper",
+    "dunlin","falcon","fulmar","godwit","grouse","hoopoe","jacana","kakadu",
+    "kestrel","kinglet","lapwing","mallard","moorhen","peacock","pelican","penguin",
+    "redwing","rosella","sparrow","starling","swallow","wagtail","warbler","waxwing",
+    "wryneck","albatross","brambling","bullfinch","chaffinch","cormorant",
+    "crossbill","dotterel","fieldfare","flamingo","goldcrest","goldfinch",
+    "gyrfalcon","jackdaw","kingfisher","merganser","nightjar","nuthatch","ovenbird",
+    "oystercatcher","partridge","peregrine","pheasant","ptarmigan","razorbill",
+    "redstart","sandpiper","shelduck","shoveler","skylark","stonechat","wheatear",
+    "whimbrel","whitethroat","woodcock","woodlark","woodpecker","yellowhammer",
+    "budgerigar","canary","cockatoo","cockatiel","galah","kea","kiwi","lorikeet",
+    "parakeet","cassowary","ostrich","roadrunner","secretary","nightingale",
+    "treecreeper","yellowlegs","capercaillie","corncrake","garganey","greenshank",
+    "guillemot","harrier","hobby","honey buzzard","jaeger","kitiwake","knot",
+    "lammergeier","loon","mistle thrush","oriole","peewit","petrel","pitta",
+    "pratincole","pied wagtail","redpoll","ring ouzel","roller","sanderling","scaup",
+    "scoter","shag","shearwater","serin","sparrowhawk","spoonbill","stint","teal",
+    "turnstone","twite","vulture","wigeon","woodpigeon"
+  ],cat:"MISC"},
+  {key:"fish",vals:["cod","ray","dab","dace","ide","pike","bass"],cat:"MISC"},
+  {key:"dog",vals:["cur","pug","mutt","hound","setter","pointer"],cat:"MISC"},
+  {key:"horse",vals:["nag","cob","mare","steed","gee","mount"],cat:"MISC"},
+  {key:"snake",vals:["asp","boa","adder","cobra","mamba","viper"],cat:"MISC"},
+  {key:"bear",vals:["stand","carry","bruin","teddy","koala"],cat:"MISC"},
+  {key:"drink",vals:["ale","gin","rum","port","wine","sup","tot"],cat:"MISC"},
+  {key:"beer",vals:["ale","ipa","lager","stout","mild","bitter"],cat:"MISC"},
+  {key:"wine",vals:["red","rose","port","vin","claret"],cat:"MISC"},
+  {key:"spirit",vals:["rum","gin","vodka","soul","ghost"],cat:"MISC"},
+  {key:"tea",vals:["t","cha","char","brew","cuppa"],cat:"MISC"},
+  {key:"food",vals:["fare","meal","dish","feed","grub","nosh"],cat:"MISC"},
+  {key:"fruit",vals:["fig","date","lime","plum","pear","apple"],cat:"MISC"},
+  {key:"colour",vals:["red","blue","tan","bay","dun","grey","hue"],cat:"MISC"},
+  {key:"material",vals:["ore","silk","felt","net","lace","tin"],cat:"MISC"},
+  {key:"stone",vals:["gem","rock","st","pebble","flint"],cat:"MISC"},
+  {key:"paper",vals:["rag","sheet","times","sun","mail","star"],cat:"MISC"},
+  {key:"record",vals:["lp","ep","cd","disc","log","note"],cat:"MISC"},
+  {key:"drug",vals:["e","lsd","pot","speed","fix","pill"],cat:"MISC"},
+  {key:"disease",vals:["flu","cold","gout","pox","plague"],cat:"MISC"},
+  {key:"pain",vals:["ache","stab","pang","sting","hurt"],cat:"MISC"},
+  {key:"anger",vals:["ire","rage","fury","bile","wrath"],cat:"MISC"},
+  {key:"love",vals:["o","nil","fancy","like","adore"],cat:"MISC"},
+  {key:"hate",vals:["loathe","detest","abhor"],cat:"MISC"},
+  {key:"fear",vals:["dread","awe","fright","terror","panic"],cat:"MISC"},
+  {key:"fool",vals:["ass","nit","mug","sap","dolt","clot"],cat:"MISC"},
+  {key:"run",vals:["r","go","flee","bolt","dash","sprint"],cat:"MISC"},
+  {key:"say",vals:["eg","state","utter","remark"],cat:"MISC"},
+  {key:"for example",vals:["eg","say","like","such as"],cat:"MISC"},
+  {key:"that is",vals:["ie","viz","namely"],cat:"MISC"},
+  {key:"nothing",vals:["o","nil","zero","nix","nought","zip"],cat:"MISC"},
+  {key:"container",vals:["tin","can","pot","box","case","urn"],cat:"MISC"},
+  {key:"weapon",vals:["gun","arm","lance","pike","bow","sword"],cat:"MISC"},
+  {key:"gun",vals:["gat","rod","piece","shooter","sten"],cat:"MISC"},
+  {key:"communist",vals:["red","che","mao","marx","left"],cat:"MISC"},
+  {key:"party",vals:["do","lab","con","lib","bash","rave"],cat:"MISC"},
+  {key:"ring",vals:["o","band","loop","circle","hoop","call"],cat:"MISC"},
+  {key:"circle",vals:["o","ring","loop","lap","round"],cat:"MISC"},
+  {key:"tail",vals:["end","last letter","shadow","dog"],cat:"MISC"},
+  {key:"beginning",vals:["start","first letter","initial","dawn"],cat:"MISC"},
+  {key:"endless",vals:["drop last letter","eternal"],cat:"MISC"},
+  {key:"beheaded",vals:["drop first letter"],cat:"MISC"},
+  {key:"new",vals:["n","neo","fresh","novel"],cat:"MISC"},
+  {key:"bible",vals:["av","ot","nt","rv"],cat:"MISC"},
+  {key:"exercise",vals:["pe","pt","drill","press-up"],cat:"MISC"},
+  {key:"attention",vals:["ear","heed","note","care"],cat:"MISC"},
+  {key:"look",vals:["lo","see","eye","peek","peep","gaze"],cat:"MISC"},
+  {key:"see",vals:["lo","eye","view","spot","note"],cat:"MISC"},
+  {key:"thanks",vals:["ta"],cat:"MISC"},
+  {key:"yes",vals:["ay","aye","yea","ok","si","ja","oui"],cat:"MISC"},
+  {key:"no",vals:["nay","nix","veto"],cat:"MISC"},
+  {key:"support",vals:["bra","prop","tee","leg","back"],cat:"MISC"},
+  {key:"charge",vals:["fee","ion","rush","cost","rap"],cat:"MISC"},
+  {key:"measure",vals:["em","en","ell","bar","rod","acre"],cat:"MISC"},
+  {key:"permission",vals:["let","leave","licence","ok"],cat:"MISC"},
+  {key:"home",vals:["in","nest","den","pad","gaff"],cat:"MISC"},
+  {key:"type",vals:["sort","kind","font","ilk","class"],cat:"MISC"},
+  {key:"case",vals:["box","trial","suit","bag"],cat:"MISC"},
+];
+
+// Load from localStorage or use defaults
+let db = JSON.parse(localStorage.getItem('synonym_db')) || JSON.parse(JSON.stringify(DEFAULT_DB));
+
+function saveDb() {
+  localStorage.setItem('synonym_db', JSON.stringify(db));
+}
+
+let activeTab = "";
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function cats() { return ["", ...new Set(db.map(e=>e.cat))].filter((v,i,a)=>a.indexOf(v)===i); }
+
+function updateStats() {
+  document.getElementById("s-entries").textContent = db.length;
+  document.getElementById("s-cats").textContent = new Set(db.map(e=>e.cat)).size;
+  document.getElementById("s-syns").textContent = db.reduce((s,e)=>s+e.vals.length,0);
+}
+
+function renderTabs() {
+  const all = cats();
+  document.getElementById("tabs").innerHTML = all.map(c =>
+    `<div class="tab ${activeTab===c?'active':''}" onclick="setTab('${esc(c)}')">${esc(c)||"All"}</div>`
+  ).join("");
+  const sel = document.getElementById("cat-filter");
+  const prev = sel.value;
+  sel.innerHTML = `<option value="">All categories</option>` +
+    CATS.map(c=>`<option value="${esc(c)}" ${prev===c?'selected':''}>${esc(c)}</option>`).join("");
+}
+
+function setTab(cat) {
+  activeTab = cat;
+  document.getElementById("cat-filter").value = cat;
+  render();
+}
+
+function syncTab(val) { activeTab = val; renderTabs(); }
+
+function render() {
+  updateStats();
+  renderTabs();
+  const q = document.getElementById("search").value.toLowerCase();
+  const cf = document.getElementById("cat-filter").value;
+  const filtered = db.filter(e => {
+    const mq = !q || e.key.includes(q) || e.vals.some(v=>v.includes(q));
+    const mc = !cf || e.cat===cf;
+    return mq && mc;
+  });
+  const grid = document.getElementById("grid");
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty">No entries found.</div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map((e,i) => {
+    const idx = db.indexOf(e);
+    return `
+    <div class="card">
+      <div class="card-top">
+        <span class="card-key">${esc(e.key)}</span>
+        <div class="card-actions">
+          <span class="cat-badge cat-${esc(e.cat)}">${esc(e.cat)}</span>
+          ${IS_ADMIN?`<button class="del-btn" onclick="deleteEntry(${idx})" title="Delete">&times;</button>`:''}
+        </div>
+      </div>
+      <div class="vals">${e.vals.map((v,vi)=>`<span class="val">${esc(v)}${IS_ADMIN?`<button class="val-rm" onclick="removeVal(${idx},${vi})" title="Remove">&times;</button>`:''}</span>`).join("")}${IS_ADMIN?`<button class="val-add" onclick="addVal(${idx})" title="Add synonym">+</button>`:''}</div>
+    </div>`;
+  }).join("");
+}
+
+function addEntry() {
+  const k = document.getElementById("nk").value.trim().toLowerCase();
+  const v = document.getElementById("nv").value.trim().toLowerCase();
+  const c = document.getElementById("nc").value;
+  if (!k || !v) return;
+  const ex = db.find(e=>e.key===k && e.cat===c);
+  if (ex) { if (!ex.vals.includes(v)) ex.vals.push(v); }
+  else db.push({key:k, vals:[v], cat:c});
+  document.getElementById("nk").value = "";
+  document.getElementById("nv").value = "";
+  saveDb();
+  render();
+}
+
+function deleteEntry(idx) {
+  if (idx < 0 || idx >= db.length) return;
+  db.splice(idx, 1);
+  saveDb();
+  render();
+}
+
+function removeVal(entryIdx, valIdx) {
+  const e = db[entryIdx];
+  if (!e || valIdx < 0 || valIdx >= e.vals.length) return;
+  e.vals.splice(valIdx, 1);
+  if (e.vals.length === 0) db.splice(entryIdx, 1);
+  saveDb();
+  render();
+}
+
+function addVal(entryIdx) {
+  const e = db[entryIdx];
+  if (!e) return;
+  const v = prompt(`Add synonym to "${e.key}":`);
+  if (!v || !v.trim()) return;
+  const val = v.trim().toLowerCase();
+  if (!e.vals.includes(val)) e.vals.push(val);
+  saveDb();
+  render();
+}
+
+function exportCSV() {
+  let csv = "keyword,synonym,category\n";
+  db.forEach(e => e.vals.forEach(v => { csv += `"${e.key}","${v}","${e.cat}"\n`; }));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download = "cryptic_synonyms.csv";
+  a.click();
+}
+
+async function extractFromText() {
+  const text = document.getElementById("ai-input").value.trim();
+  if (!text) { document.getElementById("ai-status").textContent = "Please paste some clue text first."; return; }
+  const btn = document.querySelector("#ai-input ~ .btn");
+  btn.disabled = true;
+  document.getElementById("ai-status").textContent = "Extracting...";
+  try {
+    const res = await fetch("/admin/api/synonyms/extract", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      credentials: "same-origin",
+      body: JSON.stringify({ text: text })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Server error " + res.status);
+    }
+    const data = await res.json();
+    const items = data.synonyms || [];
+    let added = 0;
+    items.forEach(item => {
+      if (!item.key||!item.val) return;
+      const k=item.key.toLowerCase(), v=item.val.toLowerCase(), c=item.cat||"MISC";
+      if (!CATS.includes(c)) return;
+      const ex=db.find(e=>e.key===k&&e.cat===c);
+      if (ex) { if (!ex.vals.includes(v)){ex.vals.push(v);added++;} }
+      else { db.push({key:k,vals:[v],cat:c}); added++; }
+    });
+    saveDb();
+    document.getElementById("ai-status").textContent = `Done! Added ${added} new synonym(s).`;
+    document.getElementById("ai-input").value = "";
+    render();
+  } catch(e) {
+    document.getElementById("ai-status").textContent = "Error: " + e.message;
+  }
+  btn.disabled = false;
+}
+
+if (IS_ADMIN) {
+  document.getElementById('panel-add').style.display = '';
+  document.getElementById('panel-extract').style.display = '';
+}
+render();
+</script>
+</body>
+</html>

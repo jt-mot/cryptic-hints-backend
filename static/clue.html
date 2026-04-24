@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">__CLUE_PAGE_TITLE__</title>
+    <meta name="description" id="metaDesc" content="__CLUE_PAGE_DESC__">
+    <meta name="keywords" content="guardian cryptic __PUZZLE_NUMBER__ __CLUE_REF__, cryptic crossword hint, crossword clue help">
+    <link rel="canonical" href="__SITE_URL__/clue/__PUZZLE_NUMBER__/__CLUE_REF__">
+    <meta property="og:title" content="__CLUE_PAGE_TITLE__">
+    <meta property="og:description" content="__CLUE_PAGE_DESC__">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="__SITE_URL__/clue/__PUZZLE_NUMBER__/__CLUE_REF__">
+    <meta property="og:site_name" content="Cryptic Hints">
+    <meta name="twitter:card" content="summary">
+    <link rel="alternate" type="application/rss+xml" title="New Puzzles" href="__SITE_URL__/feed/puzzles">
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=__GA_TRACKING_ID__"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '__GA_TRACKING_ID__');
+    </script>
+    <style>
+        :root {
+            --bg: #f5f7fa;
+            --text: #1a1a2e;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --text-faint: #94a3b8;
+            --card-bg: #fff;
+            --card-border: #e2e8f0;
+            --card-shadow: rgba(0,0,0,0.06);
+            --hint-bg: #f8fafc;
+            --hint-border: #cbd5e1;
+            --link-color: #2563eb;
+        }
+
+        [data-theme="dark"] {
+            --bg: #0f172a;
+            --text: #e2e8f0;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --text-faint: #64748b;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --card-shadow: rgba(0,0,0,0.3);
+            --hint-bg: #1e293b;
+            --hint-border: #475569;
+            --link-color: #60a5fa;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.7;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 16px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-icon { width: 36px; height: 36px; flex-shrink: 0; }
+        nav { display: flex; gap: 8px; }
+        nav a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        nav a:hover { color: #fff; background: rgba(255,255,255,0.1); }
+        .theme-toggle {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.8);
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            transition: all 0.2s;
+        }
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .breadcrumb {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+        .breadcrumb a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        .clue-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px var(--card-shadow);
+            margin-bottom: 24px;
+        }
+
+        .clue-header {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .clue-number {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            background: #2563eb;
+            border-radius: 6px;
+            padding: 2px 10px;
+            text-transform: capitalize;
+        }
+        .clue-enum {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        .clue-text {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.4;
+            margin-bottom: 4px;
+        }
+        .clue-meta {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+        .clue-meta a { color: var(--link-color); text-decoration: none; }
+        .clue-meta a:hover { text-decoration: underline; }
+
+        .hints-section h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 12px;
+        }
+
+        .hint-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            background: var(--hint-bg);
+            border: 1px solid var(--hint-border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--link-color);
+            transition: all 0.2s;
+        }
+        .hint-btn:hover {
+            border-color: var(--link-color);
+        }
+        .hint-text {
+            display: none;
+            padding: 12px 16px;
+            margin-top: -8px;
+            margin-bottom: 8px;
+            background: var(--hint-bg);
+            border: 1px solid var(--hint-border);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .hint-text.visible { display: block; }
+        .hint-btn.revealed {
+            border-radius: 8px 8px 0 0;
+            color: var(--text-muted);
+            margin-bottom: 0;
+        }
+
+        .full-puzzle-link {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 12px 24px;
+            background: #2563eb;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: background 0.2s;
+        }
+        .full-puzzle-link:hover { background: #1d4ed8; }
+
+        .loading-state, .error-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+        .error-state a { color: var(--link-color); }
+
+        footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-faint);
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .clue-text { font-size: 18px; }
+        }
+    </style>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "__CLUE_PAGE_TITLE__",
+        "description": "__CLUE_PAGE_DESC__",
+        "url": "__SITE_URL__/clue/__PUZZLE_NUMBER__/__CLUE_REF__",
+        "isPartOf": {
+            "@type": "WebSite",
+            "name": "Cryptic Hints",
+            "url": "__SITE_URL__/"
+        },
+        "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "Home", "item": "__SITE_URL__/"},
+                {"@type": "ListItem", "position": 2, "name": "Puzzle #__PUZZLE_NUMBER__", "item": "__SITE_URL__/puzzle/__PUZZLE_NUMBER__"},
+                {"@type": "ListItem", "position": 3, "name": "__CLUE_LABEL__", "item": "__SITE_URL__/clue/__PUZZLE_NUMBER__/__CLUE_REF__"}
+            ]
+        }
+    }
+    </script>
+</head>
+<body>
+    <script>
+        (function() {
+            var saved = localStorage.getItem('theme');
+            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <header>
+        <div class="header-content">
+            <a href="/" class="logo">
+                <svg class="logo-icon" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="36" height="36" rx="6" fill="url(#logoGradClue)"/>
+                    <defs>
+                        <linearGradient id="logoGradClue" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#22c55e"/>
+                            <stop offset="100%" stop-color="#16a34a"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="3" y="3" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="13.5" y="3" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="24" y="3" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="3" y="13.5" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="13.5" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="24" y="13.5" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="3" y="24" width="9" height="9" rx="1.5" fill="white"/>
+                    <rect x="13.5" y="24" width="9" height="9" rx="1.5" fill="rgba(0,0,0,0.35)"/>
+                    <rect x="24" y="24" width="9" height="9" rx="1.5" fill="white"/>
+                    <text x="18" y="21" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="700" font-family="Arial, sans-serif">?</text>
+                </svg>
+                Cryptic Hints
+            </a>
+            <nav>
+                <a href="/#puzzles">Puzzles</a>
+                <a href="/guide">Guide</a>
+                <a href="/synonyms">Synonyms</a>
+                <a href="/blog">Blog</a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
+                    <span class="theme-icon"></span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="/">Home</a> &rsaquo;
+            <a href="/puzzle/__PUZZLE_NUMBER__">Puzzle #__PUZZLE_NUMBER__</a> &rsaquo;
+            <span id="breadcrumbClue">__CLUE_LABEL__</span>
+        </div>
+
+        <div id="clueContent">
+            __CLUE_SSR_CONTENT__
+        </div>
+    </div>
+
+    <footer>
+        <p>Cryptic Hints &mdash; Guardian crosswords with progressive hints</p>
+        <p style="margin-top: 6px; font-size: 13px;"><a href="/feed/puzzles" style="color: var(--text-faint); text-decoration: none;">Puzzle RSS</a> &middot; <a href="/feed/blog" style="color: var(--text-faint); text-decoration: none;">Blog RSS</a></p>
+    </footer>
+
+    <script>
+        function toggleTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const newTheme = isDark ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon();
+        }
+        function updateThemeIcon() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.querySelectorAll('.theme-icon').forEach(function(el) {
+                el.textContent = isDark ? '\u2600\uFE0F' : '\uD83C\uDF19';
+            });
+        }
+        updateThemeIcon();
+
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        const puzzleNumber = '__PUZZLE_NUMBER__';
+        const clueRef = '__CLUE_REF__';
+        const hintLabels = ['Hint 1: Gentle nudge', 'Hint 2: More specific', 'Hint 3: Strong hint', 'Hint 4: Full explanation'];
+
+        function toggleHint(index) {
+            const text = document.getElementById('hint-' + index);
+            const btn = document.getElementById('hint-btn-' + index);
+            if (text.classList.contains('visible')) {
+                text.classList.remove('visible');
+                btn.classList.remove('revealed');
+            } else {
+                text.classList.add('visible');
+                btn.classList.add('revealed');
+            }
+        }
+
+        async function loadClue() {
+            const el = document.getElementById('clueContent');
+            try {
+                const resp = await fetch('/api/clue/' + encodeURIComponent(puzzleNumber) + '/' + encodeURIComponent(clueRef));
+                if (!resp.ok) {
+                    el.innerHTML = '<div class="error-state">Clue not found. <a href="/puzzle/' + escapeHtml(puzzleNumber) + '">View full puzzle</a></div>';
+                    return;
+                }
+                const c = await resp.json();
+                const dir = c.direction.charAt(0).toUpperCase() + c.direction.slice(1);
+                const label = c.clue_number + ' ' + dir;
+
+                // Update page title & meta
+                document.title = label + ' - Guardian Cryptic #' + c.puzzle_number + ' | Cryptic Hints';
+                document.getElementById('metaDesc').setAttribute('content',
+                    'Hints for ' + label + ' from Guardian cryptic #' + c.puzzle_number + ': "' + c.clue_text + '"');
+                document.getElementById('breadcrumbClue').textContent = label;
+
+                const ptype = (c.puzzle_type === 'quiptic') ? 'Quiptic' : 'Cryptic';
+                const setter = (c.setter && c.setter !== 'Unknown') ? ' by ' + escapeHtml(c.setter) : '';
+
+                let hintsHtml = '';
+                for (let i = 0; i < c.hints.length; i++) {
+                    if (!c.hints[i]) continue;
+                    hintsHtml += '<button class="hint-btn" id="hint-btn-' + i + '" onclick="toggleHint(' + i + ')">' + hintLabels[i] + '</button>';
+                    hintsHtml += '<div class="hint-text" id="hint-' + i + '">' + escapeHtml(c.hints[i]) + '</div>';
+                }
+
+                el.innerHTML =
+                    '<div class="clue-card">' +
+                        '<div class="clue-header">' +
+                            '<span class="clue-number">' + escapeHtml(label) + '</span>' +
+                            (c.enumeration ? '<span class="clue-enum">(' + escapeHtml(c.enumeration) + ')</span>' : '') +
+                        '</div>' +
+                        '<div class="clue-text">' + escapeHtml(c.clue_text) + '</div>' +
+                        '<div class="clue-meta">Guardian ' + ptype + ' #' + escapeHtml(c.puzzle_number) + setter +
+                            ' &middot; <a href="/puzzle/' + escapeHtml(c.puzzle_number) + '">View full puzzle</a></div>' +
+                        '<div class="hints-section">' +
+                            '<h2>Progressive Hints</h2>' +
+                            hintsHtml +
+                        '</div>' +
+                    '</div>' +
+                    '<a href="/puzzle/' + escapeHtml(c.puzzle_number) + '" class="full-puzzle-link">Solve the full puzzle &rarr;</a>';
+
+            } catch (e) {
+                el.innerHTML = '<div class="error-state">Unable to load clue. <a href="/puzzle/' + escapeHtml(puzzleNumber) + '">View full puzzle</a></div>';
+            }
+        }
+
+        loadClue();
+    </script>
+</body>
+</html>

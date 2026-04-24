@@ -13,6 +13,7 @@
     <meta property="og:url" content="__SITE_URL__/guide">
     <meta property="og:site_name" content="Cryptic Hints">
     <meta name="twitter:card" content="summary">
+    <link rel="alternate" type="application/rss+xml" title="New Puzzles" href="__SITE_URL__/feed/puzzles">
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=__GA_TRACKING_ID__"></script>
     <script>
@@ -318,6 +319,7 @@
             <nav>
                 <a href="/#puzzles">Puzzles</a>
                 <a href="/guide">Guide</a>
+                <a href="/synonyms">Synonyms</a>
                 <a href="/blog">Blog</a>
                 <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
                     <span class="theme-icon"></span>
@@ -336,13 +338,13 @@
             <h2>Contents</h2>
             <ol>
                 <li><a href="#anatomy">Anatomy of a Cryptic Clue</a></li>
-                <li><a href="#anagrams">Anagrams</a></li>
-                <li><a href="#hidden-words">Hidden Words</a></li>
-                <li><a href="#double-definitions">Double Definitions</a></li>
-                <li><a href="#reversals">Reversals</a></li>
-                <li><a href="#containers">Containers &amp; Insertions</a></li>
-                <li><a href="#homophones">Homophones</a></li>
-                <li><a href="#deletions">Deletions</a></li>
+                <li><a href="#anagrams">Anagrams</a> <a href="/guide/anagrams" style="font-size:12px; color:var(--text-faint);">(full page)</a></li>
+                <li><a href="#hidden-words">Hidden Words</a> <a href="/guide/hidden-words" style="font-size:12px; color:var(--text-faint);">(full page)</a></li>
+                <li><a href="#double-definitions">Double Definitions</a> <a href="/guide/double-definitions" style="font-size:12px; color:var(--text-faint);">(full page)</a></li>
+                <li><a href="#reversals">Reversals</a> <a href="/guide/reversals" style="font-size:12px; color:var(--text-faint);">(full page)</a></li>
+                <li><a href="#containers">Containers &amp; Insertions</a> <a href="/guide/containers" style="font-size:12px; color:var(--text-faint);">(full page)</a></li>
+                <li><a href="#homophones">Homophones</a> <a href="/guide/homophones" style="font-size:12px; color:var(--text-faint);">(full page)</a></li>
+                <li><a href="#deletions">Deletions</a> <a href="/guide/deletions" style="font-size:12px; color:var(--text-faint);">(full page)</a></li>
                 <li><a href="#charades">Charades</a></li>
                 <li><a href="#tips">General Tips</a></li>
                 <li><a href="#glossary">Indicator Word Glossary</a></li>
@@ -391,9 +393,9 @@
                 <div class="explanation">"Part of" tells you to look inside the words. "the <strong>FEST</strong>ival" contains FEST.</div>
             </div>
             <div class="example">
-                <div class="clue">"Some scuba diving gear is waterproof (5)"</div>
-                <div class="answer">BADGE</div>
-                <div class="explanation">"Some" is the indicator. Look inside: "scu<strong>BA DGE</strong>..." &mdash; wait, actually: "scu<strong>ba div</strong>ing" doesn't work. Let's reconsider: hidden in "scuBA DIving GEar". Actually the hidden word would be found in consecutive letters across the clue text.</div>
+                <div class="clue">"Observes some atheist areas (6)"</div>
+                <div class="answer">STARES</div>
+                <div class="explanation">"Some" tells you to look inside the words: "athei<strong>ST ARES</strong>" contains STARES. The definition is "observes".</div>
             </div>
             <div class="tip">Hidden words are the easiest clue type to spot. If you see "in", "some", "part of", or "held by", scan the clue text for consecutive letters that spell a word.</div>
         </div>
@@ -431,9 +433,9 @@
             <h2>Containers &amp; Insertions</h2>
             <p>One word or set of letters goes <strong>inside</strong> another. Indicators: "in", "around", "outside", "holding", "swallowing", "embracing".</p>
             <div class="example">
-                <div class="clue">"Put copper in boat to make an overcoat (5)"</div>
-                <div class="answer">CLOAK</div>
-                <div class="explanation">"Copper" = Cu (chemical symbol). "Boat" = OAK? Actually: C(u) in CLOAK... The idea is one element wraps around another to build the answer.</div>
+                <div class="clue">"Host swallowing energy is a banquet (5)"</div>
+                <div class="answer">FEAST</div>
+                <div class="explanation">"Swallowing" is the container indicator. "Host" = FAST (to fast), "energy" = E. Put E inside FAST: F(<strong>E</strong>)AST = <strong>FEAST</strong>. The definition is "banquet".</div>
             </div>
             <div class="tip">Look for words like "in", "inside", "around", "holds", "contains". One piece goes inside another to build the answer.</div>
         </div>
@@ -454,9 +456,9 @@
             <h2>Deletions</h2>
             <p>A letter is removed from a word. Indicators: "headless" (drop first letter), "endless" (drop last letter), "heartless" (drop middle letter).</p>
             <div class="example">
-                <div class="clue">"Endless pain is a window section (4)"</div>
-                <div class="answer">PANE</div>
-                <div class="explanation">"Endless" means drop the last letter. PAIN(e) without end... actually PANE can be derived: "pain" minus the last letter? PAIN &rarr; PAI... Hmm. Better example: "Endless planet is flat (5)" &rarr; PLANE (PLANET without the last letter).</div>
+                <div class="clue">"Endless planet is flat (5)"</div>
+                <div class="answer">PLANE</div>
+                <div class="explanation">"Endless" means drop the last letter. PLANET without its last letter T = <strong>PLANE</strong>. The definition is "flat".</div>
             </div>
         </div>
 
@@ -747,6 +749,7 @@
 
     <footer>
         <p>Cryptic Hints &mdash; Guardian crosswords with progressive hints</p>
+        <p style="margin-top: 6px; font-size: 13px;"><a href="/feed/puzzles" style="color: var(--text-faint); text-decoration: none;">Puzzle RSS</a> &middot; <a href="/feed/blog" style="color: var(--text-faint); text-decoration: none;">Blog RSS</a></p>
     </footer>
     <script>
         function toggleTheme() {

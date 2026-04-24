@@ -110,7 +110,7 @@ class GuardianScraper:
             try:
                 dt = datetime.fromtimestamp(timestamp / 1000)
                 return dt.strftime('%Y-%m-%d')
-            except:
+            except Exception:
                 pass
         return datetime.now().strftime('%Y-%m-%d')
 
@@ -123,6 +123,9 @@ class GuardianScraper:
         - separatorLocations: {"separator": [positions]} e.g., {",": [4]} means comma after position 4
 
         This converts to enumeration like "4, 11" or "3-2, 4"
+
+        For linked/grouped clues (e.g. "1 and 5 across"), the separator position
+        may equal the entry's length, leaving a trailing separator. We strip it.
         """
         length = entry.get('length', 0)
         separator_locations = entry.get('separatorLocations', {})
@@ -146,8 +149,9 @@ class GuardianScraper:
 
         for pos, sep in breaks:
             word_len = pos - prev_pos
-            parts.append(str(word_len))
-            parts.append(sep + ' ' if sep == ',' else sep)  # Add space after comma
+            if word_len > 0:
+                parts.append(str(word_len))
+                parts.append(sep + ' ' if sep == ',' else sep)  # Add space after comma
             prev_pos = pos
 
         # Add final part
@@ -155,7 +159,10 @@ class GuardianScraper:
         if final_len > 0:
             parts.append(str(final_len))
 
-        return ''.join(parts).strip()
+        # Strip trailing separators (happens with linked/grouped clues where
+        # the separator position equals the entry's length)
+        result = ''.join(parts).strip()
+        return result.rstrip(', -')
 
 
 class FifteensquaredScraper:
@@ -166,6 +173,17 @@ class FifteensquaredScraper:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
+
+    @staticmethod
+    def _match_definitions(hint_buffer, all_definitions_by_text):
+        """Match HTML-extracted definitions to a clue's hint text."""
+        matched = []
+        hint_text_combined = ' '.join(hint_buffer)
+        for def_text in all_definitions_by_text.values():
+            if def_text in hint_text_combined:
+                matched.append(def_text)
+                break  # Only use the first matched definition per clue
+        return matched
 
     def find_puzzle_post(self, puzzle_number: str, puzzle_type: str = 'cryptic') -> Optional[str]:
         """Search for puzzle post with retries
@@ -227,15 +245,25 @@ class FifteensquaredScraper:
         print("✗ Could not reach fifteensquared after 3 attempts")
         return None
     
-    def fetch_hints(self, url: str) -> Dict[str, List[str]]:
-        """Fetch hints from post with retry logic and flexible parsing"""
+    def fetch_hints(self, url: str, prefetched_content: str = None) -> Dict[str, List[str]]:
+        """Fetch hints from post with retry logic and flexible parsing.
+
+        Args:
+            url: The fifteensquared post URL
+            prefetched_content: If provided, skip the HTTP fetch and parse this HTML directly
+        """
         for attempt in range(3):
             try:
-                print(f"Fetching hints from post... (attempt {attempt + 1}/3)")
-                response = self.session.get(url, timeout=60)
-                response.raise_for_status()
-                
-                soup = BeautifulSoup(response.content, 'html.parser')
+                if prefetched_content and attempt == 0:
+                    print(f"Parsing hints from pre-fetched content...")
+                    raw_html = prefetched_content
+                else:
+                    print(f"Fetching hints from post... (attempt {attempt + 1}/3)")
+                    response = self.session.get(url, timeout=60)
+                    response.raise_for_status()
+                    raw_html = response.content
+
+                soup = BeautifulSoup(raw_html, 'html.parser')
                 content = soup.find(['div', 'article'], class_=lambda x: x and 'entry-content' in str(x))
                 if not content:
                     content = soup.find('article')
@@ -246,126 +274,170 @@ class FifteensquaredScraper:
                 
                 hints_map = {}
                 current_direction = None
-                
-                # FIRST: Extract ALL definitions from entire content
-                # PeterO uses: <span style="...italic...underline">definition</span>
+
+                # Extract ALL definitions from entire content (underlined spans)
                 all_definitions_by_text = {}
-                
-                # DEBUG: Check what we're actually getting
-                all_paras = content.find_all('p')
-                print(f"   DEBUG: Content has {len(all_paras)} paragraphs")
-                
-                all_spans = content.find_all('span')
-                print(f"   DEBUG: Content has {len(all_spans)} total spans")
-                
                 styled_spans = content.find_all('span', style=True)
-                print(f"   DEBUG: Found {len(styled_spans)} spans with style attribute")
-                
-                if styled_spans:
-                    # Show first few styles
-                    for i, span in enumerate(styled_spans[:3]):
-                        print(f"   DEBUG: Span {i+1} style: {span.get('style')[:100]}")
-                        print(f"   DEBUG: Span {i+1} text: {span.get_text()[:50]}")
-                
-                # Search ALL styled spans in content (not just in paragraphs)
+
                 for span in styled_spans:
                     style = span.get('style', '').lower()
-                    # Check if style has both italic and underline
-                    if 'italic' in style and 'underline' in style:
+                    if 'underline' in style:
                         def_text = span.get_text().strip()
-                        if len(def_text) > 2:
-                            # Use span text as both key and value for now
+                        if len(def_text) > 2 and def_text.lower() not in ('underlined', 'across', 'down'):
                             all_definitions_by_text[def_text] = def_text
-                
-                print(f"   DEBUG: Found {len(all_definitions_by_text)} definitions with italic+underline style")
-                if all_definitions_by_text:
-                    print(f"   DEBUG: Sample definitions: {list(all_definitions_by_text.values())[:3]}")
-                
-                # Strategy: Get text content and split by lines, but also keep HTML for parsing
+
+                print(f"   Found {len(all_definitions_by_text)} underlined definitions")
+
                 full_text = content.get_text()
                 lines = [line.strip() for line in full_text.split('\n') if line.strip()]
-                
-                # Also get all paragraphs to extract HTML-based definitions
-                all_paragraphs = content.find_all('p')
-                
+
                 print(f"   Processing {len(lines)} lines of text...")
-                
+
+                # Reusable pattern: ALL CAPS answer with optional enumeration
+                # Matches: "ANTELOPE", "ANTELOPE (8)", "SALT AND PEPPER (4,3,6)"
+                _ANSWER_LINE_RE = r'^([A-Z][A-Z\s\-\'/]+?)(?:\s*\([0-9,.\s\-]+\))?\s*$'
+
+                # Helper: checks if a line looks like the start of a new clue
+                def _is_clue_start(ln):
+                    # Just a number (1-99): "1" or "12a"
+                    if re.match(r'^\d{1,2}[a-z]?$', ln):
+                        return True
+                    # Number + all-caps answer (with optional enumeration)
+                    # "1a ANTELOPE" or "1a ANTELOPE (8)"
+                    if re.match(r'^\d{1,2}[a-z]?\s+[A-Z][A-Z\s\-\'/]+', ln):
+                        return True
+                    # Number + clue text starting with capital (Format B)
+                    # "1 Animal bound on stake" but NOT "3 letter abbreviation..."
+                    if re.match(r'^\d{1,2}[a-z]?\s+[A-Z][a-z]', ln):
+                        return True
+                    return False
+
+                # Helper: collect explanation lines starting from index j
+                def _collect_explanation(j):
+                    buf = []
+                    skip_phrases = ['posted', 'comment', 'tagged', 'bookmark',
+                                   'permalink', 'navigation', 'leave a reply',
+                                   'you must be logged', 'fill in your details',
+                                   'the puzzle may be found']
+                    while j < len(lines):
+                        nl = lines[j]
+                        if re.match(r'^(ACROSS|DOWN)$', nl, re.IGNORECASE):
+                            break
+                        if _is_clue_start(nl):
+                            break
+                        if not any(skip in nl.lower() for skip in skip_phrases):
+                            if len(nl) > 10:
+                                buf.append(nl)
+                        j += 1
+                    return buf, j
+
+                def _store_clue(clue_num, answer_text, hint_buffer, fmt_label=''):
+                    clue_id = f"{clue_num}-{current_direction}"
+                    label = f" ({fmt_label})" if fmt_label else ""
+                    print(f"   Found clue{label}: {clue_id} - {answer_text}")
+
+                    matched_definitions = self._match_definitions(
+                        hint_buffer, all_definitions_by_text)
+
+                    if hint_buffer:
+                        hints_map[clue_id] = {
+                            'text': hint_buffer,
+                            'definitions': matched_definitions
+                        }
+                        if matched_definitions:
+                            print(f"      -> {len(hint_buffer)} hint lines, {len(matched_definitions)} definitions: {matched_definitions}")
+                        else:
+                            print(f"      -> {len(hint_buffer)} hint lines, 0 definitions")
+
                 i = 0
                 while i < len(lines):
                     line = lines[i]
-                    
+
                     # Check for direction marker
                     if re.match(r'^(ACROSS|DOWN)$', line, re.IGNORECASE):
                         current_direction = line.lower()
                         print(f"   Found direction: {current_direction}")
                         i += 1
                         continue
-                    
-                    # Check if this is a clue number
-                    if current_direction and re.match(r'^\d+[a-z]?$', line):
-                        clue_num = line
-                        
-                        # Next line should be the answer
+
+                    if not current_direction:
+                        i += 1
+                        continue
+
+                    # Try to match a clue starting on this line
+                    clue_num = None
+                    answer_text = None
+                    explanation_start = None
+
+                    # Format A: Number alone, answer on next line
+                    #   "1"
+                    #   "ANTELOPE" or "ANTELOPE (8)"
+                    #   "A charade of..."
+                    if re.match(r'^\d+[a-z]?$', line):
                         if i + 1 < len(lines):
-                            answer_line = lines[i + 1]
-                            
-                            # Check if it looks like an answer (uppercase words)
-                            if re.match(r'^[A-Z][A-Z\s\-\']+$', answer_line):
-                                clue_id = f"{clue_num}-{current_direction}"
-                                print(f"   Found clue: {clue_id} - {answer_line}")
-                                
-                                # Collect explanation text
-                                hint_buffer = []
-                                j = i + 2  # Start after answer
-                                
-                                # Also find ALL definitions in this clue's paragraphs
-                                html_definitions = []
-                                
-                                while j < len(lines):
-                                    next_line = lines[j]
-                                    
-                                    # Stop if we hit another clue number or direction
-                                    if re.match(r'^\d+[a-z]?$', next_line):
-                                        break
-                                    if re.match(r'^(ACROSS|DOWN)$', next_line, re.IGNORECASE):
-                                        break
-                                    
-                                    # Skip meta text
-                                    skip_phrases = ['posted', 'comment', 'tagged', 'bookmark', 
-                                                   'permalink', 'navigation', 'leave a reply',
-                                                   'you must be logged', 'fill in your details',
-                                                   'the puzzle may be found']
-                                    
-                                    if not any(skip in next_line.lower() for skip in skip_phrases):
-                                        if len(next_line) > 10:
-                                            hint_buffer.append(next_line)
-                                    
-                                    j += 1
-                                
-                                # Match definitions to this specific clue
-                                # by finding which definition text appears in the hint paragraphs
-                                matched_definitions = []
-                                hint_text_combined = ' '.join(hint_buffer)
-                                
-                                for def_text in all_definitions_by_text.values():
-                                    # Check if this definition appears in any of the hint text
-                                    if def_text in hint_text_combined:
-                                        matched_definitions.append(def_text)
-                                        break  # Only use the first matched definition per clue
-                                
-                                if hint_buffer:
-                                    # Store both text and extracted definitions
-                                    hints_map[clue_id] = {
-                                        'text': hint_buffer,
-                                        'definitions': matched_definitions
-                                    }
-                                    if matched_definitions:
-                                        print(f"      -> {len(hint_buffer)} hint lines, {len(matched_definitions)} definitions: {matched_definitions}")
-                                    else:
-                                        print(f"      -> {len(hint_buffer)} hint lines, 0 definitions")
-                                
-                                i = j - 1  # Continue from where we stopped
-                    
+                            m_ans = re.match(_ANSWER_LINE_RE, lines[i + 1])
+                            if m_ans:
+                                clue_num = line
+                                answer_text = m_ans.group(1).strip()
+                                explanation_start = i + 2
+
+                    # Format B: Number + clue text, answer on next line
+                    #   "1 Animal bound on stake"
+                    #   "ANTELOPE" or "ANTELOPE (8)"
+                    #   "A charade of..."
+                    if not clue_num:
+                        m = re.match(r'^(\d+[a-z]?)\s+\S', line)
+                        if m and i + 1 < len(lines):
+                            next_line = lines[i + 1]
+                            m_ans = re.match(_ANSWER_LINE_RE, next_line)
+                            if m_ans:
+                                clue_num = m.group(1)
+                                answer_text = m_ans.group(1).strip()
+                                explanation_start = i + 2
+
+                    # Format C: Number + all-caps answer (with optional enumeration) on same line
+                    #   "1a ANTELOPE" or "1a ANTELOPE (8)"
+                    #   "A charade of..."
+                    if not clue_num:
+                        m = re.match(r'^(\d+[a-z]?)\s+([A-Z][A-Z\s\-\'/]+?)(?:\s*\([0-9,.\s\-]+\))?\s*$', line)
+                        if m:
+                            candidate = m.group(2).strip()
+                            if len(candidate) >= 2 and candidate == candidate.upper():
+                                clue_num = m.group(1)
+                                answer_text = candidate
+                                explanation_start = i + 1
+
+                    # Format D: Number + CAPS answer (+ optional enum) + separator + explanation on same line
+                    #   "1a ANTELOPE (8) – A charade of ANTE and LOPE"
+                    #   "1a ANTELOPE – A charade of..."
+                    #   "1a ANTELOPE (8): A charade of..."
+                    if not clue_num:
+                        m = re.match(
+                            r'^(\d+[a-z]?)\s+([A-Z][A-Z\s\-\'/]+?)(?:\s*\([0-9,.\s\-]+\))?\s*[-–—:;]\s*(.+)$',
+                            line
+                        )
+                        if m:
+                            candidate = m.group(2).strip()
+                            if len(candidate) >= 2 and candidate == candidate.upper():
+                                clue_num = m.group(1)
+                                answer_text = candidate
+                                first_expl = m.group(3).strip()
+                                # Collect remaining explanation lines after this one
+                                more_buf, j = _collect_explanation(i + 1)
+                                hint_buffer = ([first_expl] if len(first_expl) > 5 else []) + more_buf
+                                clean_num = re.match(r'^(\d+)', clue_num).group(1)
+                                _store_clue(clean_num, answer_text, hint_buffer, fmt_label='D')
+                                i = j
+                                continue
+
+                    if clue_num and answer_text and explanation_start is not None:
+                        # Strip direction suffix from clue number (e.g. "1a" -> "1")
+                        clean_num = re.match(r'^(\d+)', clue_num).group(1)
+                        hint_buffer, j = _collect_explanation(explanation_start)
+                        _store_clue(clean_num, answer_text, hint_buffer)
+                        i = j
+                        continue
+
                     i += 1
                 
                 print(f"✓ Extracted hints for {len(hints_map)} clues")
@@ -423,17 +495,19 @@ class PuzzleScraper:
         hints_map = {}
         if post_url:
             self.current_url = post_url
-            
-            # Fetch the full page content for author detection
+
+            # Fetch the page once, use for both author detection and hint parsing
+            page_content = ''
             try:
                 response = self.fifteensquared.session.get(post_url, timeout=60)
                 page_content = response.text
-            except:
-                page_content = ''
-            
-            hints_map = self.fifteensquared.fetch_hints(post_url)
-            
-            # Detect author style using full page content
+            except Exception as e:
+                print(f"⚠️  Failed to fetch fifteensquared page: {e}")
+
+            hints_map = self.fifteensquared.fetch_hints(
+                post_url, prefetched_content=page_content or None)
+
+            # Detect author style
             self.detected_author = self.style_detector.detect_author(post_url, page_content)
             print(f"   Detected author style: {self.detected_author}")
         else:
@@ -461,7 +535,8 @@ class PuzzleScraper:
                     self.detected_author,
                     definitions=definitions,
                     clue_text=clue.get('clue_text'),
-                    answer=clue.get('answer')
+                    answer=clue.get('answer'),
+                    puzzle_type=puzzle_type
                 )
                 
                 # Debug: Check first clue
@@ -479,7 +554,8 @@ class PuzzleScraper:
                     self.detected_author,
                     definitions=[],
                     clue_text=clue.get('clue_text'),
-                    answer=clue.get('answer')
+                    answer=clue.get('answer'),
+                    puzzle_type=puzzle_type
                 )
         
         clues_with_hints = len([c for c in puzzle_data['clues'] if any(c['hints'])])
