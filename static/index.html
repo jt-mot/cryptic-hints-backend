@@ -858,6 +858,12 @@
             font-size: 13px;
         }
 
+        @media (max-width: 1024px) {
+            .footer-links {
+                gap: 40px;
+            }
+        }
+
         @media (max-width: 768px) {
             .footer-content {
                 flex-direction: column;
@@ -866,12 +872,14 @@
             }
 
             .footer-links {
+                flex-wrap: wrap;
                 justify-content: center;
-                gap: 48px;
+                gap: 32px 48px;
             }
 
             .footer-col {
                 text-align: left;
+                min-width: 120px;
             }
         }
 
@@ -1319,6 +1327,16 @@
             });
         }
 
+        // HTML escape helper to prevent XSS
+        function esc(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
         // Load puzzles
         async function loadPuzzles() {
             try {
@@ -1363,17 +1381,17 @@
 
                     const typeLabel = puzzle.puzzle_type === 'quiptic' ? 'Quiptic' : 'Cryptic';
                     return `
-                    <a href="/puzzle/${puzzle.puzzle_number}" class="puzzle-card">
-                        <div class="puzzle-date">${formatDate(puzzle.date)}</div>
-                        <div class="puzzle-number">${typeLabel} #${puzzle.puzzle_number}</div>
-                        <div class="puzzle-setter">by ${puzzle.setter}</div>
+                    <a href="/puzzle/${esc(puzzle.puzzle_number)}" class="puzzle-card">
+                        <div class="puzzle-date">${esc(formatDate(puzzle.date))}</div>
+                        <div class="puzzle-number">${typeLabel} #${esc(puzzle.puzzle_number)}</div>
+                        <div class="puzzle-setter">by ${esc(puzzle.setter)}</div>
                         <div class="puzzle-stats">
                             <div class="puzzle-stat">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <rect x="3" y="3" width="18" height="18" rx="2"/>
                                     <path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
                                 </svg>
-                                <strong>${total || '~28'}</strong> clues
+                                <strong>${esc(total || '~28')}</strong> clues
                             </div>
                         </div>
                         ${progressHTML}
@@ -1441,13 +1459,13 @@
                 const latest = puzzles[0];
                 const typeLabel = latest.puzzle_type === 'quiptic' ? 'Quiptic' : 'Cryptic';
                 const ctaBtn = document.getElementById('ctaStart');
-                ctaBtn.href = `/puzzle/${latest.puzzle_number}`;
+                ctaBtn.href = `/puzzle/${esc(latest.puzzle_number)}`;
                 ctaBtn.innerHTML = `
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                         <rect x="3" y="3" width="18" height="18" rx="2"/>
                         <path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
                     </svg>
-                    ${typeLabel} #${latest.puzzle_number}
+                    ${typeLabel} #${esc(latest.puzzle_number)}
                 `;
                 // Remove the scroll behavior since we now link directly
                 ctaBtn.removeEventListener('click', ctaScrollHandler);
