@@ -428,8 +428,9 @@ def _serve_html(filename, extra=None, status=200):
 @app.route('/')
 def homepage():
     """Serve the homepage with static puzzle fallback for no-JS"""
-    # Fetch latest 10 puzzles for static rendering
+    esc = html_module.escape
     static_puzzles_html = ''
+    conn = None
     try:
         conn = get_db()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -445,29 +446,31 @@ def homepage():
         ''')
         puzzles = cursor.fetchall()
         cursor.close()
-        conn.close()
 
         for p in puzzles:
             type_label = 'Quiptic' if p['puzzle_type'] == 'quiptic' else 'Cryptic'
             date_str = p['date'].strftime('%a, %d %b %Y') if p['date'] else 'Unknown date'
             clue_count = p['clue_count'] or '~28'
             static_puzzles_html += f'''
-                <a href="/puzzle/{p['puzzle_number']}" class="puzzle-card">
-                    <div class="puzzle-date">{date_str}</div>
-                    <div class="puzzle-number">{type_label} #{p['puzzle_number']}</div>
-                    <div class="puzzle-setter">by {p['setter']}</div>
+                <a href="/puzzle/{esc(str(p['puzzle_number']))}" class="puzzle-card">
+                    <div class="puzzle-date">{esc(date_str)}</div>
+                    <div class="puzzle-number">{type_label} #{esc(str(p['puzzle_number']))}</div>
+                    <div class="puzzle-setter">by {esc(p['setter'] or 'Unknown')}</div>
                     <div class="puzzle-stats">
                         <div class="puzzle-stat">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="3" y="3" width="18" height="18" rx="2"/>
                                 <path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
                             </svg>
-                            <strong>{clue_count}</strong> clues
+                            <strong>{esc(str(clue_count))}</strong> clues
                         </div>
                     </div>
                 </a>'''
     except Exception:
         static_puzzles_html = '<div class="loading">Loading puzzles...</div>'
+    finally:
+        if conn:
+            conn.close()
 
     return _serve_html('index.html', extra={'__STATIC_PUZZLES__': static_puzzles_html})
 
