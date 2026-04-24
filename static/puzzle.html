@@ -984,6 +984,17 @@
         let cellToClues = {}; // {x,y: [clueIds]} - reverse mapping for click navigation
         let completedClues = new Set(); // Track solved clues for progress
 
+        // HTML escape helper to prevent XSS
+        function esc(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         // Mobile view toggle
         function showView(view) {
             const container = document.getElementById('mainContainer');
@@ -1023,10 +1034,10 @@
                 // Update page title and info based on puzzle type
                 const puzzleType = puzzleData.puzzle_type || 'cryptic';
                 const typeLabel = puzzleType === 'quiptic' ? 'Quiptic' : 'Cryptic';
-                document.title = `Guardian ${typeLabel} #${puzzleData.puzzle_number} - Cryptic Hints`;
+                document.title = `Guardian ${typeLabel} #${esc(puzzleData.puzzle_number)} - Cryptic Hints`;
                 document.querySelector('.header-center h1').textContent = `Guardian ${typeLabel} Crossword`;
                 document.getElementById('puzzleInfo').innerHTML =
-                    `#${puzzleData.puzzle_number} by ${puzzleData.setter} | ${puzzleData.date}`;
+                    `#${esc(puzzleData.puzzle_number)} by ${esc(puzzleData.setter)} | ${esc(puzzleData.date)}`;
                 
                 // Show grid if available
                 if (puzzleData.grid && puzzleData.grid.grid) {
@@ -1243,6 +1254,7 @@
 
         function createClueElement(clue) {
             const clueId = `${clue.clue_number}-${clue.direction}`;
+            const safeClueId = esc(clueId);
             const length = parseInt(clue.enumeration.replace(/[^0-9]/g, '')) || clue.answer.length;
 
             // Strip enumeration from clue text if it's already there (avoid duplication)
@@ -1254,16 +1266,16 @@
             const enumParts = clue.enumeration.match(/\d+/g) || [clue.answer.length];
             let boxesHTML = '';
             let totalBoxes = 0;
-            
+
             enumParts.forEach((part, partIndex) => {
                 const count = parseInt(part);
                 for (let i = 0; i < count; i++) {
                     boxesHTML += `<input type="text" maxlength="1"
                         class="answer-box"
-                        data-clue-id="${clueId}"
+                        data-clue-id="${safeClueId}"
                         data-index="${totalBoxes}"
-                        oninput="handleAnswerInput('${clueId}', ${totalBoxes}, this.value)"
-                        onkeydown="handleAnswerKeydown(event, '${clueId}', ${totalBoxes})"
+                        oninput="handleAnswerInput('${safeClueId}', ${totalBoxes}, this.value)"
+                        onkeydown="handleAnswerKeydown(event, '${safeClueId}', ${totalBoxes})"
                         onfocus="this.select()">`;
                     totalBoxes++;
                 }
@@ -1271,39 +1283,39 @@
                     boxesHTML += '<div class="answer-box separator"></div>';
                 }
             });
-            
+
             return `
-                <div class="clue-item" data-clue-id="${clueId}" onclick="focusClue('${clueId}', event)">
+                <div class="clue-item" data-clue-id="${safeClueId}" onclick="focusClue('${safeClueId}', event)">
                     <div class="clue-header">
                         <div>
-                            <span class="clue-number">${clue.clue_number}</span>
-                            <span class="clue-text">${displayClueText}</span>
-                            <span class="enumeration">(${clue.enumeration})</span>
+                            <span class="clue-number">${esc(clue.clue_number)}</span>
+                            <span class="clue-text">${esc(displayClueText)}</span>
+                            <span class="enumeration">(${esc(clue.enumeration)})</span>
                         </div>
                     </div>
-                    
+
                     <div class="answer-section">
                         <div class="answer-label">Your answer:</div>
                         <div class="answer-boxes">${boxesHTML}</div>
-                        <button class="check-button" onclick="checkAnswer('${clueId}', '${clue.answer}')">
+                        <button class="check-button" data-clue-id="${safeClueId}" onclick="checkAnswer('${safeClueId}')">
                             Check Answer
                         </button>
-                        <div class="feedback" id="feedback-${clueId}"></div>
+                        <div class="feedback" id="feedback-${safeClueId}"></div>
                     </div>
-                    
+
                     <div class="hints-section">
                         <div class="hints-label">Progressive Hints</div>
-                        <button class="hint-button hint-1" onclick="revealHint('${clueId}', 1)">💡 Hint 1: Definition</button>
-                        <div class="hint-text" id="hint-${clueId}-1">${clue.hints[0] || 'No hint available'}</div>
+                        <button class="hint-button hint-1" onclick="revealHint('${safeClueId}', 1)">Hint 1: Definition</button>
+                        <div class="hint-text" id="hint-${safeClueId}-1">${esc(clue.hints[0]) || 'No hint available'}</div>
 
-                        <button class="hint-button hint-2" onclick="revealHint('${clueId}', 2)">🔧 Hint 2: Wordplay Type</button>
-                        <div class="hint-text" id="hint-${clueId}-2">${clue.hints[1] || 'No hint available'}</div>
-                        
-                        <button class="hint-button hint-3" onclick="revealHint('${clueId}', 3)">📝 Hint 3: Breakdown</button>
-                        <div class="hint-text" id="hint-${clueId}-3">${clue.hints[2] || 'No hint available'}</div>
+                        <button class="hint-button hint-2" onclick="revealHint('${safeClueId}', 2)">Hint 2: Wordplay Type</button>
+                        <div class="hint-text" id="hint-${safeClueId}-2">${esc(clue.hints[1]) || 'No hint available'}</div>
 
-                        <button class="hint-button hint-4" onclick="revealHint('${clueId}', 4)">✅ Hint 4: Full Explanation</button>
-                        <div class="hint-text" id="hint-${clueId}-4">${clue.hints[3] || 'No hint available'}</div>
+                        <button class="hint-button hint-3" onclick="revealHint('${safeClueId}', 3)">Hint 3: Breakdown</button>
+                        <div class="hint-text" id="hint-${safeClueId}-3">${esc(clue.hints[2]) || 'No hint available'}</div>
+
+                        <button class="hint-button hint-4" onclick="revealHint('${safeClueId}', 4)">Hint 4: Full Explanation</button>
+                        <div class="hint-text" id="hint-${safeClueId}-4">${esc(clue.hints[3]) || 'No hint available'}</div>
                     </div>
                 </div>
             `;
@@ -1443,7 +1455,15 @@
             }
         }
 
-        function checkAnswer(clueId, correctAnswer) {
+        function checkAnswer(clueId) {
+            // Look up the correct answer from puzzleData (not exposed in HTML)
+            const [clueNum, direction] = clueId.split('-');
+            const clue = puzzleData.clues.find(c =>
+                String(c.clue_number) === clueNum && c.direction === direction
+            );
+            if (!clue) return;
+            const correctAnswer = clue.answer.toUpperCase();
+
             const inputs = document.querySelectorAll(`.answer-box[data-clue-id="${clueId}"]:not(.separator)`);
             let userAnswer = '';
 
@@ -1453,12 +1473,12 @@
 
             const feedback = document.getElementById(`feedback-${clueId}`);
 
-            if (userAnswer === correctAnswer.toUpperCase()) {
-                feedback.textContent = '✓ Correct!';
+            if (userAnswer === correctAnswer) {
+                feedback.textContent = 'Correct!';
                 feedback.className = 'feedback correct visible';
 
                 // Fill grid
-                updateGrid(clueId, correctAnswer.toUpperCase());
+                updateGrid(clueId, correctAnswer);
 
                 // Mark inputs as correct
                 inputs.forEach(input => {
@@ -1467,9 +1487,9 @@
                 });
 
                 // Update button
-                const button = document.querySelector(`.check-button[onclick*="${clueId}"]`);
+                const button = document.querySelector(`.check-button[data-clue-id="${clueId}"]`);
                 if (button) {
-                    button.textContent = '✓ Correct';
+                    button.textContent = 'Correct';
                     button.classList.add('correct');
                     button.disabled = true;
                 }
@@ -1486,7 +1506,7 @@
                 saveProgress();
 
             } else {
-                feedback.textContent = '✗ Not quite right. Try again or use a hint!';
+                feedback.textContent = 'Not quite right. Try again or use a hint!';
                 feedback.className = 'feedback incorrect visible';
 
                 setTimeout(() => {
