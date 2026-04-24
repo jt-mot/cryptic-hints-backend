@@ -427,22 +427,49 @@ def _serve_html(filename, extra=None, status=200):
 
 @app.route('/')
 def homepage():
-    """Serve the homepage with latest puzzle number for static fallback"""
-    latest = ''
+    """Serve the homepage with static puzzle fallback for no-JS"""
+    # Fetch latest 10 puzzles for static rendering
+    static_puzzles_html = ''
     try:
         conn = get_db()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute("""
-            SELECT puzzle_number FROM puzzles
-            WHERE status = 'published'
-            ORDER BY published_at DESC LIMIT 1
-        """)
-        row = cursor.fetchone()
-        if row:
-            latest = str(row['puzzle_number'])
+        cursor.execute('''
+            SELECT p.puzzle_type, p.puzzle_number, p.setter, p.date,
+                   COUNT(c.id) as clue_count
+            FROM puzzles p
+            LEFT JOIN clues c ON c.puzzle_id = p.id
+            WHERE p.status = 'published'
+            GROUP BY p.id, p.puzzle_type, p.puzzle_number, p.setter, p.date
+            ORDER BY p.date DESC
+            LIMIT 10
+        ''')
+        puzzles = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        for p in puzzles:
+            type_label = 'Quiptic' if p['puzzle_type'] == 'quiptic' else 'Cryptic'
+            date_str = p['date'].strftime('%a, %d %b %Y') if p['date'] else 'Unknown date'
+            clue_count = p['clue_count'] or '~28'
+            static_puzzles_html += f'''
+                <a href="/puzzle/{p['puzzle_number']}" class="puzzle-card">
+                    <div class="puzzle-date">{date_str}</div>
+                    <div class="puzzle-number">{type_label} #{p['puzzle_number']}</div>
+                    <div class="puzzle-setter">by {p['setter']}</div>
+                    <div class="puzzle-stats">
+                        <div class="puzzle-stat">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
+                            </svg>
+                            <strong>{clue_count}</strong> clues
+                        </div>
+                    </div>
+                </a>'''
     except Exception:
-        pass
-    return _serve_html('index.html', extra={'__LATEST_PUZZLE__': latest})
+        static_puzzles_html = '<div class="loading">Loading puzzles...</div>'
+
+    return _serve_html('index.html', extra={'__STATIC_PUZZLES__': static_puzzles_html})
 
 
 @app.route('/puzzle/<puzzle_number>')
