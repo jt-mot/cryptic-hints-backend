@@ -466,9 +466,16 @@ def homepage():
         puzzles = cursor.fetchall()
         cursor.close()
 
-        # Get featured message from latest puzzle
-        if puzzles and puzzles[0].get('featured_message'):
-            featured_message = esc(puzzles[0]['featured_message'])
+        # Get featured message from latest puzzle (or generate default)
+        if puzzles:
+            latest = puzzles[0]
+            if latest.get('featured_message'):
+                featured_message = esc(latest['featured_message'])
+            else:
+                # Generate default for puzzles imported before this feature
+                setter = latest.get('setter') or 'Unknown'
+                type_label = 'Quiptic' if latest.get('puzzle_type') == 'quiptic' else 'Guardian cryptic'
+                featured_message = esc(f"Come and have a go at today's {type_label} set by {setter}.")
 
         for p in puzzles:
             type_label = 'Quiptic' if p['puzzle_type'] == 'quiptic' else 'Cryptic'
