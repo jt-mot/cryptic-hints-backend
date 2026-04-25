@@ -1171,21 +1171,21 @@ def get_published_puzzles():
     """Get all published puzzles for listing"""
     conn = get_db()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
-    
+
     cursor.execute('''
         SELECT p.id, p.publication, p.puzzle_type, p.puzzle_number, p.setter, p.date,
-               COUNT(c.id) as clue_count
+               p.is_featured, COUNT(c.id) as clue_count
         FROM puzzles p
         LEFT JOIN clues c ON c.puzzle_id = p.id
         WHERE p.status = 'published'
-        GROUP BY p.id, p.publication, p.puzzle_type, p.puzzle_number, p.setter, p.date
-        ORDER BY p.date DESC
+        GROUP BY p.id, p.publication, p.puzzle_type, p.puzzle_number, p.setter, p.date, p.is_featured
+        ORDER BY p.is_featured DESC NULLS LAST, p.date DESC
     ''')
     puzzles = cursor.fetchall()
-    
+
     cursor.close()
     conn.close()
-    
+
     return jsonify([dict(p) for p in puzzles])
 
 
