@@ -406,6 +406,19 @@ def init_db():
             END IF;
         END $$;
     ''')
+
+    # Add is_featured column if it doesn't exist (migration)
+    cursor.execute('''
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name='puzzles' AND column_name='is_featured'
+            ) THEN
+                ALTER TABLE puzzles ADD COLUMN is_featured BOOLEAN DEFAULT FALSE;
+            END IF;
+        END $$;
+    ''')
     
     conn.commit()
     cursor.close()
@@ -453,6 +466,19 @@ def homepage():
     try:
         conn = get_db()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
+        # First, check for an explicitly featured puzzle
+        cursor.execute('''
+            SELECT p.puzzle_type, p.puzzle_number, p.setter, p.date, p.featured_message,
+                   COUNT(c.id) as clue_count
+            FROM puzzles p
+            LEFT JOIN clues c ON c.puzzle_id = p.id
+            WHERE p.status = 'published' AND p.is_featured = TRUE
+            GROUP BY p.id, p.puzzle_type, p.puzzle_number, p.setter, p.date, p.featured_message
+            LIMIT 1
+        ''')
+        featured_puzzle = cursor.fetchone()
+
+        # Get recent puzzles for the list
         cursor.execute('''
             SELECT p.puzzle_type, p.puzzle_number, p.setter, p.date, p.featured_message,
                    COUNT(c.id) as clue_count
@@ -466,9 +492,9 @@ def homepage():
         puzzles = cursor.fetchall()
         cursor.close()
 
-        # Get featured message from latest puzzle (or generate default)
+        # Use featured puzzle if set, otherwise fall back to latest by date
         if puzzles:
-            latest = puzzles[0]
+            latest = featured_puzzle if featured_puzzle else puzzles[0]
             if latest.get('featured_message'):
                 featured_message = esc(latest['featured_message'])
             else:
@@ -2010,6 +2036,42 @@ def update_featured_message(puzzle_id):
     conn.close()
 
     return jsonify({'success': True, 'message': 'Featured message updated'})
+
+
+@app.route('/admin/api/puzzle/<int:puzzle_id>/feature', methods=['POST'])
+@login_required
+def feature_puzzle(puzzle_id):
+    """Mark a puzzle as featured (shown on homepage). Only one can be featured at a time."""
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Unfeature all puzzles first
+    cursor.execute('UPDATE puzzles SET is_featured = FALSE')
+
+    # Feature this one
+    cursor.execute('UPDATE puzzles SET is_featured = TRUE WHERE id = %s', (puzzle_id,))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'message': 'Puzzle is now featured on homepage'})
+
+
+@app.route('/admin/api/puzzle/<int:puzzle_id>/unfeature', methods=['POST'])
+@login_required
+def unfeature_puzzle(puzzle_id):
+    """Remove featured status from a puzzle"""
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute('UPDATE puzzles SET is_featured = FALSE WHERE id = %s', (puzzle_id,))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'message': 'Puzzle unfeatured'})
 
 
 @app.route('/admin/api/puzzle/<int:puzzle_id>/featured-message', methods=['GET'])

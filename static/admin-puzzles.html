@@ -92,6 +92,35 @@
             background: #2563eb;
         }
 
+        .btn-feature {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-feature:hover {
+            background: #d97706;
+        }
+
+        .featured-badge {
+            display: inline-block;
+            background: #f59e0b;
+            color: white;
+            font-size: 0.625rem;
+            font-weight: 700;
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .featured-row {
+            background: #fffbeb !important;
+        }
+
+        .featured-row:hover {
+            background: #fef3c7 !important;
+        }
+
         .btn-sm {
             padding: 0.375rem 0.75rem;
             font-size: 0.8125rem;
@@ -420,9 +449,12 @@
                         </thead>
                         <tbody>
                             ${puzzles.map(puzzle => `
-                                <tr>
+                                <tr class="${puzzle.is_featured ? 'featured-row' : ''}">
                                     <td>${puzzle.id}</td>
-                                    <td><strong>${puzzle.puzzle_number}</strong></td>
+                                    <td>
+                                        <strong>${puzzle.puzzle_number}</strong>
+                                        ${puzzle.is_featured ? '<span class="featured-badge">FEATURED</span>' : ''}
+                                    </td>
                                     <td>${puzzle.publication}</td>
                                     <td>${puzzle.setter}</td>
                                     <td>${formatDate(puzzle.date)}</td>
@@ -430,6 +462,12 @@
                                     <td>${puzzle.total_clues || 0}</td>
                                     <td>
                                         <div class="actions">
+                                            ${puzzle.status === 'published' && !puzzle.is_featured ?
+                                                `<button class="btn btn-sm btn-feature" onclick="featurePuzzle(${puzzle.id})">Feature</button>` : ''
+                                            }
+                                            ${puzzle.is_featured ?
+                                                `<button class="btn btn-sm btn-secondary" onclick="unfeaturePuzzle(${puzzle.id})">Unfeature</button>` : ''
+                                            }
                                             <button class="btn btn-sm btn-primary" onclick="editFeaturedMessage(${puzzle.id}, '${puzzle.puzzle_number}')">Edit</button>
                                             ${puzzle.status === 'published' ?
                                                 `<button class="btn btn-sm btn-secondary" onclick="unpublishPuzzle(${puzzle.id})">Unpublish</button>` :
@@ -521,6 +559,50 @@
             }
         }
         
+        async function featurePuzzle(id) {
+            if (!confirm('Feature this puzzle on the homepage? (This will replace any currently featured puzzle)')) return;
+
+            try {
+                const response = await fetch(`/admin/api/puzzle/${id}/feature`, {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Puzzle is now featured on the homepage!');
+                    loadPuzzles();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                alert('Error featuring puzzle: ' + error.message);
+            }
+        }
+
+        async function unfeaturePuzzle(id) {
+            if (!confirm('Remove this puzzle from featured? (Homepage will show the latest puzzle by date)')) return;
+
+            try {
+                const response = await fetch(`/admin/api/puzzle/${id}/unfeature`, {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Puzzle unfeatured');
+                    loadPuzzles();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
         async function editFeaturedMessage(puzzleId, puzzleNumber) {
             currentEditingPuzzleId = puzzleId;
             document.getElementById('modalPuzzleNumber').textContent = puzzleNumber;
