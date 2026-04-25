@@ -159,17 +159,22 @@ def save_puzzle_to_db(puzzle_data, puzzle_number, puzzle_type, auto_approve=Fals
     conn = get_db()
     cursor = conn.cursor()
     try:
+        setter = puzzle_data.get('setter', 'Unknown')
+        type_label = 'Quiptic' if puzzle_type == 'quiptic' else 'Guardian cryptic'
+        featured_message = f"Come and have a go at today's {type_label} set by {setter}."
+
         cursor.execute('''
-            INSERT INTO puzzles (publication, puzzle_type, puzzle_number, setter, date, status)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO puzzles (publication, puzzle_type, puzzle_number, setter, date, status, featured_message)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         ''', (
             puzzle_data.get('publication', 'Guardian'),
             puzzle_data.get('puzzle_type', puzzle_type),
             puzzle_data.get('puzzle_number', puzzle_number),
-            puzzle_data.get('setter', 'Unknown'),
+            setter,
             puzzle_data.get('date', datetime.now().strftime('%Y-%m-%d')),
             'draft',
+            featured_message,
         ))
         puzzle_id = cursor.fetchone()[0]
 
@@ -388,6 +393,19 @@ def init_db():
             END IF;
         END $$;
     ''')
+
+    # Add featured_message column if it doesn't exist (migration)
+    cursor.execute('''
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name='puzzles' AND column_name='featured_message'
+            ) THEN
+                ALTER TABLE puzzles ADD COLUMN featured_message TEXT;
+            END IF;
+        END $$;
+    ''')
     
     conn.commit()
     cursor.close()
@@ -430,22 +448,27 @@ def homepage():
     """Serve the homepage with static puzzle fallback for no-JS"""
     esc = html_module.escape
     static_puzzles_html = ''
+    featured_message = ''
     conn = None
     try:
         conn = get_db()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute('''
-            SELECT p.puzzle_type, p.puzzle_number, p.setter, p.date,
+            SELECT p.puzzle_type, p.puzzle_number, p.setter, p.date, p.featured_message,
                    COUNT(c.id) as clue_count
             FROM puzzles p
             LEFT JOIN clues c ON c.puzzle_id = p.id
             WHERE p.status = 'published'
-            GROUP BY p.id, p.puzzle_type, p.puzzle_number, p.setter, p.date
+            GROUP BY p.id, p.puzzle_type, p.puzzle_number, p.setter, p.date, p.featured_message
             ORDER BY p.date DESC
             LIMIT 10
         ''')
         puzzles = cursor.fetchall()
         cursor.close()
+
+        # Get featured message from latest puzzle
+        if puzzles and puzzles[0].get('featured_message'):
+            featured_message = esc(puzzles[0]['featured_message'])
 
         for p in puzzles:
             type_label = 'Quiptic' if p['puzzle_type'] == 'quiptic' else 'Cryptic'
@@ -472,7 +495,10 @@ def homepage():
         if conn:
             conn.close()
 
-    return _serve_html('index.html', extra={'__STATIC_PUZZLES__': static_puzzles_html})
+    return _serve_html('index.html', extra={
+        '__STATIC_PUZZLES__': static_puzzles_html,
+        '__FEATURED_MESSAGE__': featured_message,
+    })
 
 
 @app.route('/puzzle/<puzzle_number>')
@@ -1954,6 +1980,48 @@ def unpublish_puzzle(puzzle_id):
     conn.close()
     
     return jsonify({'success': True, 'message': 'Puzzle unpublished'})
+
+
+@app.route('/admin/api/puzzle/<int:puzzle_id>/featured-message', methods=['POST'])
+@login_required
+def update_featured_message(puzzle_id):
+    """Update the featured message for a puzzle"""
+    data = request.json
+    message = data.get('message', '').strip()
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        UPDATE puzzles
+        SET featured_message = %s
+        WHERE id = %s
+    ''', (message if message else None, puzzle_id))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'message': 'Featured message updated'})
+
+
+@app.route('/admin/api/puzzle/<int:puzzle_id>/featured-message', methods=['GET'])
+@login_required
+def get_featured_message(puzzle_id):
+    """Get the featured message for a puzzle"""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    cursor.execute('SELECT featured_message FROM puzzles WHERE id = %s', (puzzle_id,))
+    row = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if not row:
+        return jsonify({'success': False, 'message': 'Puzzle not found'}), 404
+
+    return jsonify({'success': True, 'featured_message': row['featured_message'] or ''})
 
 
 @app.route('/admin/api/usage')
