@@ -177,6 +177,25 @@
             line-height: 1.7;
         }
 
+        .featured-message {
+            font-family: 'Libre Baskerville', Georgia, serif;
+            font-size: 20px;
+            font-style: italic;
+            color: var(--color-amber-light);
+            margin-bottom: 28px;
+            padding: 16px 24px;
+            background: rgba(184, 134, 11, 0.15);
+            border-radius: 8px;
+            border-left: 4px solid var(--color-amber);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .featured-message:empty {
+            display: none;
+        }
+
         .cta-buttons {
             display: flex;
             gap: 16px;
@@ -1057,6 +1076,7 @@
                 </div>
                 <h1>Master <span>Cryptic Crosswords</span><br>One Hint at a Time</h1>
                 <p>Progressive hints guide you from gentle nudges to complete explanations. Learn the art of cryptic solving without spoiling the satisfaction.</p>
+                <p class="featured-message" id="featuredMessage">__FEATURED_MESSAGE__</p>
                 <div class="cta-buttons">
                     <a href="#puzzles" class="cta-button primary" id="ctaStart">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">

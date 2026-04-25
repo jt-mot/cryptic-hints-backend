@@ -82,7 +82,16 @@
         .btn-success:hover {
             background: #059669;
         }
-        
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
         .btn-sm {
             padding: 0.375rem 0.75rem;
             font-size: 0.8125rem;
@@ -219,9 +228,128 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- Edit Featured Message Modal -->
+    <div id="editModal" class="modal" style="display:none;">
+        <div class="modal-backdrop" onclick="closeModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Featured Message</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-subtitle">Puzzle #<span id="modalPuzzleNumber"></span></p>
+                <label for="featuredMessageInput">Featured message (shown on homepage):</label>
+                <textarea id="featuredMessageInput" rows="3" placeholder="Come and have a go at today's Guardian cryptic set by..."></textarea>
+                <p class="modal-hint">This message appears on the homepage when this is the latest puzzle.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveFeaturedMessage()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            position: relative;
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            margin: 1rem;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .modal-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #64748b;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        .modal-close:hover {
+            color: #0f172a;
+        }
+        .modal-body {
+            padding: 1.5rem;
+        }
+        .modal-subtitle {
+            color: #64748b;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+        .modal-body label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+        .modal-body textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.9375rem;
+            font-family: inherit;
+            resize: vertical;
+        }
+        .modal-body textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+        }
+        .modal-hint {
+            margin-top: 0.5rem;
+            font-size: 0.8125rem;
+            color: #9ca3af;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e2e8f0;
+            background: #f8fafc;
+            border-radius: 0 0 0.5rem 0.5rem;
+        }
+    </style>
+
     <script>
         let allPuzzles = [];
+        let currentEditingPuzzleId = null;
         
         async function loadPuzzles() {
             try {
@@ -302,7 +430,8 @@
                                     <td>${puzzle.total_clues || 0}</td>
                                     <td>
                                         <div class="actions">
-                                            ${puzzle.status === 'published' ? 
+                                            <button class="btn btn-sm btn-primary" onclick="editFeaturedMessage(${puzzle.id}, '${puzzle.puzzle_number}')">Edit</button>
+                                            ${puzzle.status === 'published' ?
                                                 `<button class="btn btn-sm btn-secondary" onclick="unpublishPuzzle(${puzzle.id})">Unpublish</button>` :
                                                 `<button class="btn btn-sm btn-success" onclick="publishPuzzle(${puzzle.id})">Publish</button>`
                                             }
@@ -392,6 +521,61 @@
             }
         }
         
+        async function editFeaturedMessage(puzzleId, puzzleNumber) {
+            currentEditingPuzzleId = puzzleId;
+            document.getElementById('modalPuzzleNumber').textContent = puzzleNumber;
+
+            // Fetch current message
+            try {
+                const response = await fetch(`/admin/api/puzzle/${puzzleId}/featured-message`, {
+                    credentials: 'same-origin'
+                });
+                const data = await response.json();
+                document.getElementById('featuredMessageInput').value = data.featured_message || '';
+            } catch (error) {
+                console.error('Error fetching featured message:', error);
+                document.getElementById('featuredMessageInput').value = '';
+            }
+
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentEditingPuzzleId = null;
+        }
+
+        async function saveFeaturedMessage() {
+            if (!currentEditingPuzzleId) return;
+
+            const message = document.getElementById('featuredMessageInput').value;
+
+            try {
+                const response = await fetch(`/admin/api/puzzle/${currentEditingPuzzleId}/featured-message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Featured message updated!');
+                    closeModal();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                alert('Error saving: ' + error.message);
+            }
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
         // Load on page load
         loadPuzzles();
     </script>
