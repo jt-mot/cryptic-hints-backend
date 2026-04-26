@@ -142,7 +142,7 @@
 
         /* Hero */
         .hero {
-            padding: 4rem 2.5rem 3rem;
+            padding: 3rem 2.5rem 2rem;
             text-align: center;
         }
 
@@ -150,7 +150,7 @@
             font-family: var(--font-serif);
             font-size: 34px;
             font-weight: 500;
-            margin: 0 0 14px;
+            margin: 0 0 12px;
             line-height: 1.25;
             color: var(--color-charcoal);
             max-width: 600px;
@@ -161,7 +161,7 @@
         .hero-subtitle {
             font-size: 17px;
             color: var(--color-slate);
-            margin: 0 auto 28px;
+            margin: 0 auto 22px;
             max-width: 460px;
             line-height: 1.6;
         }
@@ -201,6 +201,17 @@
 
         .btn-secondary:hover {
             border-color: var(--color-slate);
+        }
+
+        .btn-featured {
+            background: var(--color-teal);
+            color: white;
+            padding: 12px 24px;
+            font-size: 15px;
+        }
+
+        .btn-featured:hover {
+            background: var(--color-teal-light);
         }
 
         @media (max-width: 540px) {
@@ -341,7 +352,7 @@
             font-family: var(--font-serif);
             font-size: 22px;
             line-height: 1.5;
-            margin: 0 auto 28px;
+            margin: 0 auto 18px;
             max-width: 560px;
             font-style: italic;
             color: var(--color-charcoal);
@@ -432,7 +443,8 @@
 
         .puzzle-card:hover {
             border-color: var(--color-teal);
-            box-shadow: 0 2px 8px rgba(45, 106, 106, 0.1);
+            box-shadow: 0 4px 12px rgba(45, 106, 106, 0.12);
+            transform: translateY(-2px);
         }
 
         .puzzle-card.featured {
@@ -498,7 +510,7 @@
 
         /* Subscribe section */
         .subscribe-section {
-            padding: 2.5rem;
+            padding: 2rem 2.5rem;
             border-top: 1px solid var(--color-border);
             background: var(--color-cream-dark);
             text-align: center;
@@ -515,7 +527,7 @@
             font-size: 13px;
             color: var(--color-slate);
             margin: 0 auto 16px;
-            max-width: 340px;
+            max-width: 420px;
             line-height: 1.5;
         }
 
@@ -599,12 +611,17 @@
             color: var(--color-charcoal);
         }
 
-        @media (max-width: 540px) {
+        @media (max-width: 640px) {
             .footer {
                 flex-direction: column;
-                gap: 10px;
+                gap: 12px;
                 text-align: center;
-                padding: 1rem;
+                padding: 1.25rem 1rem;
+            }
+            .footer-links {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 12px 16px;
             }
         }
     </style>
@@ -630,8 +647,8 @@
             <h1>Solve the Guardian cryptic, with hints that don't spoil it</h1>
             <p class="hero-subtitle">A nudge when you need one. The full answer when you don't.</p>
             <div class="hero-buttons">
-                <a href="#demo" class="btn btn-primary">Try a sample clue</a>
-                <a href="#puzzles" class="btn btn-secondary" id="todaysPuzzleBtn">Today's puzzle →</a>
+                <a href="#demo" class="btn btn-secondary">Try a sample clue</a>
+                <a href="#puzzles" class="btn btn-featured" id="todaysPuzzleBtn">Today's puzzle →</a>
             </div>
         </section>
 
@@ -707,7 +724,13 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <span>Built with care for crossword lovers</span>
+            <div class="footer-links">
+                <a href="/guide">Guide</a>
+                <a href="/blog">Blog</a>
+                <a href="/synonyms">Synonyms</a>
+                <a href="/feed/puzzles">Puzzle RSS</a>
+                <a href="/feed/blog">Blog RSS</a>
+            </div>
             <div class="footer-links">
                 <a href="https://x.com/Cryptic_Hints" target="_blank" rel="noopener">@Cryptic_Hints</a>
                 <a href="mailto:hello@cryptic-hints.com">hello@cryptic-hints.com</a>
@@ -771,7 +794,7 @@
                 const todayBtn = document.getElementById('todaysPuzzleBtn');
                 const typeLabel = featured.puzzle_type === 'quiptic' ? 'Quiptic' : 'Cryptic';
                 todayBtn.href = `/puzzle/${featured.puzzle_number}`;
-                todayBtn.textContent = `${typeLabel} #${featured.puzzle_number} →`;
+                todayBtn.textContent = `Today's puzzle: ${typeLabel} #${featured.puzzle_number} →`;
 
                 // Render puzzle cards (max 4)
                 const displayPuzzles = puzzles.slice(0, 4);
@@ -781,6 +804,14 @@
                     const day = formatDay(puzzle.date);
                     const clues = puzzle.clue_count || '~28';
 
+                    // Generate blurb: use featured_message if available, else default
+                    let blurb = '';
+                    if (puzzle.featured_message) {
+                        blurb = puzzle.featured_message;
+                    } else if (isFeatured) {
+                        blurb = 'Start here — hints ready when you need them.';
+                    }
+
                     return `
                         <a href="/puzzle/${esc(puzzle.puzzle_number)}" class="puzzle-card${isFeatured ? ' featured' : ''}">
                             <div class="puzzle-card-header">
@@ -788,7 +819,7 @@
                                 <span class="puzzle-card-clues">${esc(clues)} clues</span>
                             </div>
                             <p class="puzzle-card-title">#${esc(puzzle.puzzle_number)} by ${esc(puzzle.setter)}</p>
-                            <p class="puzzle-card-blurb">${isFeatured ? 'Start here — hints ready when you need them.' : ''}</p>
+                            ${blurb ? `<p class="puzzle-card-blurb">${esc(blurb)}</p>` : ''}
                         </a>
                     `;
                 }).join('');
