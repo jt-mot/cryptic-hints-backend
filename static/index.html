@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cryptic Hints - Learn to Solve Guardian Cryptic Crosswords</title>
-    <meta name="description" content="Learn to solve Guardian cryptic crosswords with progressive hints. Four levels of help guide you from definition to full solution. Free interactive puzzles with AI-powered hints.">
+    <title>Cryptic Hints - Solve Guardian Cryptics with Hints That Don't Spoil</title>
+    <meta name="description" content="Solve Guardian cryptic crosswords with progressive hints. A nudge when you need one, the full answer when you don't.">
     <meta name="keywords" content="cryptic crossword, guardian crossword, crossword hints, cryptic crossword help, learn cryptic crosswords, crossword solver, crossword tips">
     <link rel="canonical" href="__SITE_URL__/">
     <!-- Open Graph -->
-    <meta property="og:title" content="Cryptic Hints - Learn to Solve Guardian Cryptic Crosswords">
-    <meta property="og:description" content="Master cryptic crosswords with progressive hints. Four levels of help guide you from gentle nudges to complete explanations.">
+    <meta property="og:title" content="Cryptic Hints - Solve Guardian Cryptics with Hints That Don't Spoil">
+    <meta property="og:description" content="A nudge when you need one. The full answer when you don't.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="__SITE_URL__/">
     <meta property="og:site_name" content="Cryptic Hints">
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Cryptic Hints - Learn to Solve Guardian Cryptic Crosswords">
-    <meta name="twitter:description" content="Master cryptic crosswords with progressive hints. Four levels of help from definition to full solution.">
+    <meta name="twitter:title" content="Cryptic Hints - Solve Guardian Cryptics">
+    <meta name="twitter:description" content="A nudge when you need one. The full answer when you don't.">
     <link rel="alternate" type="application/rss+xml" title="New Puzzles" href="__SITE_URL__/feed/puzzles">
     <link rel="alternate" type="application/rss+xml" title="Blog" href="__SITE_URL__/feed/blog">
     <!-- Google Analytics -->
@@ -49,356 +49,233 @@
             --color-charcoal: #374151;
             --color-slate: #64748b;
             --color-border: #e5e0d5;
+            --font-serif: 'Libre Baskerville', Georgia, serif;
+            --font-sans: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         body {
-            font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: var(--font-sans);
             line-height: 1.6;
             color: var(--color-charcoal);
+            background: var(--color-cream-dark);
+        }
+
+        .page-container {
+            max-width: 720px;
+            margin: 0 auto;
             background: var(--color-cream);
+            min-height: 100vh;
+            border-left: 1px solid var(--color-border);
+            border-right: 1px solid var(--color-border);
         }
 
-        /* Header */
-        header {
-            background: var(--color-navy);
-            padding: 16px 0;
-            box-shadow: 0 2px 8px rgba(26, 54, 93, 0.15);
+        @media (max-width: 720px) {
+            .page-container {
+                border: none;
+            }
         }
 
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
+        /* Navigation */
+        .nav {
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
+            padding: 14px 24px;
+            border-bottom: 1px solid var(--color-border);
         }
 
-        .logo {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 22px;
-            font-weight: 700;
-            color: #fff;
-            text-decoration: none;
+        .nav-logo {
             display: flex;
             align-items: center;
-            gap: 12px;
-        }
-
-        .logo-icon {
-            width: 38px;
-            height: 38px;
-            flex-shrink: 0;
-        }
-
-        nav {
-            display: flex;
             gap: 8px;
-        }
-
-        nav a {
-            color: rgba(255,255,255,0.8);
             text-decoration: none;
+            color: var(--color-charcoal);
+        }
+
+        .nav-logo-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 5px;
+            background: var(--color-teal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-serif);
             font-size: 14px;
+            color: white;
             font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 6px;
-            transition: all 0.2s;
         }
 
-        nav a:hover {
-            color: #fff;
-            background: rgba(255,255,255,0.1);
+        .nav-logo-text {
+            font-family: var(--font-serif);
+            font-size: 16px;
+            font-weight: 500;
         }
 
-        /* Hero Section */
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            font-size: 13px;
+            color: var(--color-slate);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--color-charcoal);
+        }
+
+        @media (max-width: 540px) {
+            .nav {
+                padding: 12px 16px;
+            }
+            .nav-links {
+                gap: 12px;
+            }
+            .nav-links a {
+                font-size: 12px;
+            }
+        }
+
+        /* Hero */
         .hero {
-            background: var(--color-navy);
-            padding: 50px 24px 70px;
+            padding: 3rem 2rem 2.5rem;
             text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image:
-                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px),
-                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-
-        .hero-content {
-            max-width: 800px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
-        }
-
-        .hero-logo {
-            margin-bottom: 28px;
-            animation: floatIn 0.6s ease-out;
-        }
-
-        @keyframes floatIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         .hero h1 {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 44px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 16px;
-            letter-spacing: -0.5px;
-            line-height: 1.15;
+            font-family: var(--font-serif);
+            font-size: 30px;
+            font-weight: 500;
+            margin: 0 0 12px;
+            line-height: 1.25;
+            color: var(--color-charcoal);
         }
 
-        .hero h1 span {
-            color: var(--color-amber-light);
+        .hero-subtitle {
+            font-size: 15px;
+            color: var(--color-slate);
+            margin: 0 auto 24px;
+            max-width: 400px;
+            line-height: 1.6;
         }
 
-        .hero p {
-            font-size: 19px;
-            color: rgba(255,255,255,0.75);
-            margin-bottom: 32px;
-            line-height: 1.7;
-        }
-
-        .featured-message {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 20px;
-            font-style: italic;
-            color: var(--color-amber-light);
-            margin-bottom: 28px;
-            padding: 16px 24px;
-            background: rgba(184, 134, 11, 0.15);
-            border-radius: 8px;
-            border-left: 4px solid var(--color-amber);
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .featured-message:empty {
-            display: none;
-        }
-
-        .cta-buttons {
+        .hero-buttons {
             display: flex;
-            gap: 16px;
+            gap: 10px;
             justify-content: center;
             flex-wrap: wrap;
         }
 
-        .cta-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 14px 28px;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        .cta-button.primary {
-            background: var(--color-amber);
-            color: white;
-            box-shadow: 0 4px 12px rgba(184, 134, 11, 0.35);
-        }
-
-        .cta-button.primary:hover {
-            background: var(--color-amber-light);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(184, 134, 11, 0.45);
-        }
-
-        .cta-button.secondary {
-            background: transparent;
-            color: white;
-            border: 2px solid rgba(255,255,255,0.3);
-        }
-
-        .cta-button.secondary:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: rgba(255,255,255,0.5);
-        }
-
-        /* Features */
-        .features {
-            max-width: 1200px;
-            margin: -36px auto 0;
-            padding: 0 24px;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            position: relative;
-            z-index: 10;
-        }
-
-        .feature {
-            background: white;
-            padding: 28px 24px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            text-align: center;
-            transition: all 0.2s ease;
-            border: 1px solid var(--color-border);
-        }
-
-        .feature:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-        }
-
-        .feature-icon {
-            width: 52px;
-            height: 52px;
-            margin: 0 auto 16px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-        }
-
-        .feature-icon.amber { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
-        .feature-icon.teal { background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%); }
-        .feature-icon.rose { background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%); }
-        .feature-icon.indigo { background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); }
-
-        .feature h3 {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 16px;
-            margin-bottom: 8px;
-            font-weight: 700;
-            color: var(--color-charcoal);
-        }
-
-        .feature p {
-            color: var(--color-slate);
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        /* Demo Clue Section */
-        .demo-clue-tabs {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-
-        .demo-tab {
-            padding: 9px 20px;
-            border: 2px solid var(--color-border);
-            background: white;
+        .btn {
+            padding: 10px 20px;
             border-radius: 6px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            color: var(--color-slate);
+            text-decoration: none;
             transition: all 0.2s;
+            border: none;
         }
 
-        .demo-tab:hover {
-            border-color: var(--color-teal);
-            color: var(--color-teal);
-        }
-
-        .demo-tab.active {
-            background: var(--color-teal);
-            border-color: var(--color-teal);
+        .btn-primary {
+            background: var(--color-charcoal);
             color: white;
         }
 
-        .demo-section {
-            background: var(--color-cream-dark);
-            padding: 60px 20px;
-            border-top: 1px solid var(--color-border);
-            border-bottom: 1px solid var(--color-border);
+        .btn-primary:hover {
+            background: var(--color-navy);
         }
 
-        .demo-section h2 {
-            text-align: center;
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 28px;
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--color-border);
             color: var(--color-charcoal);
-            margin-bottom: 8px;
         }
 
-        .demo-section .subtitle {
-            text-align: center;
+        .btn-secondary:hover {
+            border-color: var(--color-slate);
+        }
+
+        @media (max-width: 540px) {
+            .hero {
+                padding: 2rem 1.25rem 2rem;
+            }
+            .hero h1 {
+                font-size: 24px;
+            }
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            .btn {
+                width: 100%;
+                max-width: 240px;
+            }
+        }
+
+        /* Demo section */
+        .demo-section {
+            padding: 1.5rem 2rem 2.5rem;
+            border-top: 1px solid var(--color-border);
+            background: var(--color-cream-dark);
+        }
+
+        .demo-label {
+            font-size: 11px;
             color: var(--color-slate);
-            margin-bottom: 30px;
-            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 14px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .demo-card {
+            background: var(--color-cream);
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            padding: 1.25rem 1.5rem;
         }
 
         .demo-clue {
-            max-width: 680px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            padding: 36px 40px;
-            border: 1px solid var(--color-border);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        }
-
-        .demo-clue-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--color-slate);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 12px;
-        }
-
-        .demo-clue-text {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 21px;
-            color: var(--color-charcoal);
+            font-family: var(--font-serif);
+            font-size: 18px;
+            margin: 0 0 4px;
             font-style: italic;
-            line-height: 1.5;
-            margin-bottom: 24px;
+            color: var(--color-charcoal);
         }
 
-        .demo-clue-text .enumeration {
-            font-style: normal;
+        .demo-clue .enumeration {
             color: var(--color-slate);
-            font-size: 17px;
+            font-style: normal;
+        }
+
+        .demo-clue-type {
+            font-size: 12px;
+            color: var(--color-slate);
+            margin: 0 0 16px;
         }
 
         .demo-hint-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
         }
 
         .demo-hint-btn {
-            flex: 1;
-            padding: 11px 14px;
-            border: 2px solid var(--color-border);
-            background: #fff;
+            background: var(--color-cream-dark);
+            border: 1px solid var(--color-border);
+            padding: 8px 4px;
             border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 11px;
             cursor: pointer;
-            transition: all 0.2s ease;
             color: var(--color-slate);
+            transition: all 0.2s;
         }
 
         .demo-hint-btn:hover {
@@ -406,948 +283,444 @@
             color: var(--color-teal);
         }
 
-        .demo-hint-btn.revealed {
-            color: #fff;
+        .demo-hint-btn.active {
+            background: var(--color-teal);
+            border-color: var(--color-teal);
+            color: white;
         }
 
-        .demo-hint-btn.hint-1.revealed { background: var(--color-teal); border-color: var(--color-teal); }
-        .demo-hint-btn.hint-2.revealed { background: #0891b2; border-color: #0891b2; }
-        .demo-hint-btn.hint-3.revealed { background: #7c3aed; border-color: #7c3aed; }
-        .demo-hint-btn.hint-4.revealed { background: var(--color-amber); border-color: var(--color-amber); }
-
-        .demo-hints {
-            min-height: 80px;
-        }
-
-        .demo-hint {
-            display: none;
-            padding: 14px 18px;
+        .demo-hint-content {
+            background: rgba(45, 106, 106, 0.08);
             border-radius: 6px;
-            font-size: 15px;
+            padding: 12px 14px;
+            font-size: 13px;
             line-height: 1.6;
-            margin-bottom: 10px;
-            animation: fadeIn 0.3s ease;
+            color: var(--color-teal);
+            display: none;
         }
 
-        .demo-hint.visible {
+        .demo-hint-content.visible {
             display: block;
         }
 
-        .demo-hint.hint-1 { background: #f0fdfa; color: #134e4a; border-left: 4px solid var(--color-teal); }
-        .demo-hint.hint-2 { background: #ecfeff; color: #164e63; border-left: 4px solid #0891b2; }
-        .demo-hint.hint-3 { background: #f5f3ff; color: #4c1d95; border-left: 4px solid #7c3aed; }
-        .demo-hint.hint-4 { background: #fffbeb; color: #78350f; border-left: 4px solid var(--color-amber); }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .demo-cta {
-            text-align: center;
-            margin-top: 28px;
-        }
-
-        .demo-cta a {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--color-navy);
-            color: #fff;
-            padding: 13px 26px;
-            border-radius: 6px;
+        .demo-hint-content strong {
             font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s ease;
         }
 
-        .demo-cta a:hover {
-            background: var(--color-navy-light);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(26, 54, 93, 0.3);
+        @media (max-width: 540px) {
+            .demo-section {
+                padding: 1.25rem 1rem 2rem;
+            }
+            .demo-card {
+                padding: 1rem;
+            }
+            .demo-clue {
+                font-size: 16px;
+            }
+            .demo-hint-buttons {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
-        /* Puzzles Section */
-        .puzzles-section {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 60px 24px;
+        /* Quote section */
+        .quote-section {
+            padding: 2.5rem 2rem;
+            text-align: center;
+            border-top: 1px solid var(--color-border);
         }
 
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .section-header h2 {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 28px;
-            font-weight: 700;
+        .quote-text {
+            font-family: var(--font-serif);
+            font-size: 20px;
+            line-height: 1.5;
+            margin: 0 auto 24px;
+            max-width: 480px;
+            font-style: italic;
             color: var(--color-charcoal);
         }
 
-        .view-all {
-            color: var(--color-teal);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+        .benefits {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 540px;
+            margin: 0 auto;
         }
 
-        .view-all:hover {
+        .benefit h3 {
+            font-size: 13px;
+            font-weight: 600;
+            margin: 0 0 4px;
+            color: var(--color-charcoal);
+        }
+
+        .benefit p {
+            font-size: 12px;
+            color: var(--color-slate);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 540px) {
+            .quote-section {
+                padding: 2rem 1.25rem;
+            }
+            .quote-text {
+                font-size: 18px;
+            }
+            .benefits {
+                grid-template-columns: 1fr;
+                gap: 16px;
+                text-align: left;
+                max-width: 280px;
+            }
+        }
+
+        /* Puzzles section */
+        .puzzles-section {
+            padding: 2rem;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .puzzles-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .puzzles-header h2 {
+            font-family: var(--font-serif);
+            font-size: 20px;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .puzzles-header a {
+            font-size: 13px;
+            color: var(--color-teal);
+            text-decoration: none;
+        }
+
+        .puzzles-header a:hover {
             text-decoration: underline;
         }
 
         .puzzles-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
         }
 
         .puzzle-card {
-            background: white;
+            background: var(--color-cream);
             border: 1px solid var(--color-border);
-            border-radius: 10px;
-            padding: 24px;
+            border-radius: 8px;
+            padding: 14px;
             text-decoration: none;
-            color: var(--color-charcoal);
-            transition: all 0.2s ease;
-            display: flex;
-            flex-direction: column;
+            color: inherit;
+            transition: all 0.2s;
         }
 
         .puzzle-card:hover {
             border-color: var(--color-teal);
-            box-shadow: 0 4px 12px rgba(45, 106, 106, 0.12);
-            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(45, 106, 106, 0.1);
         }
 
-        .puzzle-date {
-            font-size: 11px;
-            color: var(--color-slate);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
+        .puzzle-card.featured {
+            background: rgba(45, 106, 106, 0.06);
+            border-color: var(--color-teal);
         }
 
-        .puzzle-number {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--color-charcoal);
-            margin-bottom: 4px;
-        }
-
-        .puzzle-setter {
-            font-size: 14px;
-            color: var(--color-slate);
-            margin-bottom: 16px;
-        }
-
-        .puzzle-stats {
+        .puzzle-card-header {
             display: flex;
-            gap: 16px;
-            margin-top: auto;
-            padding-top: 16px;
-            border-top: 1px solid var(--color-border);
-        }
-
-        .puzzle-stat {
-            font-size: 12px;
-            color: var(--color-slate);
-            display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 4px;
+            margin-bottom: 6px;
         }
 
-        .puzzle-stat strong {
-            color: var(--color-charcoal);
-        }
-
-        .progress-bar-container {
-            width: 100%;
-            height: 5px;
-            background: #e5e7eb;
-            border-radius: 3px;
-            margin-top: 10px;
-            overflow: hidden;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            border-radius: 3px;
-            background: var(--color-teal);
-            transition: width 0.3s ease;
-        }
-
-        .progress-bar-fill.complete {
-            background: var(--color-amber);
-        }
-
-        .progress-label {
+        .puzzle-card-meta {
             font-size: 11px;
             color: var(--color-slate);
-            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .puzzle-card.featured .puzzle-card-meta {
+            color: var(--color-teal);
             font-weight: 500;
         }
 
-        .progress-label.complete {
-            color: var(--color-amber);
+        .puzzle-card-clues {
+            font-size: 11px;
+            color: var(--color-slate);
         }
 
-        /* Newsletter Signup */
-        .newsletter {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 60px 24px;
+        .puzzle-card.featured .puzzle-card-clues {
+            color: var(--color-teal);
         }
 
-        .newsletter-box {
-            background: var(--color-navy);
-            border-radius: 12px;
-            padding: 48px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .newsletter-box::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image:
-                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px),
-                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
-            background-size: 30px 30px;
-        }
-
-        .newsletter-box h2 {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            color: #fff;
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            position: relative;
-        }
-
-        .newsletter-box p {
-            color: rgba(255,255,255,0.7);
+        .puzzle-card-title {
+            font-family: var(--font-serif);
             font-size: 16px;
-            margin-bottom: 24px;
-            position: relative;
+            margin: 0 0 2px;
+            font-weight: 500;
+            color: var(--color-charcoal);
         }
 
-        .newsletter-form {
+        .puzzle-card-blurb {
+            font-size: 12px;
+            color: var(--color-slate);
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .puzzle-card.featured .puzzle-card-blurb {
+            color: var(--color-teal);
+        }
+
+        @media (max-width: 540px) {
+            .puzzles-section {
+                padding: 1.5rem 1rem;
+            }
+            .puzzles-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Subscribe section */
+        .subscribe-section {
+            padding: 2rem;
+            border-top: 1px solid var(--color-border);
+            background: var(--color-cream-dark);
+            text-align: center;
+        }
+
+        .subscribe-section h2 {
+            font-family: var(--font-serif);
+            font-size: 20px;
+            font-weight: 500;
+            margin: 0 0 6px;
+        }
+
+        .subscribe-section > p {
+            font-size: 13px;
+            color: var(--color-slate);
+            margin: 0 auto 16px;
+            max-width: 340px;
+            line-height: 1.5;
+        }
+
+        .subscribe-form {
             display: flex;
-            gap: 12px;
-            max-width: 440px;
+            gap: 8px;
+            max-width: 360px;
             margin: 0 auto;
-            position: relative;
         }
 
-        .newsletter-form input[type="email"] {
+        .subscribe-form input {
             flex: 1;
-            padding: 14px 18px;
-            border: 2px solid rgba(255,255,255,0.2);
+            padding: 10px 14px;
+            border: 1px solid var(--color-border);
             border-radius: 6px;
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-            font-size: 15px;
+            font-size: 14px;
+            background: var(--color-cream);
+        }
+
+        .subscribe-form input:focus {
             outline: none;
-            transition: border-color 0.2s;
+            border-color: var(--color-teal);
         }
 
-        .newsletter-form input[type="email"]::placeholder {
-            color: rgba(255,255,255,0.4);
-        }
-
-        .newsletter-form input[type="email"]:focus {
-            border-color: var(--color-amber);
-        }
-
-        .newsletter-form button {
-            padding: 14px 24px;
-            background: var(--color-amber);
+        .subscribe-form button {
+            padding: 10px 18px;
+            background: var(--color-charcoal);
             color: white;
             border: none;
             border-radius: 6px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .newsletter-form button:hover {
-            background: var(--color-amber-light);
-            transform: translateY(-1px);
-        }
-
-        .newsletter-form button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .newsletter-msg {
-            margin-top: 12px;
             font-size: 14px;
-            position: relative;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .subscribe-form button:hover {
+            background: var(--color-navy);
+        }
+
+        .subscribe-msg {
+            margin-top: 10px;
+            font-size: 13px;
             min-height: 20px;
         }
 
-        .newsletter-msg.success { color: #4ade80; }
-        .newsletter-msg.error { color: #f87171; }
+        .subscribe-msg.success { color: #059669; }
+        .subscribe-msg.error { color: #dc2626; }
 
-        /* Why Section */
-        .why-section {
-            background: white;
-            padding: 60px 24px;
-            border-top: 1px solid var(--color-border);
-        }
-
-        .why-content {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .why-section h2 {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 28px;
-            font-weight: 700;
-            text-align: center;
-            margin-bottom: 40px;
-            color: var(--color-charcoal);
-        }
-
-        .why-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 32px;
-            margin-bottom: 48px;
-        }
-
-        .why-card {
-            text-align: center;
-            padding: 24px 20px;
-        }
-
-        .why-icon {
-            width: 56px;
-            height: 56px;
-            margin: 0 auto 16px;
-            background: var(--color-cream);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--color-teal);
-        }
-
-        .why-card h3 {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 17px;
-            font-weight: 700;
-            color: var(--color-charcoal);
-            margin-bottom: 10px;
-        }
-
-        .why-card p {
-            font-size: 14px;
-            color: var(--color-slate);
-            line-height: 1.6;
-        }
-
-        .why-difference {
-            background: var(--color-cream);
-            padding: 32px 40px;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid var(--color-border);
-        }
-
-        .why-difference h3 {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--color-charcoal);
-            margin-bottom: 12px;
-        }
-
-        .why-difference p {
-            font-size: 15px;
-            color: var(--color-slate);
-            line-height: 1.7;
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        .why-difference em {
-            color: var(--color-teal);
-            font-style: normal;
-            font-weight: 600;
-        }
-
-        @media (max-width: 768px) {
-            .why-grid {
-                grid-template-columns: 1fr;
-                gap: 24px;
+        @media (max-width: 540px) {
+            .subscribe-section {
+                padding: 1.5rem 1rem;
             }
-
-            .why-difference {
-                padding: 24px 20px;
+            .subscribe-form {
+                flex-direction: column;
             }
         }
 
         /* Footer */
-        footer {
-            background: var(--color-navy);
-            padding: 48px 24px 24px;
-        }
-
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
+        .footer {
+            padding: 1.25rem 2rem;
+            border-top: 1px solid var(--color-border);
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            gap: 48px;
-            padding-bottom: 32px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .footer-brand {
-            flex: 1;
-        }
-
-        .footer-title {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 20px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 4px;
-        }
-
-        .footer-tagline {
-            color: rgba(255,255,255,0.6);
-            font-size: 14px;
+            align-items: center;
+            font-size: 12px;
+            color: var(--color-slate);
         }
 
         .footer-links {
             display: flex;
-            gap: 64px;
+            gap: 16px;
         }
 
-        .footer-col h4 {
-            color: rgba(255,255,255,0.5);
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .footer-col a {
-            display: block;
-            color: rgba(255,255,255,0.8);
+        .footer-links a {
+            color: var(--color-slate);
             text-decoration: none;
-            font-size: 14px;
-            padding: 4px 0;
-            transition: color 0.2s;
         }
 
-        .footer-col a:hover {
-            color: #fff;
-        }
-
-        .footer-bottom {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding-top: 20px;
-            text-align: center;
-        }
-
-        .footer-bottom p {
-            color: rgba(255,255,255,0.4);
-            font-size: 13px;
-        }
-
-        @media (max-width: 1024px) {
-            .footer-links {
-                gap: 40px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .footer-content {
-                flex-direction: column;
-                gap: 32px;
-                text-align: center;
-            }
-
-            .footer-links {
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 32px 48px;
-            }
-
-            .footer-col {
-                text-align: left;
-                min-width: 120px;
-            }
-        }
-
-        /* Loading State */
-        .loading {
-            text-align: center;
-            padding: 60px 24px;
-            color: var(--color-slate);
-            font-size: 15px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 24px;
-            background: white;
-            border-radius: 10px;
-            border: 1px solid var(--color-border);
-            grid-column: 1 / -1;
-        }
-
-        .empty-state h3 {
-            font-family: 'Libre Baskerville', Georgia, serif;
-            font-size: 18px;
+        .footer-links a:hover {
             color: var(--color-charcoal);
-            margin-bottom: 8px;
         }
 
-        .empty-state p {
-            color: var(--color-slate);
-            margin-bottom: 16px;
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .features {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .puzzles-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-        }
-
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 30px;
-            }
-
-            .hero p {
-                font-size: 17px;
-            }
-
-            .features {
-                grid-template-columns: 1fr;
-                margin-top: -20px;
-            }
-
-            .puzzles-grid {
-                grid-template-columns: 1fr;
-            }
-
-
-            nav {
-                display: none;
-            }
-
-            .cta-buttons {
+        @media (max-width: 540px) {
+            .footer {
                 flex-direction: column;
-                align-items: center;
+                gap: 10px;
+                text-align: center;
+                padding: 1rem;
             }
-
-            .cta-button {
-                width: 100%;
-                max-width: 280px;
-                justify-content: center;
-            }
-
-            .demo-clue {
-                padding: 28px 20px;
-            }
-
-            .demo-clue-text {
-                font-size: 18px;
-            }
-
-            .demo-hint-buttons {
-                flex-wrap: wrap;
-            }
-
-            .demo-hint-btn {
-                flex: 1 1 45%;
-            }
-
-            .newsletter-box { padding: 32px 20px; }
-            .newsletter-form { flex-direction: column; }
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="header-content">
-            <a href="/" class="logo">
-                <svg class="logo-icon" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Crossword grid logo -->
-                    <rect width="38" height="38" rx="6" fill="#b8860b"/>
-                    <!-- Row 1 -->
-                    <rect x="3" y="3" width="9.5" height="9.5" rx="1.5" fill="white"/>
-                    <rect x="14.25" y="3" width="9.5" height="9.5" rx="1.5" fill="white"/>
-                    <rect x="25.5" y="3" width="9.5" height="9.5" rx="1.5" fill="#1a365d"/>
-                    <!-- Row 2 -->
-                    <rect x="3" y="14.25" width="9.5" height="9.5" rx="1.5" fill="#1a365d"/>
-                    <rect x="14.25" y="14.25" width="9.5" height="9.5" rx="1.5" fill="white"/>
-                    <rect x="25.5" y="14.25" width="9.5" height="9.5" rx="1.5" fill="white"/>
-                    <!-- Row 3 -->
-                    <rect x="3" y="25.5" width="9.5" height="9.5" rx="1.5" fill="white"/>
-                    <rect x="14.25" y="25.5" width="9.5" height="9.5" rx="1.5" fill="#1a365d"/>
-                    <rect x="25.5" y="25.5" width="9.5" height="9.5" rx="1.5" fill="white"/>
-                    <!-- Question mark in center -->
-                    <text x="19" y="22" text-anchor="middle" fill="#b8860b" font-size="9" font-weight="700" font-family="Georgia, serif">?</text>
-                </svg>
-                Cryptic Hints
+    <div class="page-container">
+        <!-- Navigation -->
+        <nav class="nav">
+            <a href="/" class="nav-logo">
+                <div class="nav-logo-icon">?</div>
+                <span class="nav-logo-text">Cryptic Hints</span>
             </a>
-            <nav>
-                <a href="#puzzles">Puzzles</a>
+            <div class="nav-links">
+                <a href="#puzzles">Today</a>
+                <a href="#puzzles">Archive</a>
                 <a href="/guide">Guide</a>
-                <a href="/synonyms">Synonyms</a>
                 <a href="/blog">Blog</a>
-            </nav>
-        </div>
-    </header>
+            </div>
+        </nav>
 
-    <main>
-        <!-- Hero Section -->
+        <!-- Hero -->
         <section class="hero">
-            <div class="hero-content">
-                <div class="hero-logo">
-                    <svg viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg" width="110" height="110">
-                        <!-- 5x5 crossword grid with amber/navy theme -->
-                        <rect width="110" height="110" rx="14" fill="rgba(184, 134, 11, 0.15)"/>
-                        <rect x="3" y="3" width="104" height="104" rx="12" fill="none" stroke="rgba(184, 134, 11, 0.3)" stroke-width="1.5"/>
-                        <!-- Row 1 -->
-                        <rect x="7" y="7" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="27" y="7" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="47" y="7" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="67" y="7" width="18" height="18" rx="3" fill="rgba(255,255,255,0.12)"/>
-                        <rect x="87" y="7" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <!-- Row 2 -->
-                        <rect x="7" y="27" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="27" y="27" width="18" height="18" rx="3" fill="rgba(255,255,255,0.12)"/>
-                        <rect x="47" y="27" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="67" y="27" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="87" y="27" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <!-- Row 3 -->
-                        <rect x="7" y="47" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="27" y="47" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="47" y="47" width="18" height="18" rx="3" fill="white" opacity="0.9"/>
-                        <rect x="67" y="47" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="87" y="47" width="18" height="18" rx="3" fill="rgba(255,255,255,0.12)"/>
-                        <!-- Row 4 -->
-                        <rect x="7" y="67" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="27" y="67" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="47" y="67" width="18" height="18" rx="3" fill="rgba(255,255,255,0.12)"/>
-                        <rect x="67" y="67" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="87" y="67" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <!-- Row 5 -->
-                        <rect x="7" y="87" width="18" height="18" rx="3" fill="rgba(255,255,255,0.12)"/>
-                        <rect x="27" y="87" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="47" y="87" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <rect x="67" y="87" width="18" height="18" rx="3" fill="rgba(255,255,255,0.12)"/>
-                        <rect x="87" y="87" width="18" height="18" rx="3" fill="white" opacity="0.95"/>
-                        <!-- Question mark in center cell -->
-                        <text x="56" y="61" text-anchor="middle" fill="#d4a84b" font-size="15" font-weight="700" font-family="Georgia, serif">?</text>
-                    </svg>
+            <h1>Solve the Guardian cryptic, with hints that don't spoil it</h1>
+            <p class="hero-subtitle">A nudge when you need one. The full answer when you don't.</p>
+            <div class="hero-buttons">
+                <a href="#demo" class="btn btn-primary">Try a sample clue</a>
+                <a href="#puzzles" class="btn btn-secondary" id="todaysPuzzleBtn">Today's puzzle →</a>
+            </div>
+        </section>
+
+        <!-- Demo clue -->
+        <section class="demo-section" id="demo">
+            <p class="demo-label">Try a clue</p>
+            <div class="demo-card">
+                <p class="demo-clue">"Animal bound on stake" <span class="enumeration">(8)</span></p>
+                <p class="demo-clue-type">Charade clue</p>
+
+                <div class="demo-hint-buttons">
+                    <button class="demo-hint-btn active" data-hint="1" onclick="showDemoHint(1)">1. Definition</button>
+                    <button class="demo-hint-btn" data-hint="2" onclick="showDemoHint(2)">2. Technique</button>
+                    <button class="demo-hint-btn" data-hint="3" onclick="showDemoHint(3)">3. Breakdown</button>
+                    <button class="demo-hint-btn" data-hint="4" onclick="showDemoHint(4)">4. Answer</button>
                 </div>
-                <h1>Master <span>Cryptic Crosswords</span><br>One Hint at a Time</h1>
-                <p>Progressive hints guide you from gentle nudges to complete explanations. Learn the art of cryptic solving without spoiling the satisfaction.</p>
-                <p class="featured-message" id="featuredMessage">__FEATURED_MESSAGE__</p>
-                <div class="cta-buttons">
-                    <a href="#puzzles" class="cta-button primary" id="ctaStart">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <rect x="3" y="3" width="18" height="18" rx="2"/>
-                            <path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
-                        </svg>
-                        Start Solving
-                    </a>
-                    <a href="#try-it" class="cta-button secondary">
-                        See How It Works
-                    </a>
+
+                <div class="demo-hint-content visible" id="demoHint1">
+                    <strong>Definition:</strong> "animal" — that's the part of the clue pointing to what you're looking for.
+                </div>
+                <div class="demo-hint-content" id="demoHint2">
+                    <strong>Technique:</strong> This is a charade — the answer is built by joining smaller pieces together, one after another.
+                </div>
+                <div class="demo-hint-content" id="demoHint3">
+                    <strong>Breakdown:</strong> "bound" gives you a word for jump (4 letters), "on stake" gives you a word for wager (4 letters). Put them together.
+                </div>
+                <div class="demo-hint-content" id="demoHint4">
+                    <strong>Answer: ANTELOPE</strong> — ANTE (stake, as in poker) + LOPE (bound/run). An animal!
                 </div>
             </div>
         </section>
 
-        <!-- Feature Cards -->
-        <div class="features">
-            <div class="feature">
-                <div class="feature-icon teal">
-                    <span>1</span>
+        <!-- Quote + Benefits -->
+        <section class="quote-section">
+            <p class="quote-text">"Most help sites give you the answer. We give you just enough to keep solving — so you actually learn."</p>
+            <div class="benefits">
+                <div class="benefit">
+                    <h3>A daily ritual</h3>
+                    <p>20 meditative minutes with your morning coffee.</p>
                 </div>
-                <h3>Definition</h3>
-                <p>Identify which part of the clue gives you the answer's meaning</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon indigo">
-                    <span>2</span>
+                <div class="benefit">
+                    <h3>The aha moment</h3>
+                    <p>Nothing beats the click when wordplay falls into place.</p>
                 </div>
-                <h3>Technique</h3>
-                <p>Learn what type of wordplay the setter is using</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon rose">
-                    <span>3</span>
+                <div class="benefit">
+                    <h3>A community</h3>
+                    <p>Solvers, setters, and clue-lovers worth meeting.</p>
                 </div>
-                <h3>Breakdown</h3>
-                <p>See how the wordplay constructs the answer step by step</p>
-            </div>
-            <div class="feature">
-                <div class="feature-icon amber">
-                    <span>4</span>
-                </div>
-                <h3>Full Solution</h3>
-                <p>Complete explanation with the answer revealed</p>
-            </div>
-        </div>
-
-        <!-- Demo Clue Section -->
-        <section class="demo-section" id="try-it">
-            <h2>Try It Now</h2>
-            <p class="subtitle">Click each hint button to reveal progressive help</p>
-
-            <div class="demo-clue-tabs">
-                <button class="demo-tab active" onclick="switchDemo(0)">Hidden Word</button>
-                <button class="demo-tab" onclick="switchDemo(1)">Charade</button>
-            </div>
-
-            <div class="demo-clue" id="demo-0">
-                <div class="demo-clue-label">Hidden Word Clue</div>
-                <div class="demo-clue-text">
-                    "Wicked thing concealed by the villain" <span class="enumeration">(4)</span>
-                </div>
-
-                <div class="demo-hint-buttons">
-                    <button class="demo-hint-btn hint-1" onclick="revealDemoHint(0,1)">Hint 1</button>
-                    <button class="demo-hint-btn hint-2" onclick="revealDemoHint(0,2)">Hint 2</button>
-                    <button class="demo-hint-btn hint-3" onclick="revealDemoHint(0,3)">Hint 3</button>
-                    <button class="demo-hint-btn hint-4" onclick="revealDemoHint(0,4)">Hint 4</button>
-                </div>
-
-                <div class="demo-hints">
-                    <div class="demo-hint hint-1" id="demo0Hint1">
-                        <strong>Definition:</strong> "wicked thing"
-                    </div>
-                    <div class="demo-hint hint-2" id="demo0Hint2">
-                        <strong>Technique:</strong> This is a hidden word clue. The word "concealed" tells you the answer is hiding inside other words.
-                    </div>
-                    <div class="demo-hint hint-3" id="demo0Hint3">
-                        <strong>Breakdown:</strong> Look inside "th<strong>E VIL</strong>lain" &mdash; the answer is hidden within these letters.
-                    </div>
-                    <div class="demo-hint hint-4" id="demo0Hint4">
-                        <strong>Answer: EVIL</strong> &mdash; A wicked thing, hidden inside "thE VILlain".
-                    </div>
-                </div>
-            </div>
-
-            <div class="demo-clue" id="demo-1" style="display:none">
-                <div class="demo-clue-label">Charade Clue</div>
-                <div class="demo-clue-text">
-                    "Animal bound on stake" <span class="enumeration">(8)</span>
-                </div>
-
-                <div class="demo-hint-buttons">
-                    <button class="demo-hint-btn hint-1" onclick="revealDemoHint(1,1)">Hint 1</button>
-                    <button class="demo-hint-btn hint-2" onclick="revealDemoHint(1,2)">Hint 2</button>
-                    <button class="demo-hint-btn hint-3" onclick="revealDemoHint(1,3)">Hint 3</button>
-                    <button class="demo-hint-btn hint-4" onclick="revealDemoHint(1,4)">Hint 4</button>
-                </div>
-
-                <div class="demo-hints">
-                    <div class="demo-hint hint-1" id="demo1Hint1">
-                        <strong>Definition:</strong> "animal"
-                    </div>
-                    <div class="demo-hint hint-2" id="demo1Hint2">
-                        <strong>Technique:</strong> This is a charade &mdash; the answer is built by chaining smaller words or parts together, one after another.
-                    </div>
-                    <div class="demo-hint hint-3" id="demo1Hint3">
-                        <strong>Breakdown:</strong> "stake" can mean a bet placed before a game. "Bound" means to run with long strides. Put the bet before the run&hellip;
-                    </div>
-                    <div class="demo-hint hint-4" id="demo1Hint4">
-                        <strong>Answer: ANTELOPE</strong> &mdash; ANTE (a stake / bet) + LOPE (to bound / run) = ANTELOPE, an animal.
-                    </div>
-                </div>
-            </div>
-
-            <div class="demo-cta">
-                <a href="#puzzles">
-                    Try Full Puzzles
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg>
-                </a>
             </div>
         </section>
 
-        <!-- Puzzles Section -->
+        <!-- Puzzles -->
         <section class="puzzles-section" id="puzzles">
-            <div class="section-header">
-                <h2>Available Puzzles</h2>
+            <div class="puzzles-header">
+                <h2>Recent puzzles</h2>
+                <a href="#puzzles">View all →</a>
             </div>
-            <div class="puzzles-grid" id="puzzlesGrid">__STATIC_PUZZLES__</div>
-        </section>
-
-        <!-- How It Works -->
-        <section class="how-it-works" id="how-it-works">
-            <div class="how-it-works-content">
-                <h2>Four Levels of Help</h2>
-                <div class="hint-levels">
-                    <div class="hint-level">
-                        <div class="hint-level-number level-1">1</div>
-                        <h4>Definition</h4>
-                        <p>Points you to which part of the clue contains the answer's meaning</p>
-                    </div>
-                    <div class="hint-level">
-                        <div class="hint-level-number level-2">2</div>
-                        <h4>Technique</h4>
-                        <p>Reveals the type of wordplay being used (anagram, hidden word, etc.)</p>
-                    </div>
-                    <div class="hint-level">
-                        <div class="hint-level-number level-3">3</div>
-                        <h4>Breakdown</h4>
-                        <p>Shows how the wordplay works without giving away the answer</p>
-                    </div>
-                    <div class="hint-level">
-                        <div class="hint-level-number level-4">4</div>
-                        <h4>Full Solution</h4>
-                        <p>Complete explanation with the answer and how it all fits together</p>
-                    </div>
-                </div>
+            <div class="puzzles-grid" id="puzzlesGrid">
+                __STATIC_PUZZLES__
             </div>
         </section>
 
-        <!-- Why Section -->
-        <section class="why-section">
-            <div class="why-content">
-                <h2>Why Learn Cryptic Crosswords?</h2>
-                <div class="why-grid">
-                    <div class="why-card">
-                        <div class="why-icon">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/>
-                                <path d="M12 6v6l4 2"/>
-                            </svg>
-                        </div>
-                        <h3>A Daily Ritual</h3>
-                        <p>Many solvers describe their morning cryptic as the best 20 minutes of their day. It's meditative, satisfying, and completely absorbing.</p>
-                    </div>
-                    <div class="why-card">
-                        <div class="why-icon">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-                            </svg>
-                        </div>
-                        <h3>A Community</h3>
-                        <p>From blogs discussing each day's puzzle to Twitter threads celebrating clever clues, cryptic solvers are a wonderfully engaged community.</p>
-                    </div>
-                    <div class="why-card">
-                        <div class="why-icon">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                            </svg>
-                        </div>
-                        <h3>That "Aha!" Moment</h3>
-                        <p>Nothing quite matches the satisfaction of cracking a tricky clue. The wordplay suddenly clicks, and you can't help but smile.</p>
-                    </div>
-                </div>
-                <div class="why-difference">
-                    <h3>What Makes Cryptic Hints Different</h3>
-                    <p>Most cryptic help sites give you the answer immediately, robbing you of the satisfaction. We give you <em>just enough</em> help to keep solving yourself. Start with the definition, learn the technique, see the breakdown &mdash; only reveal the answer when you're truly stuck. It's how you actually learn.</p>
-                </div>
-            </div>
+        <!-- Subscribe -->
+        <section class="subscribe-section">
+            <h2>A new puzzle, in your inbox</h2>
+            <p>One quiet email when fresh hints go up. No spam, no nonsense — just a nudge to come and solve.</p>
+            <form class="subscribe-form" id="subscribeForm">
+                <input type="email" placeholder="you@example.com" required>
+                <button type="submit">Subscribe</button>
+            </form>
+            <div class="subscribe-msg" id="subscribeMsg"></div>
         </section>
 
-        <!-- Newsletter -->
-        <section class="newsletter">
-            <div class="newsletter-box">
-                <h2>Get Notified of New Puzzles</h2>
-                <p>We'll email you when new puzzles are published</p>
-                <form class="newsletter-form" id="newsletterForm">
-                    <input type="email" placeholder="Enter your email" required>
-                    <button type="submit">Subscribe</button>
-                </form>
-                <div class="newsletter-msg" id="newsletterMsg"></div>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <div class="footer-content">
-            <div class="footer-brand">
-                <p class="footer-title">Cryptic Hints</p>
-                <p class="footer-tagline">Learn to solve Guardian cryptic crosswords</p>
-            </div>
+        <!-- Footer -->
+        <footer class="footer">
+            <span>Built with care for crossword lovers</span>
             <div class="footer-links">
-                <div class="footer-col">
-                    <h4>Resources</h4>
-                    <a href="/guide">Solving Guide</a>
-                    <a href="/synonyms">Synonyms</a>
-                    <a href="/blog">Blog</a>
-                </div>
-                <div class="footer-col">
-                    <h4>Feeds</h4>
-                    <a href="/feed/puzzles">Puzzle RSS</a>
-                    <a href="/feed/blog">Blog RSS</a>
-                </div>
-                <div class="footer-col">
-                    <h4>Connect</h4>
-                    <a href="https://x.com/Cryptic_Hints" target="_blank" rel="noopener">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -2px; margin-right: 4px;">
-                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                        </svg>
-                        @Cryptic_Hints
-                    </a>
-                    <a href="mailto:hello@cryptic-hints.com">hello@cryptic-hints.com</a>
-                </div>
+                <a href="https://x.com/Cryptic_Hints" target="_blank" rel="noopener">@Cryptic_Hints</a>
+                <a href="mailto:hello@cryptic-hints.com">hello@cryptic-hints.com</a>
             </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2024-2026 Cryptic Hints. Built with care for crossword lovers.</p>
-        </div>
-    </footer>
+        </footer>
+    </div>
 
     <script>
-        // Demo hint reveal
-        function revealDemoHint(demo, level) {
-            const container = document.getElementById(`demo-${demo}`);
-            const btn = container.querySelectorAll('.demo-hint-btn')[level - 1];
-            btn.classList.add('revealed');
-            document.getElementById(`demo${demo}Hint${level}`).classList.add('visible');
+        // Demo hint interaction
+        function showDemoHint(level) {
+            // Update buttons
+            document.querySelectorAll('.demo-hint-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.hint) === level);
+            });
+            // Show selected hint
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`demoHint${i}`).classList.toggle('visible', i === level);
+            }
         }
 
-        function switchDemo(idx) {
-            document.querySelectorAll('.demo-tab').forEach((t, i) => {
-                t.classList.toggle('active', i === idx);
-            });
-            document.querySelectorAll('.demo-clue').forEach((d, i) => {
-                d.style.display = i === idx ? '' : 'none';
-            });
-        }
-
-        // HTML escape helper to prevent XSS
+        // HTML escape helper
         function esc(str) {
             if (str == null) return '';
             return String(str)
@@ -1355,6 +728,19 @@
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;');
+        }
+
+        // Format date
+        function formatDay(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) return 'Today';
+            if (diffDays === 1) return 'Yesterday';
+
+            return date.toLocaleDateString('en-GB', { weekday: 'short' });
         }
 
         // Load puzzles
@@ -1365,87 +751,51 @@
 
                 if (puzzles.length === 0) {
                     document.getElementById('puzzlesGrid').innerHTML = `
-                        <div class="empty-state">
-                            <h3>No puzzles yet</h3>
-                            <p>Check back soon for new puzzles!</p>
+                        <div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--color-slate);">
+                            No puzzles yet. Check back soon!
                         </div>
                     `;
                     return;
                 }
 
-                // Get saved progress from localStorage
-                const savedProgress = JSON.parse(localStorage.getItem('crypticHintsProgress') || '{}');
+                // Update "Today's puzzle" button
+                const featured = puzzles[0];
+                const todayBtn = document.getElementById('todaysPuzzleBtn');
+                const typeLabel = featured.puzzle_type === 'quiptic' ? 'Quiptic' : 'Cryptic';
+                todayBtn.href = `/puzzle/${featured.puzzle_number}`;
+                todayBtn.textContent = `${typeLabel} #${featured.puzzle_number} →`;
 
-                // Update CTA button with latest puzzle
-                updateCtaButton(puzzles);
+                // Render puzzle cards (max 4)
+                const displayPuzzles = puzzles.slice(0, 4);
+                document.getElementById('puzzlesGrid').innerHTML = displayPuzzles.map((puzzle, i) => {
+                    const isFeatured = i === 0;
+                    const type = puzzle.puzzle_type === 'quiptic' ? 'Quiptic' : 'Cryptic';
+                    const day = formatDay(puzzle.date);
+                    const clues = puzzle.clue_count || '~28';
 
-                document.getElementById('puzzlesGrid').innerHTML = puzzles.map(puzzle => {
-                    // Check saved progress for this puzzle
-                    const puzzleProgress = savedProgress[puzzle.puzzle_number] || {};
-                    const solvedClues = Object.values(puzzleProgress).filter(p => p.solved).length;
-                    const total = puzzle.clue_count || 0;
-                    const pct = total > 0 ? Math.round((solvedClues / total) * 100) : 0;
-                    const isComplete = total > 0 && solvedClues === total;
-
-                    // Progress bar HTML (only if there's progress)
-                    let progressHTML = '';
-                    if (solvedClues > 0 || total > 0) {
-                        progressHTML = `
-                            <div class="progress-bar-container">
-                                <div class="progress-bar-fill${isComplete ? ' complete' : ''}" style="width:${pct}%"></div>
-                            </div>
-                            <div class="progress-label${isComplete ? ' complete' : ''}">
-                                ${isComplete ? '&#10003; Complete' : `${solvedClues}/${total} solved`}
-                            </div>`;
-                    }
-
-                    const typeLabel = puzzle.puzzle_type === 'quiptic' ? 'Quiptic' : 'Cryptic';
                     return `
-                    <a href="/puzzle/${esc(puzzle.puzzle_number)}" class="puzzle-card">
-                        <div class="puzzle-date">${esc(formatDate(puzzle.date))}</div>
-                        <div class="puzzle-number">${typeLabel} #${esc(puzzle.puzzle_number)}</div>
-                        <div class="puzzle-setter">by ${esc(puzzle.setter)}</div>
-                        <div class="puzzle-stats">
-                            <div class="puzzle-stat">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                                    <path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
-                                </svg>
-                                <strong>${esc(total || '~28')}</strong> clues
+                        <a href="/puzzle/${esc(puzzle.puzzle_number)}" class="puzzle-card${isFeatured ? ' featured' : ''}">
+                            <div class="puzzle-card-header">
+                                <span class="puzzle-card-meta">${esc(day)} · ${type}</span>
+                                <span class="puzzle-card-clues">${esc(clues)} clues</span>
                             </div>
-                        </div>
-                        ${progressHTML}
-                    </a>`;
+                            <p class="puzzle-card-title">#${esc(puzzle.puzzle_number)} by ${esc(puzzle.setter)}</p>
+                            <p class="puzzle-card-blurb">${isFeatured ? 'Start here — hints ready when you need them.' : ''}</p>
+                        </a>
+                    `;
                 }).join('');
 
             } catch (error) {
                 console.error('Error loading puzzles:', error);
-                document.getElementById('puzzlesGrid').innerHTML = `
-                    <div class="empty-state">
-                        <h3>Unable to load puzzles</h3>
-                        <p>Please try refreshing the page.</p>
-                    </div>
-                `;
             }
         }
 
-        function formatDate(dateString) {
-            if (!dateString) return 'Unknown date';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-GB', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
-            });
-        }
-
-        // Newsletter signup
-        document.getElementById('newsletterForm').addEventListener('submit', async (e) => {
+        // Subscribe form
+        document.getElementById('subscribeForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = e.target.querySelector('input[type="email"]').value;
+            const email = e.target.querySelector('input').value;
             const btn = e.target.querySelector('button');
-            const msg = document.getElementById('newsletterMsg');
+            const msg = document.getElementById('subscribeMsg');
 
             btn.disabled = true;
             btn.textContent = 'Subscribing...';
@@ -1459,57 +809,31 @@
                 const data = await response.json();
 
                 msg.textContent = data.message;
-                msg.className = 'newsletter-msg ' + (data.success ? 'success' : 'error');
+                msg.className = 'subscribe-msg ' + (data.success ? 'success' : 'error');
 
                 if (data.success) {
                     e.target.reset();
                 }
             } catch (err) {
                 msg.textContent = 'Something went wrong. Please try again.';
-                msg.className = 'newsletter-msg error';
+                msg.className = 'subscribe-msg error';
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Subscribe';
             }
         });
 
-        // Update CTA button with latest puzzle
-        function updateCtaButton(puzzles) {
-            if (puzzles && puzzles.length > 0) {
-                const latest = puzzles[0];
-                const typeLabel = latest.puzzle_type === 'quiptic' ? 'Quiptic' : 'Cryptic';
-                const ctaBtn = document.getElementById('ctaStart');
-                ctaBtn.href = `/puzzle/${esc(latest.puzzle_number)}`;
-                ctaBtn.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <rect x="3" y="3" width="18" height="18" rx="2"/>
-                        <path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
-                    </svg>
-                    ${typeLabel} #${esc(latest.puzzle_number)}
-                `;
-                // Remove the scroll behavior since we now link directly
-                ctaBtn.removeEventListener('click', ctaScrollHandler);
-            }
-        }
-
-        // Scroll handler for CTA (used as fallback)
-        function ctaScrollHandler(e) {
-            e.preventDefault();
-            document.getElementById('puzzles').scrollIntoView({ behavior: 'smooth' });
-        }
-        document.getElementById('ctaStart').addEventListener('click', ctaScrollHandler);
-
         // Load puzzles on page load
         loadPuzzles();
     </script>
 
-    <!-- JSON-LD structured data for SEO -->
+    <!-- JSON-LD structured data -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
         "@type": "WebSite",
         "name": "Cryptic Hints",
-        "description": "Learn to solve Guardian cryptic crosswords with progressive hints",
+        "description": "Solve Guardian cryptic crosswords with progressive hints",
         "url": "__SITE_URL__"
     }
     </script>

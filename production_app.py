@@ -503,24 +503,37 @@ def homepage():
                 type_label = 'Quiptic' if latest.get('puzzle_type') == 'quiptic' else 'Guardian cryptic'
                 featured_message = esc(f"Come and have a go at today's {type_label} set by {setter}.")
 
-        for p in puzzles:
+        for i, p in enumerate(puzzles[:4]):  # Max 4 puzzles for static fallback
+            is_featured = (i == 0)
             type_label = 'Quiptic' if p['puzzle_type'] == 'quiptic' else 'Cryptic'
-            date_str = p['date'].strftime('%a, %d %b %Y') if p['date'] else 'Unknown date'
             clue_count = p['clue_count'] or '~28'
+
+            # Format day
+            if p['date']:
+                from datetime import date as date_type
+                today = date_type.today()
+                puzzle_date = p['date'] if isinstance(p['date'], date_type) else p['date'].date()
+                diff = (today - puzzle_date).days
+                if diff == 0:
+                    day_str = 'Today'
+                elif diff == 1:
+                    day_str = 'Yesterday'
+                else:
+                    day_str = p['date'].strftime('%a')
+            else:
+                day_str = ''
+
+            featured_class = ' featured' if is_featured else ''
+            blurb = 'Start here — hints ready when you need them.' if is_featured else ''
+
             static_puzzles_html += f'''
-                <a href="/puzzle/{esc(str(p['puzzle_number']))}" class="puzzle-card">
-                    <div class="puzzle-date">{esc(date_str)}</div>
-                    <div class="puzzle-number">{type_label} #{esc(str(p['puzzle_number']))}</div>
-                    <div class="puzzle-setter">by {esc(p['setter'] or 'Unknown')}</div>
-                    <div class="puzzle-stats">
-                        <div class="puzzle-stat">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                                <path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>
-                            </svg>
-                            <strong>{esc(str(clue_count))}</strong> clues
-                        </div>
+                <a href="/puzzle/{esc(str(p['puzzle_number']))}" class="puzzle-card{featured_class}">
+                    <div class="puzzle-card-header">
+                        <span class="puzzle-card-meta">{esc(day_str)} · {type_label}</span>
+                        <span class="puzzle-card-clues">{esc(str(clue_count))} clues</span>
                     </div>
+                    <p class="puzzle-card-title">#{esc(str(p['puzzle_number']))} by {esc(p['setter'] or 'Unknown')}</p>
+                    <p class="puzzle-card-blurb">{blurb}</p>
                 </a>'''
     except Exception:
         static_puzzles_html = '<div class="loading">Loading puzzles...</div>'
