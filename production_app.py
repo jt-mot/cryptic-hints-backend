@@ -1187,11 +1187,11 @@ def get_published_puzzles():
 
     cursor.execute('''
         SELECT p.id, p.publication, p.puzzle_type, p.puzzle_number, p.setter, p.date,
-               p.is_featured, COUNT(c.id) as clue_count
+               p.is_featured, p.featured_message, COUNT(c.id) as clue_count
         FROM puzzles p
         LEFT JOIN clues c ON c.puzzle_id = p.id
         WHERE p.status = 'published'
-        GROUP BY p.id, p.publication, p.puzzle_type, p.puzzle_number, p.setter, p.date, p.is_featured
+        GROUP BY p.id, p.publication, p.puzzle_type, p.puzzle_number, p.setter, p.date, p.is_featured, p.featured_message
         ORDER BY p.is_featured DESC NULLS LAST, p.date DESC
     ''')
     puzzles = cursor.fetchall()
