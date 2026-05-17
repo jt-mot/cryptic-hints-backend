@@ -2612,6 +2612,76 @@ def admin_delete_blog_post(post_id):
     return jsonify({'success': True})
 
 
+@app.route('/admin/api/debug-hints/<int:clue_id>')
+@login_required
+def debug_hints(clue_id):
+    """Debug endpoint: show what would be generated for a clue"""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    cursor.execute('''
+        SELECT c.id, c.clue_number, c.direction, c.clue_text, c.answer,
+               c.hint_level_1, c.hint_level_2, c.hint_level_3, c.hint_level_4,
+               p.puzzle_number, p.puzzle_type, p.setter
+        FROM clues c
+        JOIN puzzles p ON c.puzzle_id = p.id
+        WHERE c.id = %s
+    ''', (clue_id,))
+    clue = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not clue:
+        return jsonify({'error': 'Clue not found'}), 404
+
+    # Try to fetch fifteensquared content for this clue
+    from puzzle_scraper import FifteensquaredScraper
+    fs = FifteensquaredScraper()
+
+    puzzle_type = clue['puzzle_type'] or 'cryptic'
+    post_url = fs.find_puzzle_post(clue['puzzle_number'], puzzle_type)
+
+    expert_text = ''
+    definitions = []
+    if post_url:
+        hints_map = fs.fetch_hints(post_url)
+        clue_key = f"{clue['clue_number']}-{clue['direction']}"
+        if clue_key in hints_map:
+            hint_data = hints_map[clue_key]
+            if isinstance(hint_data, dict):
+                expert_text = ' '.join(hint_data.get('text', []))
+                definitions = hint_data.get('definitions', [])
+            else:
+                expert_text = ' '.join(hint_data)
+
+    return jsonify({
+        'clue': {
+            'id': clue['id'],
+            'number': clue['clue_number'],
+            'direction': clue['direction'],
+            'text': clue['clue_text'],
+            'answer': clue['answer'],
+        },
+        'puzzle': {
+            'number': clue['puzzle_number'],
+            'type': puzzle_type,
+            'setter': clue['setter'],
+        },
+        'fifteensquared': {
+            'url': post_url,
+            'expert_text': expert_text,
+            'expert_text_length': len(expert_text),
+            'definitions': definitions,
+        },
+        'current_hints': {
+            'hint1': clue['hint_level_1'],
+            'hint2': clue['hint_level_2'],
+            'hint3': clue['hint_level_3'],
+            'hint4': clue['hint_level_4'],
+        }
+    })
+
+
 # ============================================================================
 # IMPORT/SCRAPING ROUTES
 # ============================================================================
