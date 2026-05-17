@@ -2612,40 +2612,64 @@ def admin_delete_blog_post(post_id):
     return jsonify({'success': True})
 
 
-@app.route('/admin/api/debug-hints/<int:clue_id>')
+@app.route('/admin/api/debug-puzzle/<int:puzzle_id>')
 @login_required
-def debug_hints(clue_id):
-    """Debug endpoint: show what would be generated for a clue"""
+def debug_puzzle(puzzle_id):
+    """Debug endpoint: show fifteensquared extraction for a puzzle"""
     conn = get_db()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
 
+    # Get puzzle info
     cursor.execute('''
-        SELECT c.id, c.clue_number, c.direction, c.clue_text, c.answer,
-               c.hint_level_1, c.hint_level_2, c.hint_level_3, c.hint_level_4,
-               p.puzzle_number, p.puzzle_type, p.setter
-        FROM clues c
-        JOIN puzzles p ON c.puzzle_id = p.id
-        WHERE c.id = %s
-    ''', (clue_id,))
-    clue = cursor.fetchone()
+        SELECT id, puzzle_number, puzzle_type, setter
+        FROM puzzles WHERE id = %s
+    ''', (puzzle_id,))
+    puzzle = cursor.fetchone()
+
+    if not puzzle:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': 'Puzzle not found'}), 404
+
+    # Get first 3 clues
+    cursor.execute('''
+        SELECT id, clue_number, direction, clue_text, answer,
+               hint_level_1, hint_level_2, hint_level_3, hint_level_4
+        FROM clues
+        WHERE puzzle_id = %s
+        ORDER BY CASE WHEN direction = 'across' THEN 0 ELSE 1 END,
+                 CAST(clue_number AS INTEGER)
+        LIMIT 3
+    ''', (puzzle_id,))
+    clues = cursor.fetchall()
+
+    # Count total clues
+    cursor.execute('SELECT COUNT(*) as count FROM clues WHERE puzzle_id = %s', (puzzle_id,))
+    total_clues = cursor.fetchone()['count']
+
     cursor.close()
     conn.close()
 
-    if not clue:
-        return jsonify({'error': 'Clue not found'}), 404
-
-    # Try to fetch fifteensquared content for this clue
+    # Fetch fifteensquared content
     from puzzle_scraper import FifteensquaredScraper
     fs = FifteensquaredScraper()
 
-    puzzle_type = clue['puzzle_type'] or 'cryptic'
-    post_url = fs.find_puzzle_post(clue['puzzle_number'], puzzle_type)
+    puzzle_type = puzzle['puzzle_type'] or 'cryptic'
+    post_url = fs.find_puzzle_post(puzzle['puzzle_number'], puzzle_type)
 
-    expert_text = ''
-    definitions = []
+    hints_map = {}
     if post_url:
         hints_map = fs.fetch_hints(post_url)
+
+    # Build sample clues with expert text
+    sample_clues = []
+    clues_with_text = 0
+
+    for clue in clues:
         clue_key = f"{clue['clue_number']}-{clue['direction']}"
+        expert_text = ''
+        definitions = []
+
         if clue_key in hints_map:
             hint_data = hints_map[clue_key]
             if isinstance(hint_data, dict):
@@ -2654,31 +2678,40 @@ def debug_hints(clue_id):
             else:
                 expert_text = ' '.join(hint_data)
 
-    return jsonify({
-        'clue': {
-            'id': clue['id'],
+        if expert_text:
+            clues_with_text += 1
+
+        sample_clues.append({
             'number': clue['clue_number'],
             'direction': clue['direction'],
-            'text': clue['clue_text'],
+            'clue_text': clue['clue_text'],
             'answer': clue['answer'],
-        },
+            'expert_text': expert_text,
+            'definitions': definitions,
+            'hints': {
+                'hint1': clue['hint_level_1'],
+                'hint2': clue['hint_level_2'],
+                'hint3': clue['hint_level_3'],
+                'hint4': clue['hint_level_4'],
+            }
+        })
+
+    # Estimate total clues with text based on hints_map
+    total_with_text = len(hints_map)
+
+    return jsonify({
         'puzzle': {
-            'number': clue['puzzle_number'],
+            'id': puzzle['id'],
+            'number': puzzle['puzzle_number'],
             'type': puzzle_type,
-            'setter': clue['setter'],
+            'setter': puzzle['setter'],
         },
         'fifteensquared': {
             'url': post_url,
-            'expert_text': expert_text,
-            'expert_text_length': len(expert_text),
-            'definitions': definitions,
+            'clues_with_text': total_with_text,
+            'total_clues': total_clues,
         },
-        'current_hints': {
-            'hint1': clue['hint_level_1'],
-            'hint2': clue['hint_level_2'],
-            'hint3': clue['hint_level_3'],
-            'hint4': clue['hint_level_4'],
-        }
+        'sample_clues': sample_clues,
     })
 
 
