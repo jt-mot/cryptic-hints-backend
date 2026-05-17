@@ -302,6 +302,9 @@ class FifteensquaredScraper:
                     # Just a number (1-99): "1" or "12a"
                     if re.match(r'^\d{1,2}[a-z]?$', ln):
                         return True
+                    # Number + period + space + text: "4. Fuss follows..."
+                    if re.match(r'^\d{1,2}\.\s+\S', ln):
+                        return True
                     # Number + all-caps answer (with optional enumeration)
                     # "1a ANTELOPE" or "1a ANTELOPE (8)"
                     if re.match(r'^\d{1,2}[a-z]?\s+[A-Z][A-Z\s\-\'/]+', ln):
