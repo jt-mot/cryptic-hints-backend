@@ -808,6 +808,7 @@
         function renderDebugInfo(data) {
             const fs = data.fifteensquared;
             const clues = data.sample_clues || [];
+            const ps = fs.page_structure || {};
 
             let html = `
                 <div class="debug-section">
@@ -819,6 +820,38 @@
                     <p><strong>Clues with expert text:</strong> ${fs.clues_with_text} / ${fs.total_clues}</p>
                 </div>
             `;
+
+            // Show page structure analysis if available
+            if (fs.url && ps.total_lines !== undefined) {
+                html += `
+                    <div class="debug-section">
+                        <h3>Page Analysis</h3>
+                        <div class="debug-box ${fs.clues_with_text > 0 ? 'debug-good' : 'debug-bad'}">
+                            <p><strong>Total lines:</strong> ${ps.total_lines}</p>
+                            <p><strong>Has ACROSS header:</strong> ${ps.has_across ? 'Yes' : 'No'}</p>
+                            <p><strong>Has DOWN header:</strong> ${ps.has_down ? 'Yes' : 'No'}</p>
+                            <p><strong>Lines starting with numbers:</strong> ${ps.lines_with_numbers}</p>
+                        </div>
+                        ${fs.clues_with_text === 0 ? `
+                            <p style="color: #dc2626; margin-top: 0.5rem;">
+                                <strong>Parser failed!</strong> The page format doesn't match expected patterns.
+                            </p>
+                        ` : ''}
+                    </div>
+                `;
+
+                // Show raw sample lines
+                if (fs.raw_sample && fs.raw_sample.length > 0) {
+                    html += `
+                        <div class="debug-section">
+                            <h3>Raw Page Content (first 30 lines)</h3>
+                            <div class="debug-box" style="font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; max-height: 200px;">
+${fs.raw_sample.map((line, i) => `${String(i+1).padStart(2, ' ')}: ${line}`).join('\n')}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
 
             if (clues.length > 0) {
                 html += `<div class="debug-section"><h3>Sample Clues (first 3)</h3>`;
