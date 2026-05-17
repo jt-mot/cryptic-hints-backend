@@ -2652,18 +2652,45 @@ def debug_puzzle(puzzle_id):
 
     # Fetch fifteensquared content
     from puzzle_scraper import FifteensquaredScraper
+    from bs4 import BeautifulSoup
+    import requests as req
+
     fs = FifteensquaredScraper()
 
     puzzle_type = puzzle['puzzle_type'] or 'cryptic'
     post_url = fs.find_puzzle_post(puzzle['puzzle_number'], puzzle_type)
 
     hints_map = {}
+    raw_sample = []
+    page_structure = {}
+
     if post_url:
+        # Fetch the page to get raw content for debugging
+        try:
+            resp = req.get(post_url, timeout=30)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            content = soup.find(['div', 'article'], class_=lambda x: x and 'entry-content' in str(x))
+            if not content:
+                content = soup.find('article')
+
+            if content:
+                full_text = content.get_text()
+                lines = [line.strip() for line in full_text.split('\n') if line.strip()]
+                # Get first 30 lines as sample
+                raw_sample = lines[:30]
+                page_structure = {
+                    'total_lines': len(lines),
+                    'has_across': any('ACROSS' in l.upper() for l in lines),
+                    'has_down': any('DOWN' in l.upper() for l in lines),
+                    'lines_with_numbers': len([l for l in lines if l and l[0].isdigit()]),
+                }
+        except Exception as e:
+            raw_sample = [f"Error fetching page: {e}"]
+
         hints_map = fs.fetch_hints(post_url)
 
     # Build sample clues with expert text
     sample_clues = []
-    clues_with_text = 0
 
     for clue in clues:
         clue_key = f"{clue['clue_number']}-{clue['direction']}"
@@ -2677,9 +2704,6 @@ def debug_puzzle(puzzle_id):
                 definitions = hint_data.get('definitions', [])
             else:
                 expert_text = ' '.join(hint_data)
-
-        if expert_text:
-            clues_with_text += 1
 
         sample_clues.append({
             'number': clue['clue_number'],
@@ -2696,9 +2720,6 @@ def debug_puzzle(puzzle_id):
             }
         })
 
-    # Estimate total clues with text based on hints_map
-    total_with_text = len(hints_map)
-
     return jsonify({
         'puzzle': {
             'id': puzzle['id'],
@@ -2708,8 +2729,10 @@ def debug_puzzle(puzzle_id):
         },
         'fifteensquared': {
             'url': post_url,
-            'clues_with_text': total_with_text,
+            'clues_with_text': len(hints_map),
             'total_clues': total_clues,
+            'page_structure': page_structure,
+            'raw_sample': raw_sample,
         },
         'sample_clues': sample_clues,
     })
