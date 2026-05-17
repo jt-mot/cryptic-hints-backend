@@ -229,6 +229,12 @@ class EnhancedHintGenerator:
 
         # Try Claude API first if enabled and available
         if self.use_claude and self.api_key and REQUESTS_AVAILABLE:
+            # Log what we're sending to Claude
+            if os.environ.get('DEBUG_HINTS'):
+                print(f"      DEBUG: Expert text length: {len(full_text)} chars")
+                print(f"      DEBUG: Definitions: {definitions}")
+                if full_text:
+                    print(f"      DEBUG: Expert text preview: {full_text[:200]}...")
             claude_hints = self._generate_hints_with_claude(
                 full_text, definitions, clue_text, answer, puzzle_type
             )
@@ -267,41 +273,39 @@ class EnhancedHintGenerator:
                 quiptic_note = """
 NOTE: This is a QUIPTIC clue (an easier cryptic crossword aimed at beginners). Quiptics still use standard cryptic devices (anagrams, charades, hidden words, double definitions, etc.) but the wordplay is more straightforward and the indicators are more obvious. Keep your explanations simple and clear. Do NOT overcomplicate the parsing - if the wordplay is simple, say so plainly."""
 
-            prompt = f"""You are helping create progressive hints for a cryptic crossword clue. Your goal is to help solvers learn how cryptic clues work by guiding them step-by-step toward the answer.
+            prompt = f"""You are creating progressive hints for a cryptic crossword clue. Your job is to extract and present information from the expert explanation in a progressive format.
 
-IMPORTANT: Work out the full parsing internally BEFORE writing your response. Each hint must be clean, polished, and final. Never include self-corrections, backtracking, or thinking-aloud phrases like "wait", "actually", "no", "hmm", "let me reconsider", or "that's wrong".
+CRITICAL: The expert explanation below is from Fifteensquared, a trusted cryptic crossword blog. It contains the correct parsing. Your hints MUST be based on this explanation - do NOT re-derive the wordplay yourself. Extract the relevant pieces for each hint level.
 {quiptic_note}
 CONTEXT:
-- Definition (the "straight" part that means the answer): {definition_text}
+- Definition from expert: {definition_text}
 - Clue text: {clue_text if clue_text else "not provided"}
 - Answer: {answer if answer else "not provided"}
-- Expert explanation: {explanation if explanation else "not available - please analyze the clue yourself"}
+- Expert explanation (TRUST THIS): {explanation if explanation else "not available - analyze the clue yourself"}
 
-Generate exactly 4 hints, each more revealing than the last:
+Generate exactly 4 hints by extracting from the expert explanation:
 
-HINT 1 - DEFINITION ONLY:
-Output the word "Definition: " followed by the exact definition word(s) from the clue in quotes. Do NOT add any explanation, context, or extra information. Just "Definition: " and the literal words from the clue that form the definition.
-Example: If the clue's definition is "capital", output exactly: Definition: "capital" (NOT Definition: "capital city of Congo")
+HINT 1 - DEFINITION:
+State what word(s) in the clue form the definition. Use the definition identified in the expert explanation.
+Format: Definition: "[exact words from clue]"
 
 HINT 2 - TECHNIQUE:
-Name the cryptic technique used (anagram, hidden word, reversal, container, homophone, double definition, charade, deletion, etc.) and briefly explain what that technique means. Don't reveal specifics about this clue.
-Example: "This is an anagram - look for an indicator word that suggests mixing or rearranging letters"
+Name the cryptic technique from the expert explanation (anagram, hidden word, charade, double definition, container, reversal, homophone, deletion, etc.) and briefly explain what that technique means in general.
+Example: "This is a charade - the answer is built by joining smaller words/parts together in sequence"
 
-HINT 3 - HOW TO CONSTRUCT (most important - be helpful but don't give the answer):
-Explain the mechanics of how to construct the answer from the clue. Identify:
-- The indicator word (if applicable)
-- What letters/words to work with
-- How they combine
-Do NOT reveal the final answer, but make this hint genuinely useful.
-Example: "'wild' is the anagram indicator - rearrange the letters of 'PIRATES'"
-Example: "'reportedly' signals a homophone - think of a word for 'holy man' that sounds like..."
+HINT 3 - WORDPLAY BREAKDOWN:
+Extract the specific wordplay mechanics from the expert explanation. Tell the solver:
+- What the indicator word is (if any)
+- What words/letters to work with
+- How they combine to form the answer
+Do NOT reveal the final answer itself, but give enough detail to construct it.
+Example: "'confused' signals an anagram - rearrange the letters of 'CANOE' + 'IS'"
 
 HINT 4 - FULL ANSWER:
-Give the complete answer and a concise explanation of how the wordplay works. State the answer, then walk through the parsing cleanly in one pass.
-CRITICAL: When an expert explanation is provided above, base your answer on it. The expert explanation is from a trusted cryptic crossword blog and its wordplay parsing is almost always correct. You may rephrase it for clarity or add helpful context, but do NOT contradict or re-derive the core logic. Only analyse independently if no expert explanation is provided.
-Example: "Answer: TRAPPIST | 'Reportedly' indicates homophone - sounds like 'trapeze artist' = TRAPPIST (type of monk)"
+Give the answer and the complete parsing, directly based on the expert explanation. State the answer first, then explain the wordplay in one clean pass. Use the same logic as the expert - do NOT contradict it.
+Format: "Answer: [ANSWER] | [parsing explanation]"
 
-Respond with ONLY a JSON object in this exact format:
+Respond with ONLY a JSON object:
 {{"hint1": "...", "hint2": "...", "hint3": "...", "hint4": "..."}}"""
 
             request_body = {
