@@ -209,6 +209,24 @@
             line-height: 1.6;
         }
         .hint-text.visible { display: block; }
+        .hint-answer {
+            display: block;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #059669;
+            margin-bottom: 8px;
+        }
+        .hint-explanation {
+            display: block;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .hint-explanation .hint-section-label {
+            font-weight: 700;
+            color: var(--text);
+        }
         .hint-btn.revealed {
             border-radius: 8px 8px 0 0;
             color: var(--text-muted);
@@ -392,11 +410,29 @@
                 const ptype = (c.puzzle_type === 'quiptic') ? 'Quiptic' : 'Cryptic';
                 const setter = (c.setter && c.setter !== 'Unknown') ? ' by ' + escapeHtml(c.setter) : '';
 
+                function formatHint4(text, answer) {
+                    if (!text) return 'No hint available';
+                    var escaped = escapeHtml(text);
+                    var explanation = escaped.replace(/^Answer:\s*[A-Z][A-Z\s\-']*?\s*\|\s*/, '');
+                    var explanationHtml = '';
+                    if (explanation) {
+                        var sections = explanation.split(/\s*\|\s*/);
+                        explanationHtml = sections.map(function(s) {
+                            return s.replace(/^(Definition|Wordplay|Technique):\s*/i,
+                                '<span class="hint-section-label">$1:</span> ');
+                        }).join('<br>');
+                    }
+                    var displayAnswer = answer ? escapeHtml(answer.toUpperCase()) : '';
+                    return (displayAnswer ? '<span class="hint-answer">' + displayAnswer + '</span>' : '') +
+                           (explanationHtml ? '<span class="hint-explanation">' + explanationHtml + '</span>' : escaped);
+                }
+
                 let hintsHtml = '';
                 for (let i = 0; i < c.hints.length; i++) {
                     if (!c.hints[i]) continue;
                     hintsHtml += '<button class="hint-btn" id="hint-btn-' + i + '" onclick="toggleHint(' + i + ')">' + hintLabels[i] + '</button>';
-                    hintsHtml += '<div class="hint-text" id="hint-' + i + '">' + escapeHtml(c.hints[i]) + '</div>';
+                    var content = (i === 3) ? formatHint4(c.hints[i], c.answer) : escapeHtml(c.hints[i]);
+                    hintsHtml += '<div class="hint-text" id="hint-' + i + '">' + content + '</div>';
                 }
 
                 el.innerHTML =
