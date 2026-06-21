@@ -410,30 +410,28 @@
                 const ptype = (c.puzzle_type === 'quiptic') ? 'Quiptic' : 'Cryptic';
                 const setter = (c.setter && c.setter !== 'Unknown') ? ' by ' + escapeHtml(c.setter) : '';
 
-                function formatHint4(text) {
+                function formatHint4(text, answer) {
                     if (!text) return 'No hint available';
                     var escaped = escapeHtml(text);
-                    var m = escaped.match(/^Answer:\s*([A-Z][A-Z\s\-']+?)(?:\s*\||$)/);
-                    if (!m) return escaped;
-                    var answer = m[1].trim();
-                    var rest = escaped.slice(m[0].length).trim();
+                    var explanation = escaped.replace(/^Answer:\s*[A-Z][A-Z\s\-']*?\s*\|\s*/, '');
                     var explanationHtml = '';
-                    if (rest) {
-                        var sections = rest.split(/\s*\|\s*/);
+                    if (explanation) {
+                        var sections = explanation.split(/\s*\|\s*/);
                         explanationHtml = sections.map(function(s) {
                             return s.replace(/^(Definition|Wordplay|Technique):\s*/i,
                                 '<span class="hint-section-label">$1:</span> ');
                         }).join('<br>');
                     }
-                    return '<span class="hint-answer">' + answer + '</span>' +
-                           (explanationHtml ? '<span class="hint-explanation">' + explanationHtml + '</span>' : '');
+                    var displayAnswer = answer ? escapeHtml(answer.toUpperCase()) : '';
+                    return (displayAnswer ? '<span class="hint-answer">' + displayAnswer + '</span>' : '') +
+                           (explanationHtml ? '<span class="hint-explanation">' + explanationHtml + '</span>' : escaped);
                 }
 
                 let hintsHtml = '';
                 for (let i = 0; i < c.hints.length; i++) {
                     if (!c.hints[i]) continue;
                     hintsHtml += '<button class="hint-btn" id="hint-btn-' + i + '" onclick="toggleHint(' + i + ')">' + hintLabels[i] + '</button>';
-                    var content = (i === 3) ? formatHint4(c.hints[i]) : escapeHtml(c.hints[i]);
+                    var content = (i === 3) ? formatHint4(c.hints[i], c.answer) : escapeHtml(c.hints[i]);
                     hintsHtml += '<div class="hint-text" id="hint-' + i + '">' + content + '</div>';
                 }
 

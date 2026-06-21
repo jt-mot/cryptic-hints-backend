@@ -1329,13 +1329,11 @@
                         <button class="hint-button hint-2" onclick="revealHint('${safeClueId}', 2)">Hint 2: Wordplay Type</button>
                         <div class="hint-text" id="hint-${safeClueId}-2">${esc(clue.hints[1]) || 'No hint available'}</div>
 
-                        <button class="hint-button hint-4" onclick="revealHint('${clueId}', 4)">✅ Hint 4: Full Explanation</button>
-                        <div class="hint-text" id="hint-${clueId}-4">${formatHint4(clue.hints[3])}</div>
                         <button class="hint-button hint-3" onclick="revealHint('${safeClueId}', 3)">Hint 3: Breakdown</button>
                         <div class="hint-text" id="hint-${safeClueId}-3">${esc(clue.hints[2]) || 'No hint available'}</div>
 
                         <button class="hint-button hint-4" onclick="revealHint('${safeClueId}', 4)">Hint 4: Full Explanation</button>
-                        <div class="hint-text" id="hint-${safeClueId}-4">${esc(clue.hints[3]) || 'No hint available'}</div>
+                        <div class="hint-text" id="hint-${safeClueId}-4">${formatHint4(clue.hints[3], clue.answer)}</div>
                     </div>
                 </div>
             `;
@@ -1535,23 +1533,23 @@
             }
         }
 
-        function formatHint4(text) {
+        function formatHint4(text, answer) {
             if (!text) return 'No hint available';
-            const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            const answerMatch = escaped.match(/^Answer:\s*([A-Z][A-Z\s\-']+?)(?:\s*\||$)/);
-            if (!answerMatch) return escaped;
-            const answer = answerMatch[1].trim();
-            const rest = escaped.slice(answerMatch[0].length).trim();
+            const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const escaped = esc(text);
+            // Strip "Answer: XXXX |" prefix from explanation if present
+            let explanation = escaped.replace(/^Answer:\s*[A-Z][A-Z\s\-']*?\s*\|\s*/, '');
             let explanationHtml = '';
-            if (rest) {
-                const sections = rest.split(/\s*\|\s*/);
+            if (explanation) {
+                const sections = explanation.split(/\s*\|\s*/);
                 explanationHtml = sections.map(s => {
                     return s.replace(/^(Definition|Wordplay|Technique):\s*/i,
                         '<span class="hint-section-label">$1:</span> ');
                 }).join('<br>');
             }
-            return '<span class="hint-answer">' + answer + '</span>' +
-                   (explanationHtml ? '<span class="hint-explanation">' + explanationHtml + '</span>' : '');
+            const displayAnswer = answer ? esc(answer.toUpperCase()) : '';
+            return (displayAnswer ? '<span class="hint-answer">' + displayAnswer + '</span>' : '') +
+                   (explanationHtml ? '<span class="hint-explanation">' + explanationHtml + '</span>' : escaped);
         }
 
         function updateProgress() {

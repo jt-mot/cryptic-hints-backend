@@ -666,18 +666,16 @@ def blog_post_page(slug):
     return _serve_html('blog-post.html', extra={'__BLOG_SLUG__': slug})
 
 
-def _format_hint4_html(text, esc):
+def _format_hint4_html(text, esc, answer=None):
     """Format hint 4 text with the answer prominently displayed."""
     import re as _re
     escaped = esc(text)
-    m = _re.match(r'^Answer:\s*([A-Z][A-Z\s\-\']+?)(?:\s*\||$)', escaped)
-    if not m:
-        return escaped
-    answer = m.group(1).strip()
-    rest = escaped[m.end():].strip()
-    html = f'<span class="hint-answer">{answer}</span>'
-    if rest:
-        sections = rest.split(' | ')
+    explanation = _re.sub(r'^Answer:\s*[A-Z][A-Z\s\-\']*?\s*\|\s*', '', escaped)
+    html = ''
+    if answer:
+        html += f'<span class="hint-answer">{esc(answer.upper())}</span>'
+    if explanation:
+        sections = explanation.split(' | ')
         parts = []
         for s in sections:
             s = _re.sub(
@@ -687,7 +685,7 @@ def _format_hint4_html(text, esc):
             )
             parts.append(s)
         html += '<span class="hint-explanation">' + '<br>'.join(parts) + '</span>'
-    return html
+    return html if html else escaped
 
 
 @app.route('/clue/<puzzle_number>/<clue_ref>')
@@ -714,7 +712,7 @@ def clue_page(puzzle_number, clue_ref):
             cursor = conn.cursor(cursor_factory=RealDictCursor)
             cursor.execute('''
                 SELECT p.puzzle_number, p.setter, p.date, p.puzzle_type,
-                       c.clue_number, c.direction, c.clue_text, c.enumeration,
+                       c.clue_number, c.direction, c.clue_text, c.enumeration, c.answer,
                        c.hint_level_1, c.hint_level_2, c.hint_level_3, c.hint_level_4
                 FROM clues c
                 JOIN puzzles p ON c.puzzle_id = p.id
@@ -753,7 +751,7 @@ def clue_page(puzzle_number, clue_ref):
                     hints_html += (f'<button class="hint-btn" id="hint-btn-{i}" '
                                    f'onclick="toggleHint({i})">{hint_labels[i]}</button>')
                     if i == 3:
-                        hints_html += f'<div class="hint-text" id="hint-{i}">{_format_hint4_html(hint, esc)}</div>'
+                        hints_html += f'<div class="hint-text" id="hint-{i}">{_format_hint4_html(hint, esc, answer=row.get("answer"))}</div>'
                     else:
                         hints_html += f'<div class="hint-text" id="hint-{i}">{esc(hint)}</div>'
 
