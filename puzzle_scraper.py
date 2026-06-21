@@ -302,6 +302,9 @@ class FifteensquaredScraper:
                     # Just a number (1-99): "1" or "12a"
                     if re.match(r'^\d{1,2}[a-z]?$', ln):
                         return True
+                    # Number + period + space + text: "4. Fuss follows..."
+                    if re.match(r'^\d{1,2}\.\s+\S', ln):
+                        return True
                     # Number + all-caps answer (with optional enumeration)
                     # "1a ANTELOPE" or "1a ANTELOPE (8)"
                     if re.match(r'^\d{1,2}[a-z]?\s+[A-Z][A-Z\s\-\'/]+', ln):
@@ -429,6 +432,31 @@ class FifteensquaredScraper:
                                 _store_clue(clean_num, answer_text, hint_buffer, fmt_label='D')
                                 i = j
                                 continue
+
+                    # Format E: "4. Clue text (6)" on one line, "ANSWER : explanation" on next
+                    #   "4. Fuss follows Kipling novel about Japanese emperor (6)"
+                    #   "MIKADO : ADO(fuss/commotion) placed after..."
+                    if not clue_num:
+                        m = re.match(r'^(\d+)\.\s+.+', line)
+                        if m and i + 1 < len(lines):
+                            next_line = lines[i + 1]
+                            # Match "ANSWER : explanation" or "ANSWER – explanation"
+                            m_ans = re.match(
+                                r'^([A-Z][A-Z\s\-\'/]+?)\s*[:–—-]\s*(.+)$',
+                                next_line
+                            )
+                            if m_ans:
+                                candidate = m_ans.group(1).strip()
+                                if len(candidate) >= 2 and candidate == candidate.upper():
+                                    clue_num = m.group(1)
+                                    answer_text = candidate
+                                    first_expl = m_ans.group(2).strip()
+                                    # Collect remaining explanation lines
+                                    more_buf, j = _collect_explanation(i + 2)
+                                    hint_buffer = ([first_expl] if len(first_expl) > 5 else []) + more_buf
+                                    _store_clue(clue_num, answer_text, hint_buffer, fmt_label='E')
+                                    i = j
+                                    continue
 
                     if clue_num and answer_text and explanation_start is not None:
                         # Strip direction suffix from clue number (e.g. "1a" -> "1")

@@ -159,17 +159,22 @@ def save_puzzle_to_db(puzzle_data, puzzle_number, puzzle_type, auto_approve=Fals
     conn = get_db()
     cursor = conn.cursor()
     try:
+        setter = puzzle_data.get('setter', 'Unknown')
+        type_label = 'Quiptic' if puzzle_type == 'quiptic' else 'Guardian cryptic'
+        featured_message = f"Come and have a go at today's {type_label} set by {setter}."
+
         cursor.execute('''
-            INSERT INTO puzzles (publication, puzzle_type, puzzle_number, setter, date, status)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO puzzles (publication, puzzle_type, puzzle_number, setter, date, status, featured_message)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         ''', (
             puzzle_data.get('publication', 'Guardian'),
             puzzle_data.get('puzzle_type', puzzle_type),
             puzzle_data.get('puzzle_number', puzzle_number),
-            puzzle_data.get('setter', 'Unknown'),
+            setter,
             puzzle_data.get('date', datetime.now().strftime('%Y-%m-%d')),
             'draft',
+            featured_message,
         ))
         puzzle_id = cursor.fetchone()[0]
 
@@ -388,6 +393,32 @@ def init_db():
             END IF;
         END $$;
     ''')
+
+    # Add featured_message column if it doesn't exist (migration)
+    cursor.execute('''
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name='puzzles' AND column_name='featured_message'
+            ) THEN
+                ALTER TABLE puzzles ADD COLUMN featured_message TEXT;
+            END IF;
+        END $$;
+    ''')
+
+    # Add is_featured column if it doesn't exist (migration)
+    cursor.execute('''
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name='puzzles' AND column_name='is_featured'
+            ) THEN
+                ALTER TABLE puzzles ADD COLUMN is_featured BOOLEAN DEFAULT FALSE;
+            END IF;
+        END $$;
+    ''')
     
     conn.commit()
     cursor.close()
@@ -427,22 +458,93 @@ def _serve_html(filename, extra=None, status=200):
 
 @app.route('/')
 def homepage():
-    """Serve the homepage with latest puzzle number for static fallback"""
-    latest = ''
+    """Serve the homepage with static puzzle fallback for no-JS"""
+    esc = html_module.escape
+    static_puzzles_html = ''
+    featured_message = ''
+    conn = None
     try:
         conn = get_db()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute("""
-            SELECT puzzle_number FROM puzzles
-            WHERE status = 'published'
-            ORDER BY published_at DESC LIMIT 1
-        """)
-        row = cursor.fetchone()
-        if row:
-            latest = str(row['puzzle_number'])
+        # First, check for an explicitly featured puzzle
+        cursor.execute('''
+            SELECT p.puzzle_type, p.puzzle_number, p.setter, p.date, p.featured_message,
+                   COUNT(c.id) as clue_count
+            FROM puzzles p
+            LEFT JOIN clues c ON c.puzzle_id = p.id
+            WHERE p.status = 'published' AND p.is_featured = TRUE
+            GROUP BY p.id, p.puzzle_type, p.puzzle_number, p.setter, p.date, p.featured_message
+            LIMIT 1
+        ''')
+        featured_puzzle = cursor.fetchone()
+
+        # Get recent puzzles for the list
+        cursor.execute('''
+            SELECT p.puzzle_type, p.puzzle_number, p.setter, p.date, p.featured_message,
+                   COUNT(c.id) as clue_count
+            FROM puzzles p
+            LEFT JOIN clues c ON c.puzzle_id = p.id
+            WHERE p.status = 'published'
+            GROUP BY p.id, p.puzzle_type, p.puzzle_number, p.setter, p.date, p.featured_message
+            ORDER BY p.date DESC
+            LIMIT 10
+        ''')
+        puzzles = cursor.fetchall()
+        cursor.close()
+
+        # Use featured puzzle if set, otherwise fall back to latest by date
+        if puzzles:
+            latest = featured_puzzle if featured_puzzle else puzzles[0]
+            if latest.get('featured_message'):
+                featured_message = esc(latest['featured_message'])
+            else:
+                # Generate default for puzzles imported before this feature
+                setter = latest.get('setter') or 'Unknown'
+                type_label = 'Quiptic' if latest.get('puzzle_type') == 'quiptic' else 'Guardian cryptic'
+                featured_message = esc(f"Come and have a go at today's {type_label} set by {setter}.")
+
+        for i, p in enumerate(puzzles[:4]):  # Max 4 puzzles for static fallback
+            is_featured = (i == 0)
+            type_label = 'Quiptic' if p['puzzle_type'] == 'quiptic' else 'Cryptic'
+            clue_count = p['clue_count'] or '~28'
+
+            # Format day
+            if p['date']:
+                from datetime import date as date_type
+                today = date_type.today()
+                puzzle_date = p['date'] if isinstance(p['date'], date_type) else p['date'].date()
+                diff = (today - puzzle_date).days
+                if diff == 0:
+                    day_str = 'Today'
+                elif diff == 1:
+                    day_str = 'Yesterday'
+                else:
+                    day_str = p['date'].strftime('%a')
+            else:
+                day_str = ''
+
+            featured_class = ' featured' if is_featured else ''
+            blurb = 'Start here — hints ready when you need them.' if is_featured else ''
+
+            static_puzzles_html += f'''
+                <a href="/puzzle/{esc(str(p['puzzle_number']))}" class="puzzle-card{featured_class}">
+                    <div class="puzzle-card-header">
+                        <span class="puzzle-card-meta">{esc(day_str)} · {type_label}</span>
+                        <span class="puzzle-card-clues">{esc(str(clue_count))} clues</span>
+                    </div>
+                    <p class="puzzle-card-title">#{esc(str(p['puzzle_number']))} by {esc(p['setter'] or 'Unknown')}</p>
+                    <p class="puzzle-card-blurb">{blurb}</p>
+                </a>'''
     except Exception:
-        pass
-    return _serve_html('index.html', extra={'__LATEST_PUZZLE__': latest})
+        static_puzzles_html = '<div class="loading">Loading puzzles...</div>'
+    finally:
+        if conn:
+            conn.close()
+
+    return _serve_html('index.html', extra={
+        '__STATIC_PUZZLES__': static_puzzles_html,
+        '__FEATURED_MESSAGE__': featured_message,
+    })
 
 
 @app.route('/puzzle/<puzzle_number>')
@@ -1109,21 +1211,21 @@ def get_published_puzzles():
     """Get all published puzzles for listing"""
     conn = get_db()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
-    
+
     cursor.execute('''
         SELECT p.id, p.publication, p.puzzle_type, p.puzzle_number, p.setter, p.date,
-               COUNT(c.id) as clue_count
+               p.is_featured, p.featured_message, COUNT(c.id) as clue_count
         FROM puzzles p
         LEFT JOIN clues c ON c.puzzle_id = p.id
         WHERE p.status = 'published'
-        GROUP BY p.id, p.publication, p.puzzle_type, p.puzzle_number, p.setter, p.date
-        ORDER BY p.date DESC
+        GROUP BY p.id, p.publication, p.puzzle_type, p.puzzle_number, p.setter, p.date, p.is_featured, p.featured_message
+        ORDER BY p.is_featured DESC NULLS LAST, p.date DESC
     ''')
     puzzles = cursor.fetchall()
-    
+
     cursor.close()
     conn.close()
-    
+
     return jsonify([dict(p) for p in puzzles])
 
 
@@ -1953,6 +2055,84 @@ def unpublish_puzzle(puzzle_id):
     return jsonify({'success': True, 'message': 'Puzzle unpublished'})
 
 
+@app.route('/admin/api/puzzle/<int:puzzle_id>/featured-message', methods=['POST'])
+@login_required
+def update_featured_message(puzzle_id):
+    """Update the featured message for a puzzle"""
+    data = request.json
+    message = data.get('message', '').strip()
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        UPDATE puzzles
+        SET featured_message = %s
+        WHERE id = %s
+    ''', (message if message else None, puzzle_id))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'message': 'Featured message updated'})
+
+
+@app.route('/admin/api/puzzle/<int:puzzle_id>/feature', methods=['POST'])
+@login_required
+def feature_puzzle(puzzle_id):
+    """Mark a puzzle as featured (shown on homepage). Only one can be featured at a time."""
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Unfeature all puzzles first
+    cursor.execute('UPDATE puzzles SET is_featured = FALSE')
+
+    # Feature this one
+    cursor.execute('UPDATE puzzles SET is_featured = TRUE WHERE id = %s', (puzzle_id,))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'message': 'Puzzle is now featured on homepage'})
+
+
+@app.route('/admin/api/puzzle/<int:puzzle_id>/unfeature', methods=['POST'])
+@login_required
+def unfeature_puzzle(puzzle_id):
+    """Remove featured status from a puzzle"""
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute('UPDATE puzzles SET is_featured = FALSE WHERE id = %s', (puzzle_id,))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'success': True, 'message': 'Puzzle unfeatured'})
+
+
+@app.route('/admin/api/puzzle/<int:puzzle_id>/featured-message', methods=['GET'])
+@login_required
+def get_featured_message(puzzle_id):
+    """Get the featured message for a puzzle"""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    cursor.execute('SELECT featured_message FROM puzzles WHERE id = %s', (puzzle_id,))
+    row = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if not row:
+        return jsonify({'success': False, 'message': 'Puzzle not found'}), 404
+
+    return jsonify({'success': True, 'featured_message': row['featured_message'] or ''})
+
+
 @app.route('/admin/api/usage')
 @login_required
 def get_api_usage():
@@ -2457,6 +2637,132 @@ def admin_delete_blog_post(post_id):
     cursor.close()
     conn.close()
     return jsonify({'success': True})
+
+
+@app.route('/admin/api/debug-puzzle/<int:puzzle_id>')
+@login_required
+def debug_puzzle(puzzle_id):
+    """Debug endpoint: show fifteensquared extraction for a puzzle"""
+    conn = get_db()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    # Get puzzle info
+    cursor.execute('''
+        SELECT id, puzzle_number, puzzle_type, setter
+        FROM puzzles WHERE id = %s
+    ''', (puzzle_id,))
+    puzzle = cursor.fetchone()
+
+    if not puzzle:
+        cursor.close()
+        conn.close()
+        return jsonify({'error': 'Puzzle not found'}), 404
+
+    # Get first 3 clues
+    cursor.execute('''
+        SELECT id, clue_number, direction, clue_text, answer,
+               hint_level_1, hint_level_2, hint_level_3, hint_level_4
+        FROM clues
+        WHERE puzzle_id = %s
+        ORDER BY CASE WHEN direction = 'across' THEN 0 ELSE 1 END,
+                 CAST(clue_number AS INTEGER)
+        LIMIT 3
+    ''', (puzzle_id,))
+    clues = cursor.fetchall()
+
+    # Count total clues
+    cursor.execute('SELECT COUNT(*) as count FROM clues WHERE puzzle_id = %s', (puzzle_id,))
+    total_clues = cursor.fetchone()['count']
+
+    cursor.close()
+    conn.close()
+
+    # Fetch fifteensquared content
+    from puzzle_scraper import FifteensquaredScraper
+    from bs4 import BeautifulSoup
+    import requests as req
+
+    fs = FifteensquaredScraper()
+
+    puzzle_type = puzzle['puzzle_type'] or 'cryptic'
+    post_url = fs.find_puzzle_post(puzzle['puzzle_number'], puzzle_type)
+
+    hints_map = {}
+    raw_sample = []
+    page_structure = {}
+
+    if post_url:
+        # Fetch the page to get raw content for debugging
+        try:
+            resp = req.get(post_url, timeout=30)
+            soup = BeautifulSoup(resp.content, 'html.parser')
+            content = soup.find(['div', 'article'], class_=lambda x: x and 'entry-content' in str(x))
+            if not content:
+                content = soup.find('article')
+
+            if content:
+                full_text = content.get_text()
+                lines = [line.strip() for line in full_text.split('\n') if line.strip()]
+                # Get first 30 lines as sample
+                raw_sample = lines[:30]
+                page_structure = {
+                    'total_lines': len(lines),
+                    'has_across': any('ACROSS' in l.upper() for l in lines),
+                    'has_down': any('DOWN' in l.upper() for l in lines),
+                    'lines_with_numbers': len([l for l in lines if l and l[0].isdigit()]),
+                }
+        except Exception as e:
+            raw_sample = [f"Error fetching page: {e}"]
+
+        hints_map = fs.fetch_hints(post_url)
+
+    # Build sample clues with expert text
+    sample_clues = []
+
+    for clue in clues:
+        clue_key = f"{clue['clue_number']}-{clue['direction']}"
+        expert_text = ''
+        definitions = []
+
+        if clue_key in hints_map:
+            hint_data = hints_map[clue_key]
+            if isinstance(hint_data, dict):
+                expert_text = ' '.join(hint_data.get('text', []))
+                definitions = hint_data.get('definitions', [])
+            else:
+                expert_text = ' '.join(hint_data)
+
+        sample_clues.append({
+            'number': clue['clue_number'],
+            'direction': clue['direction'],
+            'clue_text': clue['clue_text'],
+            'answer': clue['answer'],
+            'expert_text': expert_text,
+            'definitions': definitions,
+            'hints': {
+                'hint1': clue['hint_level_1'],
+                'hint2': clue['hint_level_2'],
+                'hint3': clue['hint_level_3'],
+                'hint4': clue['hint_level_4'],
+            }
+        })
+
+    return jsonify({
+        'puzzle': {
+            'id': puzzle['id'],
+            'number': puzzle['puzzle_number'],
+            'type': puzzle_type,
+            'setter': puzzle['setter'],
+        },
+        'fifteensquared': {
+            'url': post_url,
+            'clues_with_text': len(hints_map),
+            'total_clues': total_clues,
+            'page_structure': page_structure,
+            'raw_sample': raw_sample,
+        },
+        'sample_clues': sample_clues,
+    })
 
 
 # ============================================================================
