@@ -564,6 +564,30 @@ def blog_post_page(slug):
     return _serve_html('blog-post.html', extra={'__BLOG_SLUG__': slug})
 
 
+def _format_hint4_html(text, esc):
+    """Format hint 4 text with the answer prominently displayed."""
+    import re as _re
+    escaped = esc(text)
+    m = _re.match(r'^Answer:\s*([A-Z][A-Z\s\-\']+?)(?:\s*\||$)', escaped)
+    if not m:
+        return escaped
+    answer = m.group(1).strip()
+    rest = escaped[m.end():].strip()
+    html = f'<span class="hint-answer">{answer}</span>'
+    if rest:
+        sections = rest.split(' | ')
+        parts = []
+        for s in sections:
+            s = _re.sub(
+                r'^(Definition|Wordplay|Technique):\s*',
+                r'<span class="hint-section-label">\1:</span> ',
+                s, flags=_re.IGNORECASE
+            )
+            parts.append(s)
+        html += '<span class="hint-explanation">' + '<br>'.join(parts) + '</span>'
+    return html
+
+
 @app.route('/clue/<puzzle_number>/<clue_ref>')
 def clue_page(puzzle_number, clue_ref):
     """Serve an individual clue page with server-side rendered content for SEO."""
@@ -626,7 +650,10 @@ def clue_page(puzzle_number, clue_ref):
                         continue
                     hints_html += (f'<button class="hint-btn" id="hint-btn-{i}" '
                                    f'onclick="toggleHint({i})">{hint_labels[i]}</button>')
-                    hints_html += f'<div class="hint-text" id="hint-{i}">{esc(hint)}</div>'
+                    if i == 3:
+                        hints_html += f'<div class="hint-text" id="hint-{i}">{_format_hint4_html(hint, esc)}</div>'
+                    else:
+                        hints_html += f'<div class="hint-text" id="hint-{i}">{esc(hint)}</div>'
 
                 ssr_content = (
                     '<div class="clue-card">'
