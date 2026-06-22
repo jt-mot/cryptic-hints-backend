@@ -480,25 +480,6 @@
             display: none;
             color: #334155;
         }
-        .hint-answer {
-            display: block;
-            font-size: 20px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            color: #059669;
-            margin-bottom: 8px;
-        }
-        .hint-explanation {
-            display: block;
-            font-size: 14px;
-            color: #475569;
-            line-height: 1.6;
-        }
-        .hint-explanation .hint-section-label {
-            font-weight: 700;
-            color: #334155;
-        }
-
         .hint-text.visible {
             display: block;
             animation: slideDown 0.2s ease;
@@ -1333,7 +1314,7 @@
                         <div class="hint-text" id="hint-${safeClueId}-3">${esc(clue.hints[2]) || 'No hint available'}</div>
 
                         <button class="hint-button hint-4" onclick="revealHint('${safeClueId}', 4)">Hint 4: Full Explanation</button>
-                        <div class="hint-text" id="hint-${safeClueId}-4">${formatHint4(clue.hints[3], clue.answer)}</div>
+                        <div class="hint-text" id="hint-${safeClueId}-4">${esc(clue.hints[3]) || 'No hint available'}</div>
                     </div>
                 </div>
             `;
@@ -1531,25 +1512,6 @@
                     feedback.classList.remove('visible');
                 }, 3000);
             }
-        }
-
-        function formatHint4(text, answer) {
-            if (!text) return 'No hint available';
-            const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            const escaped = esc(text);
-            // Strip "Answer: XXXX |" prefix from explanation if present
-            let explanation = escaped.replace(/^Answer:\s*[A-Z][A-Z\s\-']*?\s*\|\s*/, '');
-            let explanationHtml = '';
-            if (explanation) {
-                const sections = explanation.split(/\s*\|\s*/);
-                explanationHtml = sections.map(s => {
-                    return s.replace(/^(Definition|Wordplay|Technique):\s*/i,
-                        '<span class="hint-section-label">$1:</span> ');
-                }).join('<br>');
-            }
-            const displayAnswer = answer ? esc(answer.toUpperCase()) : '';
-            return (displayAnswer ? '<span class="hint-answer">' + displayAnswer + '</span>' : '') +
-                   (explanationHtml ? '<span class="hint-explanation">' + explanationHtml + '</span>' : escaped);
         }
 
         function updateProgress() {
