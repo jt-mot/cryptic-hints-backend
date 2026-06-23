@@ -823,16 +823,14 @@ Respond with ONLY a JSON object:
         full_text = ' '.join(paragraphs)
         parts = []
 
-        # Extract the answer (longest ALL CAPS word, usually the answer)
-        extracted_answer = None
-        caps_words = re.findall(r'\b[A-Z]{2,}\b', full_text)
-        if caps_words:
-            answer_candidates = [w for w in caps_words if len(w) >= 3]
-            if answer_candidates:
-                extracted_answer = max(answer_candidates, key=len)
-
-        # Use passed-in answer if extraction failed
-        display_answer = extracted_answer or answer
+        # Use the known answer if available; fall back to extracting from text
+        display_answer = answer
+        if not display_answer:
+            caps_words = re.findall(r'\b[A-Z]{2,}\b', full_text)
+            if caps_words:
+                answer_candidates = [w for w in caps_words if len(w) >= 3]
+                if answer_candidates:
+                    display_answer = max(answer_candidates, key=len)
         if display_answer:
             parts.append(f"Answer: {display_answer.upper()}")
 
