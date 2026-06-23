@@ -478,7 +478,7 @@ Respond with ONLY a JSON object:
         hint_3 = self._generate_structural_hint(full_text, paragraphs=hint_paragraphs,
                                                  definitions=definitions)
         hint_4 = self._generate_full_explanation(hint_paragraphs, definitions,
-                                                  answer=answer)
+                                                  answer=answer, clue_text=clue_text)
 
         return [hint_1, hint_2, hint_3, hint_4]
 
@@ -813,7 +813,8 @@ Respond with ONLY a JSON object:
 
     def _generate_full_explanation(self, paragraphs: List[str],
                                     definitions: List[str],
-                                    answer: str = None) -> str:
+                                    answer: str = None,
+                                    clue_text: str = None) -> str:
         """
         Level 4: Complete explanation
 
@@ -832,7 +833,9 @@ Respond with ONLY a JSON object:
                 if answer_candidates:
                     display_answer = max(answer_candidates, key=len)
         if display_answer:
-            parts.append(f"Answer: {display_answer.upper()}")
+            # Format answer with spaces using enumeration from clue text
+            formatted = self._format_answer_with_spaces(display_answer.upper(), clue_text)
+            parts.append(f"Answer: {formatted}")
 
         # Definition section
         if definitions:
@@ -843,12 +846,21 @@ Respond with ONLY a JSON object:
 
         # Wordplay explanation - use the main content paragraphs
         if paragraphs:
-            # Find the most explanatory paragraph (usually has the CAPS answer parts)
             best_para = None
             best_score = 0
 
+            # Strip enumeration from clue text for comparison
+            clue_stripped = ''
+            if clue_text:
+                clue_stripped = re.sub(r'\s*\([0-9,\-\s]+\)\s*$', '', clue_text).strip().lower()
+
             for para in paragraphs:
-                # Score by presence of caps words and structural words
+                # Skip paragraphs that are just the clue text repeated
+                para_lower = para.strip().lower()
+                if clue_stripped and (para_lower == clue_stripped
+                                     or para_lower.startswith(clue_stripped)):
+                    continue
+
                 caps_count = len(re.findall(r'\b[A-Z]{2,}\b', para))
                 has_structure = any(word in para.lower() for word in
                                    ['plus', 'in', 'around', 'gives', 'makes', '=', '+'])
@@ -860,7 +872,6 @@ Respond with ONLY a JSON object:
 
             if best_para:
                 explanation = best_para.strip()
-                # Don't duplicate if it's the same as definition
                 if not definitions or explanation.lower() != definitions[0].lower():
                     parts.append(f"Wordplay: {explanation}")
 
@@ -868,3 +879,26 @@ Respond with ONLY a JSON object:
             return ' '.join(paragraphs) if paragraphs else "No explanation available."
 
         return " | ".join(parts)
+
+    @staticmethod
+    def _format_answer_with_spaces(answer: str, clue_text: str = None) -> str:
+        """Insert spaces into an answer using the enumeration from the clue text.
+        e.g. NATURALDISASTER with (7,8) -> NATURAL DISASTER"""
+        if not clue_text:
+            return answer
+        enum_match = re.search(r'\(([0-9,\-\s]+)\)\s*$', clue_text)
+        if not enum_match:
+            return answer
+        enum_str = enum_match.group(1)
+        lengths = [int(n) for n in re.findall(r'\d+', enum_str)]
+        if sum(lengths) != len(answer):
+            return answer
+        if len(lengths) <= 1:
+            return answer
+        result = []
+        pos = 0
+        sep = '-' if '-' in enum_str else ' '
+        for length in lengths:
+            result.append(answer[pos:pos + length])
+            pos += length
+        return sep.join(result)
